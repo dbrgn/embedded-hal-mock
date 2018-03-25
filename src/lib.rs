@@ -25,7 +25,7 @@ impl<'a> I2cMock<'a> {
     }
 
     /// Set data that will be read by `read()`.
-    pub fn set_data(&mut self, data: &'a [u8]) {
+    pub fn set_read_data(&mut self, data: &'a [u8]) {
         self.data = data;
     }
 }
@@ -61,11 +61,11 @@ impl<'a> hal::blocking::i2c::WriteRead for I2cMock<'a> {
     }
 }
 
-pub struct DelayMock;
+pub struct DelayMockNoop;
 
 macro_rules! impl_delay_us {
     ($type:ty) => {
-        impl hal::blocking::delay::DelayUs<$type> for DelayMock {
+        impl hal::blocking::delay::DelayUs<$type> for DelayMockNoop {
             /// A no-op delay implementation.
             fn delay_us(&mut self, _n: $type) { }
         }
@@ -79,7 +79,7 @@ impl_delay_us!(u64);
 
 macro_rules! impl_delay_ms {
     ($type:ty) => {
-        impl hal::blocking::delay::DelayMs<$type> for DelayMock {
+        impl hal::blocking::delay::DelayMs<$type> for DelayMockNoop {
             /// A no-op delay implementation.
             fn delay_ms(&mut self, _n: $type) { }
         }
@@ -90,3 +90,36 @@ impl_delay_ms!(u8);
 impl_delay_ms!(u16);
 impl_delay_ms!(u32);
 impl_delay_ms!(u64);
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use hal::blocking::i2c::Read;
+
+    #[test]
+    fn i2c_read_no_data_set() {
+        let mut i2c = I2cMock::new();
+        let mut buf = [0; 3];
+        i2c.read(0, &mut buf).unwrap();
+        assert_eq!(buf, [0; 3]);
+    }
+
+    #[test]
+    fn i2c_read_some_data_set() {
+        let mut i2c = I2cMock::new();
+        let mut buf = [0; 3];
+        i2c.set_read_data(&[1, 2]);
+        i2c.read(0, &mut buf).unwrap();
+        assert_eq!(buf, [1, 2, 0]);
+    }
+
+    #[test]
+    fn i2c_read_too_much_data_set() {
+        let mut i2c = I2cMock::new();
+        let mut buf = [0; 3];
+        i2c.set_read_data(&[1, 2, 3, 4]);
+        i2c.read(0, &mut buf).unwrap();
+        assert_eq!(buf, [1, 2, 3]);
+    }
+}

@@ -18,6 +18,27 @@ to hardware.
 Currently this crate is not `no_std`. If you think this is important, let me
 know.
 
+## Usage
+
+### I2C
+
+```rust
+use embedded_hal::blocking::i2c::Read;
+use embedded_hal_mock::I2cMock;
+
+let mut i2c = I2cMock::new();
+let mut buf = [0; 3];
+i2c.set_read_data(&[1, 2]);
+i2c.read(0, &mut buf).unwrap();
+assert_eq!(buf, [1, 2, 0]);
+```
+
+### Delay
+
+Just create an instance of `embedded_hal_mock::DelayMockNoop`. There will be no
+actual delay. This is useful for fast tests, where you don't actually need to
+wait for the hardware.
+
 ## License
 
 Licensed under either of
