@@ -1,0 +1,7 @@
+[package]
+name = "embedded-hal-mock"
+version = "0.1.0"
+authors = ["Danilo Bargen <mail@dbrgn.ch>"]
+
+[dependencies]
+embedded-hal = "0.1"
