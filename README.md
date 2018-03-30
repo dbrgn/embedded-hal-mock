@@ -27,10 +27,19 @@ use embedded_hal::blocking::i2c::Read;
 use embedded_hal_mock::I2cMock;
 
 let mut i2c = I2cMock::new();
+
+// Reading
 let mut buf = [0; 3];
 i2c.set_read_data(&[1, 2]);
 i2c.read(0, &mut buf).unwrap();
 assert_eq!(buf, [1, 2, 0]);
+assert_eq!(i2c.get_last_address(), Some(0));
+
+// Writing
+let buf = [1, 2, 4];
+i2c.write(42, &buf).unwrap();
+assert_eq!(i2c.get_last_address(), Some(42));
+assert_eq!(i2c.get_write_data(), &[1, 2, 4]);
 ```
 
 ### Delay
