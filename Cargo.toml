@@ -2,6 +2,21 @@
 name = "embedded-hal-mock"
 version = "0.1.0"
 authors = ["Danilo Bargen <mail@dbrgn.ch>"]
+categories = ["embedded", "hardware-support", "testing"]
+description = "A collection of mocked devices that implement the embedded-hal traits"
+documentation = "https://docs.rs/embedded-hal"
+keywords = ["hal", "IO"]
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+repository = "https://github.com/dbrgn/embedded-hal-mock"
+include = [
+    "**/*.rs",
+    "Cargo.toml",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE-MIT",
+    "LICENSE-APACHE",
+]
 
 [dependencies]
 embedded-hal = "0.1"
