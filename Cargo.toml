@@ -19,4 +19,4 @@ include = [
 ]
 
 [dependencies]
-embedded-hal = "0.1"
+embedded-hal = "0.2"
