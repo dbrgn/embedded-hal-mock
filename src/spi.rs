@@ -44,14 +44,14 @@ impl Transaction {
 /// Mock SPI implementation
 /// This supports the specification and checking of expectations to allow automated testing of SPI based drivers.
 /// Mismatches between expected and real SPI transactions will cause runtime assertions to assist with locating faults.
-pub struct SPIMock {
+pub struct Mock {
     expected: Arc<Mutex<VecDeque<Transaction>>>,
 }
 
-impl SPIMock {
+impl Mock {
     /// Create a new mock SPI interface
     pub fn new() -> Self {
-        SPIMock {
+        Mock {
             expected: Arc::new(Mutex::new(VecDeque::new())),
         }
     }
@@ -64,17 +64,17 @@ impl SPIMock {
         *e = expected.into();
     }
 
-    /// Assert that all expectations on a given SPIMock have been met
+    /// Assert that all expectations on a given Mock have been met
     pub fn done(&mut self) {
         let expected = self.expected.lock().unwrap();
         assert_eq!(expected.len(), 0);
     }
 }
 
-impl spi::Write<u8> for SPIMock {
+impl spi::Write<u8> for Mock {
     type Error = MockError;
 
-    /// spi::Write implementation for SPIMock
+    /// spi::Write implementation for Mock
     /// This will cause an assertion if the write call does not match the next expectation
     fn write(&mut self, buffer: &[u8]) -> Result<(), Self::Error> {
         let w = self
@@ -89,10 +89,10 @@ impl spi::Write<u8> for SPIMock {
     }
 }
 
-impl spi::Transfer<u8> for SPIMock {
+impl spi::Transfer<u8> for Mock {
     type Error = MockError;
 
-    /// spi::Transfer implementation for SPIMock
+    /// spi::Transfer implementation for Mock
     /// This writes the provided response to the buffer and will cause an assertion if the written data does not match the next expectation
     fn transfer<'w>(&mut self, buffer: &'w mut [u8]) -> Result<&'w [u8], Self::Error> {
         let w = self
@@ -119,7 +119,7 @@ mod test {
 
     #[test]
     fn test_spi_mock_write() {
-        let mut spi = SPIMock::new();
+        let mut spi = Mock::new();
 
         spi.expect(vec![Transaction::write(vec![10u8, 12u8])]);
 
@@ -130,7 +130,7 @@ mod test {
 
     #[test]
     fn test_spi_mock_transfer() {
-        let mut spi = SPIMock::new();
+        let mut spi = Mock::new();
 
         spi.expect(vec![Transaction::transfer(
             vec![10u8, 12u8],
@@ -147,7 +147,7 @@ mod test {
 
     #[test]
     fn test_spi_mock_multiple() {
-        let mut spi = SPIMock::new();
+        let mut spi = Mock::new();
 
         spi.expect(vec![
             Transaction::write(vec![1u8, 2u8]),
@@ -167,7 +167,7 @@ mod test {
     #[test]
     #[should_panic]
     fn test_spi_mock_write_err() {
-        let mut spi = SPIMock::new();
+        let mut spi = Mock::new();
 
         spi.expect(vec![Transaction::write(vec![10u8, 12u8])]);
 
@@ -179,7 +179,7 @@ mod test {
     #[test]
     #[should_panic]
     fn test_spi_mock_transfer_err() {
-        let mut spi = SPIMock::new();
+        let mut spi = Mock::new();
 
         spi.expect(vec![Transaction::transfer(
             vec![10u8, 12u8],
@@ -197,7 +197,7 @@ mod test {
     #[test]
     #[should_panic]
     fn test_spi_mock_transfer_response_err() {
-        let mut spi = SPIMock::new();
+        let mut spi = Mock::new();
 
         spi.expect(vec![Transaction::transfer(
             vec![1u8, 2u8],
@@ -215,7 +215,7 @@ mod test {
     #[test]
     #[should_panic]
     fn test_spi_mock_mode_err() {
-        let mut spi = SPIMock::new();
+        let mut spi = Mock::new();
 
         spi.expect(vec![Transaction::transfer(vec![10u8, 12u8], vec![])]);
 
@@ -227,7 +227,7 @@ mod test {
     #[test]
     #[should_panic]
     fn test_spi_mock_multiple_transaction_err() {
-        let mut spi = SPIMock::new();
+        let mut spi = Mock::new();
 
         spi.expect(vec![
             Transaction::write(vec![10u8, 12u8]),

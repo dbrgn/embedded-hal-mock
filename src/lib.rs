@@ -7,7 +7,8 @@ mod i2c;
 pub use i2c::I2cMock;
 
 mod spi;
-pub use spi::SPIMock;
+pub use spi::Mock as SPIMock;
+pub use spi::Transaction as SPITransaction;
 
 pub struct DelayMockNoop;
 
