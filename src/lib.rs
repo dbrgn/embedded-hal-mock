@@ -1,7 +1,5 @@
 extern crate embedded_hal as hal;
 
-use std::io::{self, Read};
-
 mod error;
 pub use error::MockError;
 
@@ -17,9 +15,9 @@ macro_rules! impl_delay_us {
     ($type:ty) => {
         impl hal::blocking::delay::DelayUs<$type> for DelayMockNoop {
             /// A no-op delay implementation.
-            fn delay_us(&mut self, _n: $type) { }
+            fn delay_us(&mut self, _n: $type) {}
         }
-    }
+    };
 }
 
 impl_delay_us!(u8);
@@ -31,14 +29,12 @@ macro_rules! impl_delay_ms {
     ($type:ty) => {
         impl hal::blocking::delay::DelayMs<$type> for DelayMockNoop {
             /// A no-op delay implementation.
-            fn delay_ms(&mut self, _n: $type) { }
+            fn delay_ms(&mut self, _n: $type) {}
         }
-    }
+    };
 }
 
 impl_delay_ms!(u8);
 impl_delay_ms!(u16);
 impl_delay_ms!(u32);
 impl_delay_ms!(u64);
-
-

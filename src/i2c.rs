@@ -1,11 +1,8 @@
-
-
-use std::io::{self, Read};
+use std::io::Read;
 
 use hal::blocking::i2c;
 
-use ::error::MockError;
-
+use error::MockError;
 
 const WRITE_BUF_SIZE: usize = 64;
 
@@ -57,8 +54,11 @@ impl<'a> i2c::Write for I2cMock<'a> {
 
     fn write(&mut self, address: u8, bytes: &[u8]) -> Result<(), Self::Error> {
         if bytes.len() > WRITE_BUF_SIZE {
-            panic!("Write buffer is too small for this number of bytes ({} > {})",
-                   bytes.len(), WRITE_BUF_SIZE);
+            panic!(
+                "Write buffer is too small for this number of bytes ({} > {})",
+                bytes.len(),
+                WRITE_BUF_SIZE
+            );
         }
         self.address = Some(address);
         self.buf[0..bytes.len()].copy_from_slice(bytes);
@@ -77,8 +77,11 @@ impl<'a> i2c::WriteRead for I2cMock<'a> {
         mut buffer: &mut [u8],
     ) -> Result<(), Self::Error> {
         if bytes.len() > WRITE_BUF_SIZE {
-            panic!("Write buffer is too small for this number of bytes ({} > {})",
-                   bytes.len(), WRITE_BUF_SIZE);
+            panic!(
+                "Write buffer is too small for this number of bytes ({} > {})",
+                bytes.len(),
+                WRITE_BUF_SIZE
+            );
         }
         self.address = Some(address);
         self.data.read(&mut buffer)?;

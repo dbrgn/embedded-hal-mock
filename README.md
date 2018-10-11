@@ -11,6 +11,7 @@ to hardware.
 ## Status
 
 - [x] Simple I2C implementation
+- [x] Transactional SPI implementation
 - [x] No-op Delay implementation
 
 ## no\_std
@@ -40,6 +41,32 @@ let buf = [1, 2, 4];
 i2c.write(42, &buf).unwrap();
 assert_eq!(i2c.get_last_address(), Some(42));
 assert_eq!(i2c.get_write_data(), &[1, 2, 4]);
+```
+
+### SPI
+
+```rust
+use hal::blocking::spi::{Transfer, Write};
+use embedded_hal_mock::SPIMock;
+
+let mut spi = SPIMock::new();
+
+// Configure expectations
+spi.expect(vec![
+    Transaction::write(vec![1u8, 2u8]),
+    Transaction::transfer(vec![3u8, 4u8], vec![5u8, 6u8]),
+]);
+
+// Writing
+spi.write(&vec![1u8, 2u8]).unwrap();
+
+// Transferring
+let mut v = vec![3u8, 4u8];
+spi.transfer(&mut v).unwrap();
+assert_eq!(v, vec![5u8, 6u8]);
+
+// Finalise expectations
+spi.done();
 ```
 
 ### Delay
