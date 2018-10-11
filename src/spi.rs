@@ -103,6 +103,7 @@ impl spi::Transfer<u8> for SPIMock {
             .expect("no expectation for spi::transfer call");
         assert_eq!(w.expected_mode, Mode::Transfer);
         assert_eq!(&w.expected_data, &buffer);
+        assert_eq!(buffer.len(), w.response.len(), "mismatched response length for spi::transfer");
         for i in 0..w.response.len() {
             buffer[i] = w.response[i];
         }
@@ -183,6 +184,24 @@ mod test {
         spi.expect(vec![Transaction::transfer(
             vec![10u8, 12u8],
             vec![12u8, 15u8],
+        )]);
+
+        let mut v = vec![10u8, 12u8];
+        spi.transfer(&mut v).unwrap();
+
+        assert_eq!(v, vec![12u8, 13u8]);
+
+        spi.done();
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_spi_mock_transfer_response_err() {
+        let mut spi = SPIMock::new();
+
+        spi.expect(vec![Transaction::transfer(
+            vec![1u8, 2u8],
+            vec![3u8, 4u8, 5u8],
         )]);
 
         let mut v = vec![10u8, 12u8];
