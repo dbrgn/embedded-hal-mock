@@ -61,9 +61,9 @@ spi.expect(vec![
 spi.write(&vec![1u8, 2u8]).unwrap();
 
 // Transferring
-let mut v = vec![3u8, 4u8];
-spi.transfer(&mut v).unwrap();
-assert_eq!(v, vec![5u8, 6u8]);
+let mut buf = vec![3u8, 4u8];
+spi.transfer(&mut buf).unwrap();
+assert_eq!(buf, vec![5u8, 6u8]);
 
 // Finalise expectations
 spi.done();
