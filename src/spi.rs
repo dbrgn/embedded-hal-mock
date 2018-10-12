@@ -1,3 +1,39 @@
+//! SPI mock implementations.
+//!
+//! This mock supports the specification and checking of expectations to allow
+//! automated testing of SPI based drivers. Mismatches between expected and
+//! real SPI transactions will cause runtime assertions to assist with locating
+//! faults.
+//!
+//! ## Usage
+//!
+//! ```
+//! extern crate embedded_hal;
+//! extern crate embedded_hal_mock;
+//!
+//! use embedded_hal::blocking::spi::{Transfer, Write};
+//! use embedded_hal_mock::spi::{Mock as SpiMock, Transaction as SpiTransaction};
+//!
+//! let mut spi = SpiMock::new();
+//!
+//! // Configure expectations
+//! spi.expect(vec![
+//!     SpiTransaction::write(vec![1u8, 2u8]),
+//!     SpiTransaction::transfer(vec![3u8, 4u8], vec![5u8, 6u8]),
+//! ]);
+//!
+//! // Writing
+//! spi.write(&vec![1u8, 2u8]).unwrap();
+//!
+//! // Transferring
+//! let mut buf = vec![3u8, 4u8];
+//! spi.transfer(&mut buf).unwrap();
+//! assert_eq!(buf, vec![5u8, 6u8]);
+//!
+//! // Finalise expectations
+//! spi.done();
+//! ```
+
 use std::collections::VecDeque;
 use std::sync::{Arc, Mutex};
 
@@ -13,6 +49,7 @@ pub enum Mode {
 }
 
 /// SPI transaction type
+///
 /// Models an SPI write or transfer (with response)
 #[derive(Clone, Debug, PartialEq)]
 pub struct Transaction {
@@ -42,8 +79,13 @@ impl Transaction {
 }
 
 /// Mock SPI implementation
-/// This supports the specification and checking of expectations to allow automated testing of SPI based drivers.
-/// Mismatches between expected and real SPI transactions will cause runtime assertions to assist with locating faults.
+///
+/// This supports the specification and checking of expectations to allow
+/// automated testing of SPI based drivers. Mismatches between expected and
+/// real SPI transactions will cause runtime assertions to assist with locating
+/// faults.
+///
+/// See the usage section in the module level docs for an example.
 pub struct Mock {
     expected: Arc<Mutex<VecDeque<Transaction>>>,
 }
@@ -57,6 +99,7 @@ impl Mock {
     }
 
     /// Set expectations on the SPI interface
+    ///
     /// This is a list of SPI transactions to be executed in order
     /// Note that setting this will overwrite any existing expectations
     pub fn expect(&mut self, expected: Vec<Transaction>) {
@@ -75,6 +118,7 @@ impl spi::Write<u8> for Mock {
     type Error = MockError;
 
     /// spi::Write implementation for Mock
+    ///
     /// This will cause an assertion if the write call does not match the next expectation
     fn write(&mut self, buffer: &[u8]) -> Result<(), Self::Error> {
         let w = self
@@ -93,6 +137,7 @@ impl spi::Transfer<u8> for Mock {
     type Error = MockError;
 
     /// spi::Transfer implementation for Mock
+    ///
     /// This writes the provided response to the buffer and will cause an assertion if the written data does not match the next expectation
     fn transfer<'w>(&mut self, buffer: &'w mut [u8]) -> Result<&'w [u8], Self::Error> {
         let w = self

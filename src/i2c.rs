@@ -1,3 +1,31 @@
+//! I²C mock implementations.
+//!
+//! ## Usage
+//!
+//! ```
+//! extern crate embedded_hal;
+//! extern crate embedded_hal_mock;
+//!
+//! use embedded_hal::prelude::*;
+//! use embedded_hal::blocking::i2c::Read;
+//! use embedded_hal_mock::i2c::Mock as I2cMock;
+//!
+//! let mut i2c = I2cMock::new();
+//!
+//! // Reading
+//! let mut buf = [0; 3];
+//! i2c.set_read_data(&[1, 2]);
+//! i2c.read(0, &mut buf).unwrap();
+//! assert_eq!(buf, [1, 2, 0]);
+//! assert_eq!(i2c.get_last_address(), Some(0));
+//!
+//! // Writing
+//! let buf = [1, 2, 4];
+//! i2c.write(42, &buf).unwrap();
+//! assert_eq!(i2c.get_last_address(), Some(42));
+//! assert_eq!(i2c.get_write_data(), &[1, 2, 4]);
+//! ```
+
 use std::io::Read;
 
 use hal::blocking::i2c;
@@ -6,16 +34,23 @@ use error::MockError;
 
 const WRITE_BUF_SIZE: usize = 64;
 
-pub struct I2cMock<'a> {
+/// Mock I²C implementation
+///
+/// The main idea behind this is that you set the data that will be read back
+/// by a read call in advance. Then the driver can read from the mock device,
+/// and will get exactly the data you prepared.
+///
+/// See the usage section in the module level docs for an example.
+pub struct Mock<'a> {
     data: &'a [u8],
     address: Option<u8>,
     buf: [u8; WRITE_BUF_SIZE],
     buf_bytes_written: usize,
 }
 
-impl<'a> I2cMock<'a> {
+impl<'a> Mock<'a> {
     pub fn new() -> Self {
-        I2cMock {
+        Mock {
             data: &[],
             address: None,
             buf: [0; WRITE_BUF_SIZE],
@@ -39,7 +74,7 @@ impl<'a> I2cMock<'a> {
     }
 }
 
-impl<'a> i2c::Read for I2cMock<'a> {
+impl<'a> i2c::Read for Mock<'a> {
     type Error = MockError;
 
     fn read(&mut self, address: u8, mut buffer: &mut [u8]) -> Result<(), Self::Error> {
@@ -49,7 +84,7 @@ impl<'a> i2c::Read for I2cMock<'a> {
     }
 }
 
-impl<'a> i2c::Write for I2cMock<'a> {
+impl<'a> i2c::Write for Mock<'a> {
     type Error = MockError;
 
     fn write(&mut self, address: u8, bytes: &[u8]) -> Result<(), Self::Error> {
@@ -67,7 +102,7 @@ impl<'a> i2c::Write for I2cMock<'a> {
     }
 }
 
-impl<'a> i2c::WriteRead for I2cMock<'a> {
+impl<'a> i2c::WriteRead for Mock<'a> {
     type Error = MockError;
 
     fn write_read(
@@ -99,7 +134,7 @@ mod tests {
 
     #[test]
     fn i2c_read_no_data_set() {
-        let mut i2c = I2cMock::new();
+        let mut i2c = Mock::new();
         let mut buf = [0; 3];
         i2c.read(0, &mut buf).unwrap();
         assert_eq!(buf, [0; 3]);
@@ -107,7 +142,7 @@ mod tests {
 
     #[test]
     fn i2c_read_some_data_set() {
-        let mut i2c = I2cMock::new();
+        let mut i2c = Mock::new();
         let mut buf = [0; 3];
         i2c.set_read_data(&[1, 2]);
         i2c.read(0, &mut buf).unwrap();
@@ -116,7 +151,7 @@ mod tests {
 
     #[test]
     fn i2c_read_too_much_data_set() {
-        let mut i2c = I2cMock::new();
+        let mut i2c = Mock::new();
         let mut buf = [0; 3];
         i2c.set_read_data(&[1, 2, 3, 4]);
         i2c.read(0, &mut buf).unwrap();
@@ -125,7 +160,7 @@ mod tests {
 
     #[test]
     fn i2c_write_data() {
-        let mut i2c = I2cMock::new();
+        let mut i2c = Mock::new();
         let buf = [1, 2, 4];
         assert_eq!(i2c.get_last_address(), None);
         i2c.write(42, &buf[..]).unwrap();
@@ -139,14 +174,14 @@ mod tests {
     #[test]
     #[should_panic]
     fn i2c_write_data_too_much() {
-        let mut i2c = I2cMock::new();
+        let mut i2c = Mock::new();
         let buf = [0; 65];
         i2c.write(42, &buf[..]).unwrap();
     }
 
     #[test]
     fn i2c_read_write_data() {
-        let mut i2c = I2cMock::new();
+        let mut i2c = Mock::new();
         let buf = [1, 2, 4];
         let mut buf2 = [0; 3];
         assert_eq!(i2c.get_last_address(), None);

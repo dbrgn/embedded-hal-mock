@@ -1,5 +1,6 @@
 use std::io;
 
+/// Errors that may occur during mocking.
 #[derive(Debug)]
 pub enum MockError {
     Io(io::Error),
