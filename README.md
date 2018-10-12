@@ -47,14 +47,14 @@ assert_eq!(i2c.get_write_data(), &[1, 2, 4]);
 
 ```rust
 use hal::blocking::spi::{Transfer, Write};
-use embedded_hal_mock::{SPIMock, SPITransaction};
+use embedded_hal_mock::{SpiMock, SpiTransaction};
 
-let mut spi = SPIMock::new();
+let mut spi = SpiMock::new();
 
 // Configure expectations
 spi.expect(vec![
-    SPITransaction::write(vec![1u8, 2u8]),
-    SPITransaction::transfer(vec![3u8, 4u8], vec![5u8, 6u8]),
+    SpiTransaction::write(vec![1u8, 2u8]),
+    SpiTransaction::transfer(vec![3u8, 4u8], vec![5u8, 6u8]),
 ]);
 
 // Writing
