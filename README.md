@@ -14,6 +14,8 @@ to hardware.
 - [x] Transactional SPI implementation
 - [x] No-op Delay implementation
 
+Pull requests for more mock implementations are welcome! :)
+
 ## no\_std
 
 Currently this crate is not `no_std`. If you think this is important, let me
