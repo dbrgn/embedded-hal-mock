@@ -1,5 +1,7 @@
 # embedded-hal-mock
 
+[![CircleCI][circle-ci-badge]][circle-ci]
+
 This is a collection of types that implement the embedded-hal traits.
 
 The implementations never access real hardware. Instead, the hardware is mocked
@@ -91,3 +93,8 @@ Licensed under either of
 Unless you explicitly state otherwise, any contribution intentionally submitted
 for inclusion in the work by you, as defined in the Apache-2.0 license, shall
 be dual licensed as above, without any additional terms or conditions.
+
+
+<!-- Badges -->
+[circle-ci]: https://circleci.com/gh/dbrgn/embedded-hal-mock/tree/master
+[circle-ci-badge]: https://circleci.com/gh/dbrgn/embedded-hal-mock/tree/master.svg?style=shield

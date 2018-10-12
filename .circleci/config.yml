@@ -1,0 +1,41 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: rust:1.28
+    steps:
+      - checkout
+
+      # Load cargo target from cache if possible.
+      # Multiple caches are used to increase the chance of a cache hit.
+      - restore_cache:
+          keys:
+            - v1-cargo-cache-{{ arch }}-{{ .Branch }}
+            - v1-cargo-cache-{{ arch }}
+
+      # Diagnostics
+      - run:
+          name: Show versions
+          command: rustc --version && cargo --version
+
+      # Build and test main crate
+      - run:
+          name: Build
+          command: cargo build
+      - run:
+          name: Test
+          command: cargo test
+
+      # Save cache
+      - save_cache:
+          key: v1-cargo-cache-{{ arch }}-{{ .Branch }}
+          paths:
+            - target
+            - ffi/target
+            - /usr/local/cargo
+      - save_cache:
+          key: v1-cargo-cache-{{ arch }}
+          paths:
+            - target
+            - ffi/target
+            - /usr/local/cargo
