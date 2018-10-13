@@ -18,17 +18,17 @@
 //!
 //! // Configure expectations
 //! spi.expect(vec![
-//!     SpiTransaction::write(vec![1u8, 2u8]),
-//!     SpiTransaction::transfer(vec![3u8, 4u8], vec![5u8, 6u8]),
+//!     SpiTransaction::write(vec![1, 2]),
+//!     SpiTransaction::transfer(vec![3, 4], vec![5, 6]),
 //! ]);
 //!
 //! // Writing
-//! spi.write(&vec![1u8, 2u8]).unwrap();
+//! spi.write(&vec![1, 2]).unwrap();
 //!
 //! // Transferring
-//! let mut buf = vec![3u8, 4u8];
+//! let mut buf = vec![3, 4];
 //! spi.transfer(&mut buf).unwrap();
-//! assert_eq!(buf, vec![5u8, 6u8]);
+//! assert_eq!(buf, vec![5, 6]);
 //!
 //! // Finalise expectations
 //! spi.done();
@@ -114,6 +114,12 @@ impl Mock {
     }
 }
 
+impl Clone for Mock {
+    fn clone(&self) -> Mock {
+        Mock{ expected: self.expected.clone() }
+    }
+}
+
 impl spi::Write<u8> for Mock {
     type Error = MockError;
 
@@ -127,8 +133,8 @@ impl spi::Write<u8> for Mock {
             .unwrap()
             .pop_front()
             .expect("no expectation for spi::write call");
-        assert_eq!(w.expected_mode, Mode::Write);
-        assert_eq!(&w.expected_data, &buffer);
+        assert_eq!(w.expected_mode, Mode::Write, "spi::write unexpected mode");
+        assert_eq!(&w.expected_data, &buffer, "spi::write data does not match expectation");
         Ok(())
     }
 }
@@ -146,12 +152,10 @@ impl spi::Transfer<u8> for Mock {
             .unwrap()
             .pop_front()
             .expect("no expectation for spi::transfer call");
-        assert_eq!(w.expected_mode, Mode::Transfer);
-        assert_eq!(&w.expected_data, &buffer);
+        assert_eq!(w.expected_mode, Mode::Transfer, "spi::transfer unexpected mode");
+        assert_eq!(&w.expected_data, &buffer, "spi::write data does not match expectation");
         assert_eq!(buffer.len(), w.response.len(), "mismatched response length for spi::transfer");
-        for i in 0..w.response.len() {
-            buffer[i] = w.response[i];
-        }
+        buffer.copy_from_slice(&w.responsea);
         Ok(buffer)
     }
 }
@@ -166,9 +170,9 @@ mod test {
     fn test_spi_mock_write() {
         let mut spi = Mock::new();
 
-        spi.expect(vec![Transaction::write(vec![10u8, 12u8])]);
+        spi.expect(vec![Transaction::write(vec![10, 12])]);
 
-        spi.write(&vec![10u8, 12u8]).unwrap();
+        spi.write(&vec![10, 12]).unwrap();
 
         spi.done();
     }
@@ -178,14 +182,14 @@ mod test {
         let mut spi = Mock::new();
 
         spi.expect(vec![Transaction::transfer(
-            vec![10u8, 12u8],
-            vec![12u8, 13u8],
+            vec![10, 12],
+            vec![12, 13],
         )]);
 
-        let mut v = vec![10u8, 12u8];
+        let mut v = vec![10, 12];
         spi.transfer(&mut v).unwrap();
 
-        assert_eq!(v, vec![12u8, 13u8]);
+        assert_eq!(v, vec![12, 13]);
 
         spi.done();
     }
@@ -195,16 +199,16 @@ mod test {
         let mut spi = Mock::new();
 
         spi.expect(vec![
-            Transaction::write(vec![1u8, 2u8]),
-            Transaction::transfer(vec![3u8, 4u8], vec![5u8, 6u8]),
+            Transaction::write(vec![1, 2]),
+            Transaction::transfer(vec![3, 4], vec![5, 6]),
         ]);
 
-        spi.write(&vec![1u8, 2u8]).unwrap();
+        spi.write(&vec![1, 2]).unwrap();
 
-        let mut v = vec![3u8, 4u8];
+        let mut v = vec![3, 4];
         spi.transfer(&mut v).unwrap();
 
-        assert_eq!(v, vec![5u8, 6u8]);
+        assert_eq!(v, vec![5, 6]);
 
         spi.done();
     }
@@ -214,9 +218,9 @@ mod test {
     fn test_spi_mock_write_err() {
         let mut spi = Mock::new();
 
-        spi.expect(vec![Transaction::write(vec![10u8, 12u8])]);
+        spi.expect(vec![Transaction::write(vec![10, 12])]);
 
-        spi.write(&vec![10u8, 12u8, 12u8]).unwrap();
+        spi.write(&vec![10, 12, 12]).unwrap();
 
         spi.done();
     }
@@ -227,14 +231,14 @@ mod test {
         let mut spi = Mock::new();
 
         spi.expect(vec![Transaction::transfer(
-            vec![10u8, 12u8],
-            vec![12u8, 15u8],
+            vec![10, 12],
+            vec![12, 15],
         )]);
 
-        let mut v = vec![10u8, 12u8];
+        let mut v = vec![10, 12];
         spi.transfer(&mut v).unwrap();
 
-        assert_eq!(v, vec![12u8, 13u8]);
+        assert_eq!(v, vec![12, 13]);
 
         spi.done();
     }
@@ -245,14 +249,14 @@ mod test {
         let mut spi = Mock::new();
 
         spi.expect(vec![Transaction::transfer(
-            vec![1u8, 2u8],
-            vec![3u8, 4u8, 5u8],
+            vec![1, 2],
+            vec![3, 4, 5],
         )]);
 
-        let mut v = vec![10u8, 12u8];
+        let mut v = vec![10, 12];
         spi.transfer(&mut v).unwrap();
 
-        assert_eq!(v, vec![12u8, 13u8]);
+        assert_eq!(v, vec![12, 13]);
 
         spi.done();
     }
@@ -262,9 +266,9 @@ mod test {
     fn test_spi_mock_mode_err() {
         let mut spi = Mock::new();
 
-        spi.expect(vec![Transaction::transfer(vec![10u8, 12u8], vec![])]);
+        spi.expect(vec![Transaction::transfer(vec![10, 12], vec![])]);
 
-        spi.write(&vec![10u8, 12u8, 12u8]).unwrap();
+        spi.write(&vec![10, 12, 12]).unwrap();
 
         spi.done();
     }
@@ -275,11 +279,11 @@ mod test {
         let mut spi = Mock::new();
 
         spi.expect(vec![
-            Transaction::write(vec![10u8, 12u8]),
-            Transaction::write(vec![10u8, 12u8]),
+            Transaction::write(vec![10, 12]),
+            Transaction::write(vec![10, 12]),
         ]);
 
-        spi.write(&vec![10u8, 12u8, 12u8]).unwrap();
+        spi.write(&vec![10, 12, 12]).unwrap();
 
         spi.done();
     }
