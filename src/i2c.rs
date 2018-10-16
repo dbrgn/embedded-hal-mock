@@ -43,7 +43,7 @@ pub enum Mode {
 }
 
 /// I2C Transaction type
-/// 
+///
 /// Models an I2C read or write
 #[derive(Clone, Debug, PartialEq)]
 pub struct Transaction {
@@ -86,7 +86,7 @@ impl Transaction {
 }
 
 /// Mock I2C implementation
-/// 
+///
 /// This supports the specification and evaluation of expectations to allow automated testing of I2C based drivers.
 /// Mismatches between expectations will cause runtime assertions to assist in locating the source of the fault.
 pub type Mock<'a> = Generic<'a, Transaction>;
@@ -112,7 +112,7 @@ impl <'a>i2c::Write for Mock<'a> {
 
     fn write(&mut self, address: u8, bytes: &[u8]) -> Result<(), Self::Error> {
         let w = self.next().expect("no pending expectation for i2c::read call");
-            
+
         assert_eq!(w.expected_mode, Mode::Write, "i2c::write unexpected mode");
         assert_eq!(w.expected_addr, address, "i2c::write address mismatch");
         assert_eq!(w.expected_data, bytes, "i2c::write data does not match expectation");
@@ -131,7 +131,7 @@ impl <'a>i2c::WriteRead for Mock<'a> {
         buffer: &mut [u8],
     ) -> Result<(), Self::Error> {
         let w = self.next().expect("no pending expectation for i2c::read call");
-            
+
         assert_eq!(w.expected_mode, Mode::WriteRead, "i2c::write_read unexpected mode");
         assert_eq!(w.expected_addr, address, "i2c::write_read address mismatch");
         assert_eq!(w.expected_data, bytes, "i2c::write_read write data does not match expectation");
@@ -154,7 +154,6 @@ mod test {
         let expectations = [Transaction::write(0xaa, vec![10, 12])];
         let mut i2c = Mock::new(&expectations);
 
-
         i2c.write(0xaa, &vec![10, 12]).unwrap();
 
         i2c.done();
@@ -164,7 +163,6 @@ mod test {
     fn test_i2c_mock_read() {
         let expectations = [Transaction::read(0xaa, vec![1, 2])];
         let mut i2c = Mock::new(&expectations);
-
 
         let mut buff = vec![0u8; 2];
         i2c.read(0xaa, &mut buff).unwrap();
@@ -269,5 +267,28 @@ mod test {
         i2c.write(0xaa, &vec![10, 12]).unwrap();
 
         i2c.done();
+    }
+
+    #[test]
+    fn test_i2c_mock_cloned_done_ok() {
+        let expectations = [Transaction::read(0xaa, vec![1, 2])];
+        let mut i2c = Mock::new(&expectations);
+        let mut i2c_clone = i2c.clone();
+
+        let mut buff = vec![0u8; 2];
+        i2c.read(0xaa, &mut buff).unwrap();
+        assert_eq!(vec![1, 2], buff);
+
+        i2c.done();
+        i2c_clone.done();
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_i2c_mock_cloned_done_error() {
+        let expectations = [Transaction::read(0xaa, vec![1, 2])];
+        let i2c = Mock::new(&expectations);
+        let mut i2c_clone = i2c.clone();
+        i2c_clone.done();
     }
 }

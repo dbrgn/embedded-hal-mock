@@ -2,9 +2,13 @@
 use std::sync::{Mutex, Arc};
 
 /// Generic Mock implementation
-/// 
+///
 /// This supports the specification and evaluation of expectations to allow automated testing of hal drivers.
 /// Mismatches between expectations will cause runtime assertions to assist in locating the source of the fault.
+///
+/// Note that the implementation uses an `Arc<Mutex<...>>` internally, so a
+/// cloned instance of the mock can be used to check the expectations of the
+/// original instance that has been moved into a driver.
 #[derive(Debug)]
 pub struct Generic<'a, T: 'a> {
     expected: Arc<Mutex<(usize, &'a[T])>>,
@@ -12,7 +16,7 @@ pub struct Generic<'a, T: 'a> {
 
 impl <'a, T>Generic<'a, T> {
     /// Create a new mock interface
-    /// 
+    ///
     /// This creates a new generic mock interface with initial expectations
     pub fn new(e: &'a [T]) -> Self {
         Generic {
@@ -21,7 +25,7 @@ impl <'a, T>Generic<'a, T> {
     }
 
     /// Set expectations on the interface
-    /// 
+    ///
     /// This is a list of transactions to be executed in order
     /// Note that setting this will overwrite any existing expectations
     pub fn expect(&mut self, expected: &'a [T]) {

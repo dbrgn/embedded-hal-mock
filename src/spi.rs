@@ -19,7 +19,7 @@
 //!     SpiTransaction::write(vec![1, 2]),
 //!     SpiTransaction::transfer(vec![3, 4], vec![5, 6]),
 //! ];
-//! 
+//!
 //! let mut spi = SpiMock::new(&expectations);
 //!
 //! // Writing
