@@ -20,6 +20,8 @@ extern crate embedded_hal as hal;
 mod error;
 pub use error::MockError;
 
+pub mod mock;
 pub mod i2c;
 pub mod spi;
 pub mod delay;
+
