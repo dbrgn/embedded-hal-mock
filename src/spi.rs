@@ -36,7 +36,7 @@
 
 use hal::blocking::spi;
 
-use mock::Generic;
+use common::Generic;
 use error::MockError;
 
 /// SPI Transaction mode

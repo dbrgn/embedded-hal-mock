@@ -31,7 +31,7 @@
 
 use hal::blocking::i2c;
 
-use mock::Generic;
+use common::Generic;
 use error::MockError;
 
 /// I2C Transaction modes

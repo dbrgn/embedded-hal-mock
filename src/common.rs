@@ -1,3 +1,4 @@
+//! Common functionality used by the mock implementations.
 
 use std::sync::{Mutex, Arc};
 
@@ -60,7 +61,7 @@ impl <'a, T>Iterator for Generic<'a, T> {
 
 #[cfg(test)]
 mod tests {
-    use mock::Generic;
+    use super::*;
 
     #[test]
     fn test_generic_mock() {
