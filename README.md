@@ -1,7 +1,9 @@
 # embedded-hal-mock
 
-- Master: [![CircleCI][circle-ci-badge]][circle-ci]
-- Next: [![CircleCI][circle-ci-badge-next]][circle-ci-next]
+| Branch | Build status |
+| --- | --- |
+| master | [![CircleCI][circle-ci-badge]][circle-ci] |
+| next | [![CircleCI][circle-ci-badge-next]][circle-ci-next] |
 
 This is a collection of types that implement the embedded-hal traits.
 
