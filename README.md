@@ -17,9 +17,15 @@ to hardware.
 
 ## Status
 
-- [x] Simple I2C implementation
-- [x] Transactional SPI implementation
-- [x] No-op Delay implementation
+- [x] I²C
+- [x] SPI
+- [x] No-op delay
+- [ ] Actual delay
+- [ ] Serial
+- [ ] RNG
+- [ ] I/O pins
+- [ ] Timers
+- [ ] ...
 
 Pull requests for more mock implementations are welcome! :)
 
