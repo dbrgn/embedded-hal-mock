@@ -1,6 +1,7 @@
 # embedded-hal-mock
 
-[![CircleCI][circle-ci-badge]][circle-ci]
+- Master: [![CircleCI][circle-ci-badge]][circle-ci]
+- Next: [![CircleCI][circle-ci-badge-next]][circle-ci-next]
 
 This is a collection of types that implement the embedded-hal traits.
 
@@ -29,6 +30,16 @@ know.
 
 See [docs](https://docs.rs/embedded-hal-mock/).
 
+## Development Version of `embedded-hal`
+
+If you would like to use the current development version of `embedded-hal`, you
+can point your project at the `next` branch of this repository:
+
+https://github.com/rust-embedded/embedded-hal/tree/next
+
+    [dev-dependencies]
+    embedded-hal = { git = "https://github.com/dbrgn/embedded-hal-mock", branch = "next" }
+
 ## License
 
 Licensed under either of
@@ -48,3 +59,5 @@ be dual licensed as above, without any additional terms or conditions.
 <!-- Badges -->
 [circle-ci]: https://circleci.com/gh/dbrgn/embedded-hal-mock/tree/master
 [circle-ci-badge]: https://circleci.com/gh/dbrgn/embedded-hal-mock/tree/master.svg?style=shield
+[circle-ci-next]: https://circleci.com/gh/dbrgn/embedded-hal-mock/tree/next
+[circle-ci-badge-next]: https://circleci.com/gh/dbrgn/embedded-hal-mock/tree/next.svg?style=shield
