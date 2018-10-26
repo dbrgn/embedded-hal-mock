@@ -42,7 +42,9 @@ use error::MockError;
 /// SPI Transaction mode
 #[derive(Clone, Debug, PartialEq)]
 pub enum Mode {
+    /// Write transaction
     Write,
+    /// Write and read transaction
     Transfer,
 }
 

@@ -37,8 +37,11 @@ use error::MockError;
 /// I2C Transaction modes
 #[derive(Clone, Debug, PartialEq)]
 pub enum Mode {
+    /// Write transaction
     Write,
+    /// Read transaction
     Read,
+    /// Write and read transaction
     WriteRead,
 }
 

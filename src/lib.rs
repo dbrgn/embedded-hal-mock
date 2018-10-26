@@ -15,6 +15,8 @@
 //! Currently this crate is not `no_std`. If you think this is important, let
 //! me know.
 
+#![deny(missing_docs)]
+
 extern crate embedded_hal as hal;
 
 mod error;
@@ -24,4 +26,3 @@ pub mod common;
 pub mod i2c;
 pub mod spi;
 pub mod delay;
-
