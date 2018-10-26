@@ -20,7 +20,7 @@ to hardware.
 - [x] I²C
 - [x] SPI
 - [x] No-op delay
-- [ ] Actual delay
+- [x] Actual delay
 - [ ] Serial
 - [ ] RNG
 - [ ] I/O pins
