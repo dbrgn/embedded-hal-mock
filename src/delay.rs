@@ -20,6 +20,13 @@ use hal::blocking::delay;
 /// A `Delay` implementation that does not actually block.
 pub struct MockNoop;
 
+impl MockNoop {
+    /// Create a new `MockNoop` instance.
+    pub fn new() -> Self {
+        MockNoop
+    }
+}
+
 macro_rules! impl_noop_delay_us {
     ($type:ty) => {
         impl delay::DelayUs<$type> for MockNoop {
@@ -51,6 +58,13 @@ impl_noop_delay_ms!(u64);
 
 /// A `Delay` implementation that uses `std::thread::sleep`.
 pub struct StdSleep;
+
+impl StdSleep {
+    /// Create a new `StdSleep` instance.
+    pub fn new() -> Self {
+        StdSleep
+    }
+}
 
 macro_rules! impl_stdsleep_delay_us {
     ($type:ty) => {
