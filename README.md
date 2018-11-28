@@ -40,13 +40,14 @@ See [docs](https://docs.rs/embedded-hal-mock/).
 
 ## Development Version of `embedded-hal`
 
-If you would like to use the current development version of `embedded-hal`, you
-can point your project at the `next` branch of this repository:
+If you would like to use the current development version of `embedded-hal` (or any other version), 
+so long as they are API compatible you can use a patch field in your `Cargo.toml` file to override 
+the dependency version.
 
-https://github.com/rust-embedded/embedded-hal/tree/next
-
-    [dev-dependencies]
-    embedded-hal = { git = "https://github.com/dbrgn/embedded-hal-mock", branch = "next" }
+```yaml
+[patch.crates-io]
+embedded-hal = { git = "https://github.com/rust-embedded/embedded-hal" }
+```
 
 ## License
 
