@@ -20,3 +20,4 @@ include = [
 
 [dependencies]
 embedded-hal = "0.2"
+nb = "0.1.1"

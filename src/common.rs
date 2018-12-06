@@ -38,7 +38,7 @@ impl <'a, T>Generic<'a, T> {
     /// Assert that all expectations on a given Mock have been met
     pub fn done(&mut self) {
         let e = self.expected.lock().unwrap();
-        assert_eq!(e.0, e.1.len());
+        assert_eq!(e.0, e.1.len(),"Mock call number(left) and expectations(right) do not match");
     }
 }
 
