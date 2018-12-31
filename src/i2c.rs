@@ -114,7 +114,7 @@ impl <'a>i2c::Write for Mock<'a> {
     type Error = MockError;
 
     fn write(&mut self, address: u8, bytes: &[u8]) -> Result<(), Self::Error> {
-        let w = self.next().expect("no pending expectation for i2c::read call");
+        let w = self.next().expect("no pending expectation for i2c::write call");
 
         assert_eq!(w.expected_mode, Mode::Write, "i2c::write unexpected mode");
         assert_eq!(w.expected_addr, address, "i2c::write address mismatch");
@@ -133,7 +133,7 @@ impl <'a>i2c::WriteRead for Mock<'a> {
         bytes: &[u8],
         buffer: &mut [u8],
     ) -> Result<(), Self::Error> {
-        let w = self.next().expect("no pending expectation for i2c::read call");
+        let w = self.next().expect("no pending expectation for i2c::write_read call");
 
         assert_eq!(w.expected_mode, Mode::WriteRead, "i2c::write_read unexpected mode");
         assert_eq!(w.expected_addr, address, "i2c::write_read address mismatch");

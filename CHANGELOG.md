@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 
+## 0.4.0 - 2018-12-26
+
+### Added
+
+- Add `StdSleep` delay implementation based on `std::thread::sleep` (#8)
+- Add `new()` methods to `MockNoop` and `StdSleep`
+
+### Fixed
+
+- Fix error messages for unfulfilled I²C expectations (#12)
+
+
 ## 0.4.0 - 2018-10-22
 
 ### Changed
