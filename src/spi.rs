@@ -15,11 +15,10 @@
 //! use embedded_hal_mock::spi::{Mock as SpiMock, Transaction as SpiTransaction};
 //! use embedded_hal::spi::FullDuplex;
 //! 
-
 //! // Configure expectations
 //! let expectations = [
-//!     SpiTransaction::send(9),
-//!     SpiTransaction::read(10),
+//!     SpiTransaction::send(0x09),
+//!     SpiTransaction::read(0x0A),
 //!     SpiTransaction::send(0xFE),
 //!     SpiTransaction::read(0xFF),
 //!     SpiTransaction::write(vec![1, 2]),
@@ -29,8 +28,8 @@
 //! let mut spi = SpiMock::new(&expectations);
 //! // FullDuplex transfers
 //! spi.send(0x09);
-//! assert_eq!(spi.read().unwrap(), 0x0a);
-//! spi.send(0xfe);
+//! assert_eq!(spi.read().unwrap(), 0x0A);
+//! spi.send(0xFE);
 //! assert_eq!(spi.read().unwrap(), 0xFF);
 //! 
 //! // Writing
