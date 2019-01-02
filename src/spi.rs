@@ -13,15 +13,26 @@
 //!
 //! use embedded_hal::blocking::spi::{Transfer, Write};
 //! use embedded_hal_mock::spi::{Mock as SpiMock, Transaction as SpiTransaction};
-//!
+//! use embedded_hal::spi::FullDuplex;
+//! 
+
 //! // Configure expectations
 //! let expectations = [
+//!     SpiTransaction::send(9),
+//!     SpiTransaction::read(10),
+//!     SpiTransaction::send(0xFE),
+//!     SpiTransaction::read(0xFF),
 //!     SpiTransaction::write(vec![1, 2]),
 //!     SpiTransaction::transfer(vec![3, 4], vec![5, 6]),
 //! ];
 //!
 //! let mut spi = SpiMock::new(&expectations);
-//!
+//! // FullDuplex transfers
+//! spi.send(0x09);
+//! assert_eq!(spi.read().unwrap(), 0x0a);
+//! spi.send(0xfe);
+//! assert_eq!(spi.read().unwrap(), 0xFF);
+//! 
 //! // Writing
 //! spi.write(&vec![1, 2]).unwrap();
 //!
@@ -78,9 +89,10 @@ impl Transaction {
         Transaction {
             expected_mode: Mode::Transfer,
             expected_data: expected,
-            response: response,
+            response,
         }
     }
+
     /// Create a transfer transaction
     pub fn send(expected: u8 ) -> Transaction {
         Transaction {
@@ -128,17 +140,16 @@ impl <'a>FullDuplex<u8> for Mock<'a> {
     /// spi::FullDuplex implementeation for Mock
     ///
     /// This will call the nonblocking read/write primitives.
-
     fn send(&mut self, buffer: u8) -> nb::Result<(), Self::Error> {
         let data = self.next().expect("no expectation for spi::send call");
         assert_eq!(data.expected_mode, Mode::Send, "spi::send unexpected mode");
         assert_eq!(data.expected_data[0], buffer, "spi::send data does not match expectation");
         Ok(())
     }
+
     /// spi::FullDuplex implementeation for Mock
     ///
     /// This will call the nonblocking read/write primitives.
-
     fn read(&mut self) -> nb::Result< u8, Self::Error> {
         let w = self.next().expect("no expectation for spi::read call");
         assert_eq!(w.expected_mode, Mode::Read, "spi::Read unexpected mode");
@@ -175,7 +186,7 @@ mod test {
         let expectations = [Transaction::send(10)];
         let mut spi = Mock::new(&expectations);
 
-        spi.send(10).unwrap();
+        let _ = spi.send(10).unwrap();
 
         spi.done();
     }
@@ -209,9 +220,9 @@ mod test {
         spi.write(&vec![1, 2]).unwrap();
 
 
-        spi.send(0x09);
+        let _ = spi.send(0x09);
         assert_eq!(spi.read().unwrap(), 0x0a);
-        spi.send(0xfe);
+        let _ = spi.send(0xfe);
         assert_eq!(spi.read().unwrap(), 0xFF);
         let mut v = vec![3, 4];
         spi.transfer(&mut v).unwrap();
