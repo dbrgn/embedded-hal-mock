@@ -28,14 +28,14 @@ jobs:
 
       # Check code formatting
       - run:
-          name: Install nightly toolchain
-          command: rustup toolchain add nightly
+          name: Update rustup
+          command: rustup self update
       - run:
           name: Install rustfmt
-          command: rustup component add rustfmt --toolchain nightly
+          command: rustup component add rustfmt
       - run:
           name: Check code formatting
-          command: cargo +nightly fmt --all -- --check
+          command: cargo fmt --all -- --check
 
       # Save cache
       - save_cache:
