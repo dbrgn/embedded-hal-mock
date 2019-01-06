@@ -28,6 +28,9 @@ jobs:
 
       # Check code formatting
       - run:
+          name: Install nightly toolchain
+          command: rustup toolchain add nightly
+      - run:
           name: Install rustfmt
           command: rustup component add rustfmt --toolchain nightly
       - run:
