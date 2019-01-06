@@ -29,10 +29,10 @@
 //! i2c.done();
 //! ```
 
-use hal::blocking::i2c;
+use embedded_hal::blocking::i2c;
 
-use common::Generic;
-use error::MockError;
+use crate::common::Generic;
+use crate::error::MockError;
 
 /// I2C Transaction modes
 #[derive(Clone, Debug, PartialEq)]
@@ -150,7 +150,7 @@ impl <'a>i2c::WriteRead for Mock<'a> {
 mod test {
     use super::*;
 
-    use hal::blocking::i2c::{Read, Write, WriteRead};
+    use embedded_hal::blocking::i2c::{Read, Write, WriteRead};
 
     #[test]
     fn test_i2c_mock_write() {

@@ -17,10 +17,8 @@
 
 #![deny(missing_docs)]
 
-extern crate embedded_hal as hal;
-
 mod error;
-pub use error::MockError;
+pub use crate::error::MockError;
 
 pub mod common;
 pub mod i2c;

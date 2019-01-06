@@ -11,7 +11,7 @@ use std::sync::{Mutex, Arc};
 /// cloned instance of the mock can be used to check the expectations of the
 /// original instance that has been moved into a driver.
 #[derive(Debug)]
-pub struct Generic<'a, T: 'a> {
+pub struct Generic<'a, T> {
     expected: Arc<Mutex<(usize, &'a[T])>>,
 }
 
