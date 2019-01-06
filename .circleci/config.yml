@@ -26,6 +26,14 @@ jobs:
           name: Test
           command: cargo test
 
+      # Check code formatting
+      - run:
+          name: Install rustfmt
+          command: rustup component add rustfmt
+      - run:
+          name: Check code formatting
+          command: cargo fmt --all -- --check
+
       # Save cache
       - save_cache:
           key: v1-cargo-cache-{{ arch }}-{{ .Branch }}

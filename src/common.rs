@@ -1,6 +1,6 @@
 //! Common functionality used by the mock implementations.
 
-use std::sync::{Mutex, Arc};
+use std::sync::{Arc, Mutex};
 
 /// Generic Mock implementation
 ///
@@ -12,10 +12,10 @@ use std::sync::{Mutex, Arc};
 /// original instance that has been moved into a driver.
 #[derive(Debug)]
 pub struct Generic<'a, T> {
-    expected: Arc<Mutex<(usize, &'a[T])>>,
+    expected: Arc<Mutex<(usize, &'a [T])>>,
 }
 
-impl <'a, T>Generic<'a, T> {
+impl<'a, T> Generic<'a, T> {
     /// Create a new mock interface
     ///
     /// This creates a new generic mock interface with initial expectations
@@ -38,24 +38,30 @@ impl <'a, T>Generic<'a, T> {
     /// Assert that all expectations on a given Mock have been met
     pub fn done(&mut self) {
         let e = self.expected.lock().unwrap();
-        assert_eq!(e.0, e.1.len(),"Mock call number(left) and expectations(right) do not match");
+        assert_eq!(
+            e.0,
+            e.1.len(),
+            "Mock call number(left) and expectations(right) do not match"
+        );
     }
 }
 
 /// Clone allows a single mock to be duplicated for control and evaluation
-impl <'a, T>Clone for Generic<'a, T> {
+impl<'a, T> Clone for Generic<'a, T> {
     fn clone(&self) -> Self {
-        Generic{ expected: self.expected.clone() }
+        Generic {
+            expected: self.expected.clone(),
+        }
     }
 }
 
 /// Iterator impl for use in mock impls
-impl <'a, T>Iterator for Generic<'a, T> {
+impl<'a, T> Iterator for Generic<'a, T> {
     type Item = &'a T;
     fn next(&mut self) -> Option<Self::Item> {
         let mut e = self.expected.lock().unwrap();
         e.0 += 1;
-        e.1.get(e.0-1)
+        e.1.get(e.0 - 1)
     }
 }
 

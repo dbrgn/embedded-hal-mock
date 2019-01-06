@@ -14,7 +14,7 @@
 //! use embedded_hal::blocking::spi::{Transfer, Write};
 //! use embedded_hal_mock::spi::{Mock as SpiMock, Transaction as SpiTransaction};
 //! use embedded_hal::spi::FullDuplex;
-//! 
+//!
 //! // Configure expectations
 //! let expectations = [
 //!     SpiTransaction::send(0x09),
@@ -31,7 +31,7 @@
 //! assert_eq!(spi.read().unwrap(), 0x0A);
 //! spi.send(0xFE);
 //! assert_eq!(spi.read().unwrap(), 0xFF);
-//! 
+//!
 //! // Writing
 //! spi.write(&vec![1, 2]).unwrap();
 //!
@@ -93,7 +93,7 @@ impl Transaction {
     }
 
     /// Create a transfer transaction
-    pub fn send(expected: u8 ) -> Transaction {
+    pub fn send(expected: u8) -> Transaction {
         Transaction {
             expected_mode: Mode::Send,
             expected_data: [expected].to_vec(),
@@ -120,7 +120,7 @@ impl Transaction {
 /// See the usage section in the module level docs for an example.
 pub type Mock<'a> = Generic<'a, Transaction>;
 
-impl <'a>spi::Write<u8> for Mock<'a> {
+impl<'a> spi::Write<u8> for Mock<'a> {
     type Error = MockError;
 
     /// spi::Write implementation for Mock
@@ -129,12 +129,15 @@ impl <'a>spi::Write<u8> for Mock<'a> {
     fn write(&mut self, buffer: &[u8]) -> Result<(), Self::Error> {
         let w = self.next().expect("no expectation for spi::write call");
         assert_eq!(w.expected_mode, Mode::Write, "spi::write unexpected mode");
-        assert_eq!(&w.expected_data, &buffer, "spi::write data does not match expectation");
+        assert_eq!(
+            &w.expected_data, &buffer,
+            "spi::write data does not match expectation"
+        );
         Ok(())
     }
 }
 
-impl <'a>FullDuplex<u8> for Mock<'a> {
+impl<'a> FullDuplex<u8> for Mock<'a> {
     type Error = MockError;
     /// spi::FullDuplex implementeation for Mock
     ///
@@ -142,23 +145,29 @@ impl <'a>FullDuplex<u8> for Mock<'a> {
     fn send(&mut self, buffer: u8) -> nb::Result<(), Self::Error> {
         let data = self.next().expect("no expectation for spi::send call");
         assert_eq!(data.expected_mode, Mode::Send, "spi::send unexpected mode");
-        assert_eq!(data.expected_data[0], buffer, "spi::send data does not match expectation");
+        assert_eq!(
+            data.expected_data[0], buffer,
+            "spi::send data does not match expectation"
+        );
         Ok(())
     }
 
     /// spi::FullDuplex implementeation for Mock
     ///
     /// This will call the nonblocking read/write primitives.
-    fn read(&mut self) -> nb::Result< u8, Self::Error> {
+    fn read(&mut self) -> nb::Result<u8, Self::Error> {
         let w = self.next().expect("no expectation for spi::read call");
         assert_eq!(w.expected_mode, Mode::Read, "spi::Read unexpected mode");
-        assert_eq!(1, w.response.len(), "mismatched response length for spi::read");
-        let buffer:u8 = w.response[0];
+        assert_eq!(
+            1,
+            w.response.len(),
+            "mismatched response length for spi::read"
+        );
+        let buffer: u8 = w.response[0];
         Ok(buffer)
     }
-
 }
-impl <'a>spi::Transfer<u8> for Mock<'a> {
+impl<'a> spi::Transfer<u8> for Mock<'a> {
     type Error = MockError;
 
     /// spi::Transfer implementation for Mock
@@ -166,9 +175,20 @@ impl <'a>spi::Transfer<u8> for Mock<'a> {
     /// This writes the provided response to the buffer and will cause an assertion if the written data does not match the next expectation
     fn transfer<'w>(&mut self, buffer: &'w mut [u8]) -> Result<&'w [u8], Self::Error> {
         let w = self.next().expect("no expectation for spi::transfer call");
-        assert_eq!(w.expected_mode, Mode::Transfer, "spi::transfer unexpected mode");
-        assert_eq!(&w.expected_data, &buffer, "spi::write data does not match expectation");
-        assert_eq!(buffer.len(), w.response.len(), "mismatched response length for spi::transfer");
+        assert_eq!(
+            w.expected_mode,
+            Mode::Transfer,
+            "spi::transfer unexpected mode"
+        );
+        assert_eq!(
+            &w.expected_data, &buffer,
+            "spi::write data does not match expectation"
+        );
+        assert_eq!(
+            buffer.len(),
+            w.response.len(),
+            "mismatched response length for spi::transfer"
+        );
         buffer.copy_from_slice(&w.response);
         Ok(buffer)
     }
@@ -196,7 +216,7 @@ mod test {
 
         let mut spi = Mock::new(&expectations);
 
-        let ans=spi.read().unwrap();
+        let ans = spi.read().unwrap();
 
         assert_eq!(ans, 10);
 
@@ -212,12 +232,10 @@ mod test {
             Transaction::send(0xFE),
             Transaction::read(0xFF),
             Transaction::transfer(vec![3, 4], vec![5, 6]),
-
         ];
         let mut spi = Mock::new(&expectations);
 
         spi.write(&vec![1, 2]).unwrap();
-
 
         let _ = spi.send(0x09);
         assert_eq!(spi.read().unwrap(), 0x0a);
@@ -243,10 +261,7 @@ mod test {
 
     #[test]
     fn test_spi_mock_transfer() {
-        let expectations = [Transaction::transfer(
-            vec![10, 12],
-            vec![12, 13],
-        )];
+        let expectations = [Transaction::transfer(vec![10, 12], vec![12, 13])];
         let mut spi = Mock::new(&expectations);
 
         let mut v = vec![10, 12];
@@ -289,10 +304,7 @@ mod test {
     #[test]
     #[should_panic]
     fn test_spi_mock_transfer_err() {
-        let expectations = [Transaction::transfer(
-            vec![10, 12],
-            vec![12, 15],
-        )];
+        let expectations = [Transaction::transfer(vec![10, 12], vec![12, 15])];
         let mut spi = Mock::new(&expectations);
 
         let mut v = vec![10, 12];
@@ -306,10 +318,7 @@ mod test {
     #[test]
     #[should_panic]
     fn test_spi_mock_transfer_response_err() {
-        let expectations = [Transaction::transfer(
-            vec![1, 2],
-            vec![3, 4, 5],
-        )];
+        let expectations = [Transaction::transfer(vec![1, 2], vec![3, 4, 5])];
         let mut spi = Mock::new(&expectations);
 
         let mut v = vec![10, 12];
@@ -324,7 +333,7 @@ mod test {
     #[should_panic]
     fn test_spi_mock_mode_err() {
         let expectations = [Transaction::transfer(vec![10, 12], vec![])];
-let mut spi = Mock::new(&expectations);
+        let mut spi = Mock::new(&expectations);
 
         spi.write(&vec![10, 12, 12]).unwrap();
 
@@ -339,7 +348,6 @@ let mut spi = Mock::new(&expectations);
             Transaction::write(vec![10, 12]),
         ];
         let mut spi = Mock::new(&expectations);
-
 
         spi.write(&vec![10, 12, 12]).unwrap();
 
