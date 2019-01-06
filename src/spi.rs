@@ -43,12 +43,12 @@
 //! // Finalise expectations
 //! spi.done();
 //! ```
-extern crate nb;
-use hal::blocking::spi;
-use hal::spi::FullDuplex;
+use embedded_hal::blocking::spi;
+use embedded_hal::spi::FullDuplex;
+use nb;
 
-use common::Generic;
-use error::MockError;
+use crate::common::Generic;
+use crate::error::MockError;
 
 /// SPI Transaction mode
 #[derive(Clone, Debug, PartialEq)]
@@ -178,7 +178,7 @@ impl <'a>spi::Transfer<u8> for Mock<'a> {
 mod test {
     use super::*;
 
-    use hal::blocking::spi::{Transfer, Write};
+    use embedded_hal::blocking::spi::{Transfer, Write};
 
     #[test]
     fn test_spi_mock_send() {

@@ -15,7 +15,7 @@
 use std::thread;
 use std::time::Duration;
 
-use hal::blocking::delay;
+use embedded_hal::blocking::delay;
 
 /// A `Delay` implementation that does not actually block.
 pub struct MockNoop;
