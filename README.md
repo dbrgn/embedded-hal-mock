@@ -17,6 +17,7 @@ This crate requires Rust 1.31+!
 
 [Docs](https://docs.rs/embedded-hal-mock/)
 
+
 ## Status
 
 - [x] I²C
@@ -31,14 +32,17 @@ This crate requires Rust 1.31+!
 
 Pull requests for more mock implementations are welcome! :)
 
+
 ## no\_std
 
 Currently this crate is not `no_std`. If you think this is important, let me
 know.
 
+
 ## Usage
 
 See [docs](https://docs.rs/embedded-hal-mock/).
+
 
 ## Development Version of `embedded-hal`
 
@@ -50,6 +54,7 @@ the dependency version.
 [patch.crates-io]
 embedded-hal = { git = "https://github.com/rust-embedded/embedded-hal" }
 ```
+
 
 ## License
 

@@ -55,7 +55,6 @@ impl_noop_delay_ms!(u16);
 impl_noop_delay_ms!(u32);
 impl_noop_delay_ms!(u64);
 
-
 /// A `Delay` implementation that uses `std::thread::sleep`.
 pub struct StdSleep;
 
