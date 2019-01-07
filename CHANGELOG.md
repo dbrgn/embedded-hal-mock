@@ -6,7 +6,19 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 
-## 0.4.0 - 2018-12-26
+## 0.5.0 - 2019-01-07
+
+### Added
+
+- SPI: Add support for non-blocking `FullDuplex` mode (#14)
+
+### Changed
+
+- Require Rust 1.31+
+- Apply and enforce rustfmt
+
+
+## 0.4.1 - 2018-12-26
 
 ### Added
 
