@@ -1,9 +1,6 @@
 # embedded-hal-mock
 
-| Branch | Build status |
-| --- | --- |
-| master | [![CircleCI][circle-ci-badge]][circle-ci] |
-| next | [![CircleCI][circle-ci-badge-next]][circle-ci-next] |
+[![CircleCI][circle-ci-badge]][circle-ci]
 
 This is a collection of types that implement the embedded-hal traits.
 
@@ -75,5 +72,3 @@ be dual licensed as above, without any additional terms or conditions.
 <!-- Badges -->
 [circle-ci]: https://circleci.com/gh/dbrgn/embedded-hal-mock/tree/master
 [circle-ci-badge]: https://circleci.com/gh/dbrgn/embedded-hal-mock/tree/master.svg?style=shield
-[circle-ci-next]: https://circleci.com/gh/dbrgn/embedded-hal-mock/tree/next
-[circle-ci-badge-next]: https://circleci.com/gh/dbrgn/embedded-hal-mock/tree/next.svg?style=shield
