@@ -20,5 +20,9 @@ include = [
 edition = "2018"
 
 [dependencies]
-embedded-hal = "0.2"
+embedded-hal = { version = "0.2.2", features = ["unproven"] }
 nb = "0.1.1"
+
+[patch.crates-io]
+embedded-hal = { git = "https://github.com/rust-embedded/embedded-hal" }
+
