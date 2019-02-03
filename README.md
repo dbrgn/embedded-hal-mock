@@ -73,4 +73,4 @@ be dual licensed as above, without any additional terms or conditions.
 <!-- Badges -->
 [circle-ci]: https://circleci.com/gh/dbrgn/embedded-hal-mock/tree/master
 [circle-ci-badge]: https://circleci.com/gh/dbrgn/embedded-hal-mock/tree/master.svg?style=shield
-[min-rust-badge]: https://img.shields.io/badge/rustc-1.31+-lightgray.svg
+[min-rust-badge]: https://img.shields.io/badge/rustc-1.31+-blue.svg
