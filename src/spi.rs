@@ -118,9 +118,9 @@ impl Transaction {
 /// faults.
 ///
 /// See the usage section in the module level docs for an example.
-pub type Mock<'a> = Generic<'a, Transaction>;
+pub type Mock = Generic<Transaction>;
 
-impl<'a> spi::Write<u8> for Mock<'a> {
+impl spi::Write<u8> for Mock {
     type Error = MockError;
 
     /// spi::Write implementation for Mock
@@ -137,7 +137,7 @@ impl<'a> spi::Write<u8> for Mock<'a> {
     }
 }
 
-impl<'a> FullDuplex<u8> for Mock<'a> {
+impl FullDuplex<u8> for Mock {
     type Error = MockError;
     /// spi::FullDuplex implementeation for Mock
     ///
@@ -167,7 +167,7 @@ impl<'a> FullDuplex<u8> for Mock<'a> {
         Ok(buffer)
     }
 }
-impl<'a> spi::Transfer<u8> for Mock<'a> {
+impl spi::Transfer<u8> for Mock {
     type Error = MockError;
 
     /// spi::Transfer implementation for Mock
@@ -202,8 +202,7 @@ mod test {
 
     #[test]
     fn test_spi_mock_send() {
-        let expectations = [Transaction::send(10)];
-        let mut spi = Mock::new(&expectations);
+        let mut spi = Mock::new(vec![Transaction::send(10)]);
 
         let _ = spi.send(10).unwrap();
 
@@ -212,9 +211,7 @@ mod test {
 
     #[test]
     fn test_spi_mock_read() {
-        let expectations = [Transaction::read(10)];
-
-        let mut spi = Mock::new(&expectations);
+        let mut spi = Mock::new(vec![Transaction::read(10)]);
 
         let ans = spi.read().unwrap();
 

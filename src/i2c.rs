@@ -92,9 +92,9 @@ impl Transaction {
 ///
 /// This supports the specification and evaluation of expectations to allow automated testing of I2C based drivers.
 /// Mismatches between expectations will cause runtime assertions to assist in locating the source of the fault.
-pub type Mock<'a> = Generic<'a, Transaction>;
+pub type Mock = Generic<Transaction>;
 
-impl<'a> i2c::Read for Mock<'a> {
+impl i2c::Read for Mock {
     type Error = MockError;
 
     fn read(&mut self, address: u8, buffer: &mut [u8]) -> Result<(), Self::Error> {
@@ -116,7 +116,7 @@ impl<'a> i2c::Read for Mock<'a> {
     }
 }
 
-impl<'a> i2c::Write for Mock<'a> {
+impl i2c::Write for Mock {
     type Error = MockError;
 
     fn write(&mut self, address: u8, bytes: &[u8]) -> Result<(), Self::Error> {
@@ -135,7 +135,7 @@ impl<'a> i2c::Write for Mock<'a> {
     }
 }
 
-impl<'a> i2c::WriteRead for Mock<'a> {
+impl i2c::WriteRead for Mock {
     type Error = MockError;
 
     fn write_read(
