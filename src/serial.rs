@@ -3,8 +3,7 @@
 //! We may expect serial read and write transactions on a mock
 //! Serial device. Note that, in the `embedded_hal` crate, there
 //! are the non-blocking serial traits, and there is a blocking
-//! `serial::Write` trait that is defined in terms of the non-blocking
-//! variant. We may use the same mock to mock both interfaces.
+//! variant. We may use the same mock for both interfaces.
 //!
 //! ## Usage: non-blocking serial traits
 //!
@@ -239,22 +238,37 @@ pub struct Mock<'a, Word> {
 impl<'a, Word: Clone> Mock<'a, Word> {
     /// Create a serial mock that will expect the provided transactions
     pub fn new(transactions: &'a [Transaction<Word>]) -> Self {
-        let expected_modes = transactions
-            .iter()
-            .fold(VecDeque::new(), |mut modes, transaction| {
-                modes.extend(transaction.mode.clone());
-                modes
-            });
-        Mock {
-            expected_modes: Arc::new(Mutex::new(Some(expected_modes))),
+        let mut ser = Mock {
+            expected_modes: Arc::new(Mutex::new(None)),
             marker: PhantomData,
-        }
+        };
+        ser.expect(transactions);
+        ser
+    }
+
+    /// Set expectations on the interface
+    ///
+    /// This is a list of transactions to be executed in order.
+    /// Note that setting this will overwrite any existing expectations
+    pub fn expect(&mut self, transactions: &'a [Transaction<Word>]) {
+        let mut lock = self
+            .expected_modes
+            .lock()
+            .expect("unable to lock serial mock in call to expect");
+        *lock = Some(
+            transactions
+                .iter()
+                .fold(VecDeque::new(), |mut modes, transaction| {
+                    modes.extend(transaction.mode.clone());
+                    modes
+                }),
+        );
     }
 
     /// Consumes the mock, asserting that all exepctations were met
     pub fn done(self) {
         // Note that we take self by value, unlike the generic versions that
-        // take by reference. It wouldn't make sense to call done() twice anyway :P
+        // take by mut reference. It wouldn't make sense to call done() twice anyway :P
         let mut lock = self
             .expected_modes
             .lock()
