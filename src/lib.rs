@@ -23,4 +23,5 @@ pub use crate::error::MockError;
 pub mod common;
 pub mod delay;
 pub mod i2c;
+pub mod serial;
 pub mod spi;
