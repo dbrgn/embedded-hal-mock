@@ -202,7 +202,7 @@ mod test {
 
     #[test]
     fn test_spi_mock_send() {
-        let mut spi = Mock::new(vec![Transaction::send(10)]);
+        let mut spi = Mock::new(&[Transaction::send(10)]);
 
         let _ = spi.send(10).unwrap();
 
@@ -211,7 +211,7 @@ mod test {
 
     #[test]
     fn test_spi_mock_read() {
-        let mut spi = Mock::new(vec![Transaction::read(10)]);
+        let mut spi = Mock::new(&[Transaction::read(10)]);
 
         let ans = spi.read().unwrap();
 

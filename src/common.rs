@@ -16,18 +16,22 @@ pub struct Generic<T: Clone + Debug + PartialEq> {
     expected: Arc<Mutex<(usize, Vec<T>)>>,
 }
 
-impl<T> Generic<T> 
+impl<'a, T: 'a> Generic<T> 
 where T: Clone + Debug + PartialEq,
 {
     /// Create a new mock interface
     ///
     /// This creates a new generic mock interface with initial expectations
-    pub fn new<E>(expected: E) -> Self 
-    where E: Into<Vec<T>>
+    pub fn new<E>(expected: E) -> Generic<T> 
+    where E: IntoIterator<Item=&'a T>
     {
-        Generic {
-            expected: Arc::new(Mutex::new((0, expected.into()))),
-        }
+        let mut g = Generic {
+            expected: Arc::new(Mutex::new((0, vec![]))),
+        };
+
+        g.expect(expected);
+
+        g
     }
 
     /// Set expectations on the interface
@@ -35,11 +39,12 @@ where T: Clone + Debug + PartialEq,
     /// This is a list of transactions to be executed in order
     /// Note that setting this will overwrite any existing expectations
     pub fn expect<E>(&mut self, expected: E)
-    where E: Into<Vec<T>>
+    where E: IntoIterator<Item=&'a T>
     {
+        let v: Vec<T> = expected.into_iter().map(|v| v.clone() ).collect();
         let mut e = self.expected.lock().unwrap();
         e.0 = 0;
-        e.1 = expected.into();
+        e.1 = v;
     }
 
     /// Assert that all expectations on a given Mock have been met
@@ -50,14 +55,6 @@ where T: Clone + Debug + PartialEq,
             e.1.len(),
             "Mock call number(left) and expectations(right) do not match"
         );
-    }
-}
-
-impl <T> From<&[T]> for Generic<T> 
-where T: Clone + Debug + PartialEq,
-{
-    fn from(r: &[T]) -> Generic<T> {
-        Generic::new(r.to_vec())
     }
 }
 
@@ -80,7 +77,7 @@ where T: Clone + Debug + PartialEq,
     fn next(&mut self) -> Option<Self::Item> {
         let mut e = self.expected.lock().unwrap();
         e.0 += 1;
-        e.1.get(e.0 - 1)
+        e.1.get(e.0 - 1).map(|v| v.clone() )
     }
 }
 
@@ -91,10 +88,10 @@ mod tests {
     #[test]
     fn test_generic_mock() {
         let expectations = [0u8, 1u8];
-        let mut mock = Generic::new(&expectations);
+        let mut mock: Generic<u8> = Generic::new(&expectations);
 
-        assert_eq!(mock.next(), Some(&0u8));
-        assert_eq!(mock.next(), Some(&1u8));
+        assert_eq!(mock.next(), Some(0u8));
+        assert_eq!(mock.next(), Some(1u8));
         assert_eq!(mock.next(), None);
     }
 }
