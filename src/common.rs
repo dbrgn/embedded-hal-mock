@@ -16,14 +16,16 @@ pub struct Generic<T: Clone + Debug + PartialEq> {
     expected: Arc<Mutex<(usize, Vec<T>)>>,
 }
 
-impl<'a, T: 'a> Generic<T> 
-where T: Clone + Debug + PartialEq,
+impl<'a, T: 'a> Generic<T>
+where
+    T: Clone + Debug + PartialEq,
 {
     /// Create a new mock interface
     ///
     /// This creates a new generic mock interface with initial expectations
-    pub fn new<E>(expected: E) -> Generic<T> 
-    where E: IntoIterator<Item=&'a T>
+    pub fn new<E>(expected: E) -> Generic<T>
+    where
+        E: IntoIterator<Item = &'a T>,
     {
         let mut g = Generic {
             expected: Arc::new(Mutex::new((0, vec![]))),
@@ -39,9 +41,10 @@ where T: Clone + Debug + PartialEq,
     /// This is a list of transactions to be executed in order
     /// Note that setting this will overwrite any existing expectations
     pub fn expect<E>(&mut self, expected: E)
-    where E: IntoIterator<Item=&'a T>
+    where
+        E: IntoIterator<Item = &'a T>,
     {
-        let v: Vec<T> = expected.into_iter().map(|v| v.clone() ).collect();
+        let v: Vec<T> = expected.into_iter().map(|v| v.clone()).collect();
         let mut e = self.expected.lock().unwrap();
         e.0 = 0;
         e.1 = v;
@@ -59,8 +62,9 @@ where T: Clone + Debug + PartialEq,
 }
 
 /// Clone allows a single mock to be duplicated for control and evaluation
-impl<T> Clone for Generic<T>  
-where T: Clone + Debug + PartialEq,
+impl<T> Clone for Generic<T>
+where
+    T: Clone + Debug + PartialEq,
 {
     fn clone(&self) -> Self {
         Generic {
@@ -70,14 +74,15 @@ where T: Clone + Debug + PartialEq,
 }
 
 /// Iterator impl for use in mock impls
-impl<T> Iterator for Generic<T>  
-where T: Clone + Debug + PartialEq,
+impl<T> Iterator for Generic<T>
+where
+    T: Clone + Debug + PartialEq,
 {
     type Item = T;
     fn next(&mut self) -> Option<Self::Item> {
         let mut e = self.expected.lock().unwrap();
         e.0 += 1;
-        e.1.get(e.0 - 1).map(|v| v.clone() )
+        e.1.get(e.0 - 1).map(|v| v.clone())
     }
 }
 
