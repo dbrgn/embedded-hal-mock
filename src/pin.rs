@@ -97,10 +97,10 @@ impl TransactionKind {
 }
 
 /// Mock Pin implementation
-pub type Mock<'a> = Generic<'a, Transaction>;
+pub type Mock = Generic<Transaction>;
 
 /// Single digital push-pull output pin
-impl <'a>OutputPin for Mock<'a> {
+impl OutputPin for Mock {
     /// Error type
     type Error = MockError;
 
@@ -108,7 +108,7 @@ impl <'a>OutputPin for Mock<'a> {
     fn set_low(&mut self) -> Result<(), Self::Error> {
         let Transaction{kind, err} = self.next().expect("no expectation for pin::set_low call");
 
-        assert_eq!(*kind, TransactionKind::Set(false), "expected pin::set_low");
+        assert_eq!(kind, TransactionKind::Set(false), "expected pin::set_low");
         
         match err {
             Some(e) => Err(e.clone()),
@@ -120,7 +120,7 @@ impl <'a>OutputPin for Mock<'a> {
     fn set_high(&mut self) -> Result<(), Self::Error> {
         let Transaction{kind, err} = self.next().expect("no expectation for pin::set_high call");
 
-        assert_eq!(*kind, TransactionKind::Set(true), "expected pin::set_high");
+        assert_eq!(kind, TransactionKind::Set(true), "expected pin::set_high");
         
         match err {
             Some(e) => Err(e.clone()),
@@ -129,7 +129,7 @@ impl <'a>OutputPin for Mock<'a> {
     }
 }
 
-impl <'a>InputPin for Mock<'a> {
+impl InputPin for Mock {
     /// Error type
     type Error = MockError;
 
@@ -144,7 +144,7 @@ impl <'a>InputPin for Mock<'a> {
         if let Some(e) = err { 
             Err(e.clone())
         } else if let TransactionKind::Get(v) = kind {
-            Ok(*v == true)
+            Ok(v == true)
         } else {
             unreachable!();
         }
@@ -161,7 +161,7 @@ impl <'a>InputPin for Mock<'a> {
         if let Some(e) = err { 
             Err(e.clone())
         } else if let TransactionKind::Get(v) = kind {
-            Ok(*v == false)
+            Ok(v == false)
         } else {
             unreachable!();
         }
