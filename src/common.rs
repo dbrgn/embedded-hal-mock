@@ -1,5 +1,6 @@
 //! Common functionality used by the mock implementations.
 
+use std::fmt::Debug;
 use std::sync::{Arc, Mutex};
 
 /// Generic Mock implementation
@@ -11,28 +12,42 @@ use std::sync::{Arc, Mutex};
 /// cloned instance of the mock can be used to check the expectations of the
 /// original instance that has been moved into a driver.
 #[derive(Debug)]
-pub struct Generic<'a, T> {
-    expected: Arc<Mutex<(usize, &'a [T])>>,
+pub struct Generic<T: Clone + Debug + PartialEq> {
+    expected: Arc<Mutex<(usize, Vec<T>)>>,
 }
 
-impl<'a, T> Generic<'a, T> {
+impl<'a, T: 'a> Generic<T>
+where
+    T: Clone + Debug + PartialEq,
+{
     /// Create a new mock interface
     ///
     /// This creates a new generic mock interface with initial expectations
-    pub fn new(e: &'a [T]) -> Self {
-        Generic {
-            expected: Arc::new(Mutex::new((0, e))),
-        }
+    pub fn new<E>(expected: E) -> Generic<T>
+    where
+        E: IntoIterator<Item = &'a T>,
+    {
+        let mut g = Generic {
+            expected: Arc::new(Mutex::new((0, vec![]))),
+        };
+
+        g.expect(expected);
+
+        g
     }
 
     /// Set expectations on the interface
     ///
     /// This is a list of transactions to be executed in order
     /// Note that setting this will overwrite any existing expectations
-    pub fn expect(&mut self, expected: &'a [T]) {
+    pub fn expect<E>(&mut self, expected: E)
+    where
+        E: IntoIterator<Item = &'a T>,
+    {
+        let v: Vec<T> = expected.into_iter().map(|v| v.clone()).collect();
         let mut e = self.expected.lock().unwrap();
         e.0 = 0;
-        e.1 = expected.into();
+        e.1 = v;
     }
 
     /// Assert that all expectations on a given Mock have been met
@@ -47,7 +62,10 @@ impl<'a, T> Generic<'a, T> {
 }
 
 /// Clone allows a single mock to be duplicated for control and evaluation
-impl<'a, T> Clone for Generic<'a, T> {
+impl<T> Clone for Generic<T>
+where
+    T: Clone + Debug + PartialEq,
+{
     fn clone(&self) -> Self {
         Generic {
             expected: self.expected.clone(),
@@ -56,12 +74,15 @@ impl<'a, T> Clone for Generic<'a, T> {
 }
 
 /// Iterator impl for use in mock impls
-impl<'a, T> Iterator for Generic<'a, T> {
-    type Item = &'a T;
+impl<T> Iterator for Generic<T>
+where
+    T: Clone + Debug + PartialEq,
+{
+    type Item = T;
     fn next(&mut self) -> Option<Self::Item> {
         let mut e = self.expected.lock().unwrap();
         e.0 += 1;
-        e.1.get(e.0 - 1)
+        e.1.get(e.0 - 1).map(|v| v.clone())
     }
 }
 
@@ -72,10 +93,10 @@ mod tests {
     #[test]
     fn test_generic_mock() {
         let expectations = [0u8, 1u8];
-        let mut mock = Generic::new(&expectations);
+        let mut mock: Generic<u8> = Generic::new(&expectations);
 
-        assert_eq!(mock.next(), Some(&0u8));
-        assert_eq!(mock.next(), Some(&1u8));
+        assert_eq!(mock.next(), Some(0u8));
+        assert_eq!(mock.next(), Some(1u8));
         assert_eq!(mock.next(), None);
     }
 }
