@@ -1,24 +1,27 @@
-//! Mock digital InputPin and OutputPin implementations
+//! Mock digital [`InputPin`] and [`OutputPin`] implementations
+//! 
+//! [`InputPin`]: https://docs.rs/embedded-hal/latest/embedded_hal/digital/trait.InputPin.html
+//! [`OutputPin`]: https://docs.rs/embedded-hal/latest/embedded_hal/digital/trait.OutputPin.html
 //! 
 //! ```
 //! use std::io::ErrorKind;
 //! 
 //! use embedded_hal_mock::MockError;
-//! use embedded_hal_mock::pin::{Transaction as PinTransaction, Mock as MockPin};
+//! use embedded_hal_mock::pin::{Transaction as PinTransaction, Mock as PinMock, State as PinState};
 //! use embedded_hal::digital::v2::{InputPin, OutputPin};
 //! 
 //! let err = MockError::Io(ErrorKind::NotConnected);
 //! 
 //! // Configure expectations
 //! let expectations = [
-//!     PinTransaction::get(true),
-//!     PinTransaction::get(true),
-//!     PinTransaction::set(false),
-//!     PinTransaction::set(true).with_error(err.clone()),
+//!     PinTransaction::get(PinState::High),
+//!     PinTransaction::get(PinState::High),
+//!     PinTransaction::set(PinState::Low),
+//!     PinTransaction::set(PinState::High).with_error(err.clone()),
 //! ];
 //! 
 //! // Create pin
-//! let mut pin = MockPin::new(&expectations);
+//! let mut pin = PinMock::new(&expectations);
 //! 
 //! // Run and test
 //! assert_eq!(pin.is_high().unwrap(), true);
@@ -53,6 +56,15 @@ pub struct Transaction {
     err: Option<MockError>,
 }
 
+#[derive(PartialEq, Clone, Debug)]
+/// Digital pin value enumeration
+pub enum State {
+    /// Digital low state
+    Low,
+    /// Digital high state
+    High,
+}
+
 impl Transaction {
     /// Create a new pin transaction
     pub fn new(kind: TransactionKind) -> Transaction {
@@ -60,13 +72,13 @@ impl Transaction {
     }
 
     /// Create a new get transaction
-    pub fn get(value: bool) -> Transaction {
-        Transaction::new(TransactionKind::Get(value))
+    pub fn get(state: State) -> Transaction {
+        Transaction::new(TransactionKind::Get(state))
     }
 
     /// Create a new get transaction
-    pub fn set(value: bool) -> Transaction {
-        Transaction::new(TransactionKind::Set(value))
+    pub fn set(state: State) -> Transaction {
+        Transaction::new(TransactionKind::Set(state))
     }
 
     /// Add an error return to a transaction
@@ -78,13 +90,13 @@ impl Transaction {
     }
 }
 
-/// MockPin transaction kind, either Get or Set a bool
+/// MockPin transaction kind, either Get or Set with the associated State
 #[derive(PartialEq, Clone, Debug)]
 pub enum TransactionKind {
     /// Set(true) for set_high or Set(false) for set_low
-    Set(bool),
+    Set(State),
     /// Get(true) for high value or Get(false) for low value
-    Get(bool),
+    Get(State),
 }
 
 impl TransactionKind {
@@ -108,7 +120,7 @@ impl OutputPin for Mock {
     fn set_low(&mut self) -> Result<(), Self::Error> {
         let Transaction{kind, err} = self.next().expect("no expectation for pin::set_low call");
 
-        assert_eq!(kind, TransactionKind::Set(false), "expected pin::set_low");
+        assert_eq!(kind, TransactionKind::Set(State::Low), "expected pin::set_low");
         
         match err {
             Some(e) => Err(e.clone()),
@@ -120,7 +132,7 @@ impl OutputPin for Mock {
     fn set_high(&mut self) -> Result<(), Self::Error> {
         let Transaction{kind, err} = self.next().expect("no expectation for pin::set_high call");
 
-        assert_eq!(kind, TransactionKind::Set(true), "expected pin::set_high");
+        assert_eq!(kind, TransactionKind::Set(State::High), "expected pin::set_high");
         
         match err {
             Some(e) => Err(e.clone()),
@@ -144,7 +156,7 @@ impl InputPin for Mock {
         if let Some(e) = err { 
             Err(e.clone())
         } else if let TransactionKind::Get(v) = kind {
-            Ok(v == true)
+            Ok(v == State::High)
         } else {
             unreachable!();
         }
@@ -161,7 +173,7 @@ impl InputPin for Mock {
         if let Some(e) = err { 
             Err(e.clone())
         } else if let TransactionKind::Get(v) = kind {
-            Ok(v == false)
+            Ok(v == State::Low)
         } else {
             unreachable!();
         }
@@ -181,11 +193,11 @@ mod test {
     #[test]
     fn test_input_pin() {
         let expectations = [
-            Transaction::new(Get(true)),
-            Transaction::new(Get(true)),
-            Transaction::new(Get(false)),
-            Transaction::new(Get(false)),
-            Transaction::new(Get(true)).with_error(MockError::Io(ErrorKind::NotConnected)),
+            Transaction::new(Get(State::High)),
+            Transaction::new(Get(State::High)),
+            Transaction::new(Get(State::Low)),
+            Transaction::new(Get(State::Low)),
+            Transaction::new(Get(State::High)).with_error(MockError::Io(ErrorKind::NotConnected)),
         ];
         let mut pin = Mock::new(&expectations);
 
@@ -202,9 +214,9 @@ mod test {
     #[test]
     fn test_output_pin() {
         let expectations = [
-            Transaction::new(Set(true)),
-            Transaction::new(Set(false)),
-            Transaction::new(Set(true)).with_error(MockError::Io(ErrorKind::NotConnected)),
+            Transaction::new(Set(State::High)),
+            Transaction::new(Set(State::Low)),
+            Transaction::new(Set(State::High)).with_error(MockError::Io(ErrorKind::NotConnected)),
         ];
         let mut pin = Mock::new(&expectations);
 
