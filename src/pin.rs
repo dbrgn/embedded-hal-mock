@@ -49,11 +49,11 @@ use embedded_hal::digital::v2::{OutputPin, InputPin};
 #[derive(PartialEq, Clone, Debug)]
 pub struct Transaction {
     /// Kind is the transaction kind (and data) expected
-    kind: TransactionKind,
+    pub(crate) kind: TransactionKind,
     /// Err is an optional error return for a transaction.
     /// This is in addition to kind to allow validation that the transaction kind
     /// is correct prior to returning the error.
-    err: Option<MockError>,
+    pub(crate) err: Option<MockError>,
 }
 
 #[derive(PartialEq, Clone, Debug)]
@@ -100,7 +100,7 @@ pub enum TransactionKind {
 }
 
 impl TransactionKind {
-    fn is_get(&self) -> bool {
+    pub(crate) fn is_get(&self) -> bool {
         match self {
             TransactionKind::Get(_) => true,
             _ => false,

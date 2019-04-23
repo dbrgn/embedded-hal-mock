@@ -118,16 +118,51 @@ impl Transaction {
 /// faults.
 ///
 /// See the usage section in the module level docs for an example.
-pub type Mock = Generic<Transaction>;
+#[derive(Clone)]
+pub struct Mock<T: Iterator<Item=Transaction>> {
+    iter: T,
+}
 
-impl spi::Write<u8> for Mock {
+impl <T> Mock<T> 
+where T: Iterator<Item=Transaction>,
+{
+    pub fn done(&mut self) {
+        let next = self.iter.next();
+        assert_eq!(next, None);
+    }
+
+    pub fn inner(&mut self) -> &mut T {
+        &mut self.iter
+    }
+}
+
+impl <'a> Mock<Generic<Transaction>> {
+    pub fn new<E>(expected: E) -> Mock<Generic<Transaction>>
+    where
+        E: IntoIterator<Item = &'a Transaction>,
+    {
+        Self{iter: Generic::new(expected)}
+    }
+}
+
+impl <T> From<T> for Mock<T> 
+where T: Iterator<Item=Transaction>,
+{
+    fn from(iter: T) -> Self {
+        Self{iter}
+    }
+}
+
+impl <T> spi::Write<u8> for Mock<T> 
+where T: Iterator<Item=Transaction>,
+{
     type Error = MockError;
 
     /// spi::Write implementation for Mock
     ///
     /// This will cause an assertion if the write call does not match the next expectation
     fn write(&mut self, buffer: &[u8]) -> Result<(), Self::Error> {
-        let w = self.next().expect("no expectation for spi::write call");
+        let w = self.iter.next().expect("no expectation for spi::write call");
         assert_eq!(w.expected_mode, Mode::Write, "spi::write unexpected mode");
         assert_eq!(
             &w.expected_data, &buffer,
@@ -137,13 +172,15 @@ impl spi::Write<u8> for Mock {
     }
 }
 
-impl FullDuplex<u8> for Mock {
+impl <T> FullDuplex<u8> for Mock <T> 
+where T: Iterator<Item=Transaction>,
+{
     type Error = MockError;
     /// spi::FullDuplex implementeation for Mock
     ///
     /// This will call the nonblocking read/write primitives.
     fn send(&mut self, buffer: u8) -> nb::Result<(), Self::Error> {
-        let data = self.next().expect("no expectation for spi::send call");
+        let data = self.iter.next().expect("no expectation for spi::send call");
         assert_eq!(data.expected_mode, Mode::Send, "spi::send unexpected mode");
         assert_eq!(
             data.expected_data[0], buffer,
@@ -156,7 +193,7 @@ impl FullDuplex<u8> for Mock {
     ///
     /// This will call the nonblocking read/write primitives.
     fn read(&mut self) -> nb::Result<u8, Self::Error> {
-        let w = self.next().expect("no expectation for spi::read call");
+        let w = self.iter.next().expect("no expectation for spi::read call");
         assert_eq!(w.expected_mode, Mode::Read, "spi::Read unexpected mode");
         assert_eq!(
             1,
@@ -167,14 +204,17 @@ impl FullDuplex<u8> for Mock {
         Ok(buffer)
     }
 }
-impl spi::Transfer<u8> for Mock {
+
+impl <T> spi::Transfer<u8> for Mock<T>
+where T: Iterator<Item=Transaction>,
+{
     type Error = MockError;
 
     /// spi::Transfer implementation for Mock
     ///
     /// This writes the provided response to the buffer and will cause an assertion if the written data does not match the next expectation
     fn transfer<'w>(&mut self, buffer: &'w mut [u8]) -> Result<&'w [u8], Self::Error> {
-        let w = self.next().expect("no expectation for spi::transfer call");
+        let w = self.iter.next().expect("no expectation for spi::transfer call");
         assert_eq!(
             w.expected_mode,
             Mode::Transfer,

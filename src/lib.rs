@@ -15,7 +15,7 @@
 //! Currently this crate is not `no_std`. If you think this is important, let
 //! me know.
 
-#![deny(missing_docs)]
+//#![deny(missing_docs)]
 
 mod error;
 pub use crate::error::MockError;
@@ -25,3 +25,5 @@ pub mod delay;
 pub mod i2c;
 pub mod spi;
 pub mod pin;
+
+pub mod engine;
