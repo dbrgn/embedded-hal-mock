@@ -1,9 +1,9 @@
 //! Serial mock implementations
 //!
-//! We may expect serial read and write transactions on a mock
+//! You can set expectations for serial read and write transactions on a mock
 //! Serial device. Note that, in the `embedded_hal` crate, there
 //! are the non-blocking serial traits, and there is a blocking
-//! variant. We may use the same mock for both interfaces.
+//! variant. You can use the same mock for both interfaces.
 //!
 //! ## Usage: non-blocking serial traits
 //!
@@ -44,8 +44,7 @@
 //! serial.flush().unwrap();
 //!
 //! // When you believe there are no more calls on the mock,
-//! // you may call done(), or let the mock drop out without
-//! // any other checks
+//! // call done() to assert there are no pending transactions.
 //! serial.done();
 //! ```
 //!
@@ -88,8 +87,7 @@
 //! serial.bflush().unwrap();
 //!
 //! // When you believe there are no more calls on the mock,
-//! // you may call done(), or let the mock drop out without
-//! // any other checks
+//! // call done() to assert there are no pending transactions.
 //! serial.done();
 //! ```
 
@@ -350,12 +348,12 @@ where
     }
 }
 
-// Note: we attempted to provide our own implementation of
+// Note: We attempted to provide our own implementation of
 // embedded_hal::blocking::serial::Write. However, we're unable
 // to override it due to the blanket default implementation provided by
 // the embedded_hal crate. It comes down to the fact that, if we were
 // to provide an embedded_hal::blocking::serial::Write implementation
-// here, any user of embedded_hal would be free to implement the *defuault*
+// here, any user of embedded_hal would be free to implement the *default*
 // version for our type. Therefore, we conform to the default implementation,
 // knowing that the default is implemented in terms of the non-blocking
 // trait, which is defined above.
