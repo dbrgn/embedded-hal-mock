@@ -112,7 +112,6 @@ use embedded_hal::serial;
 use crate::error::MockError;
 
 use std::collections::VecDeque;
-use std::marker::PhantomData;
 use std::sync::{Arc, Mutex};
 
 // Note that mode is private
@@ -216,29 +215,20 @@ where
 /// device user. Under the hood, both cloned mocks will share
 /// the same state, allowing your handle to eventually call `done()`,
 /// if desired.
-pub struct Mock<'a, Word> {
+pub struct Mock<Word> {
     /// The expected operations upon the mock
     ///
     /// It's in an arc to maintain shared state, and in a mutex
     /// to make it thread safe. It's then wrapped in an `Option`
     /// so that we can take it in the call to `done()`.
     expected_modes: Arc<Mutex<Option<VecDeque<Mode<Word>>>>>,
-    /// We'll note that this phantom type and lifetime is actually
-    /// unnecessary. As noted above, we try to keep a consistent
-    /// public API with the existing spi and i2c modules. Given that
-    /// this lifetime is necessary for them, it is also necessary here.
-    ///
-    /// Of course, this could quickly be removed if the overall public
-    /// API changes.
-    marker: PhantomData<&'a Word>,
 }
 
-impl<'a, Word: Clone> Mock<'a, Word> {
+impl<Word: Clone> Mock<Word> {
     /// Create a serial mock that will expect the provided transactions
-    pub fn new(transactions: &'a [Transaction<Word>]) -> Self {
+    pub fn new(transactions: &[Transaction<Word>]) -> Self {
         let mut ser = Mock {
             expected_modes: Arc::new(Mutex::new(None)),
-            marker: PhantomData,
         };
         ser.expect(transactions);
         ser
@@ -248,7 +238,7 @@ impl<'a, Word: Clone> Mock<'a, Word> {
     ///
     /// This is a list of transactions to be executed in order.
     /// Note that setting this will overwrite any existing expectations
-    pub fn expect(&mut self, transactions: &'a [Transaction<Word>]) {
+    pub fn expect(&mut self, transactions: &[Transaction<Word>]) {
         let mut lock = self
             .expected_modes
             .lock()
@@ -290,7 +280,7 @@ impl<'a, Word: Clone> Mock<'a, Word> {
     }
 }
 
-impl<'a, Word> serial::Read<Word> for Mock<'a, Word>
+impl<Word> serial::Read<Word> for Mock<Word>
 where
     Word: Clone + std::fmt::Debug,
 {
@@ -307,7 +297,7 @@ where
     }
 }
 
-impl<'a, Word> serial::Write<Word> for Mock<'a, Word>
+impl<Word> serial::Write<Word> for Mock<Word>
 where
     Word: PartialEq + std::fmt::Debug + Clone,
 {
@@ -358,10 +348,7 @@ where
 // trait, which is defined above.
 //
 // If you know a way around this, please let us know!
-impl<'a, Word> write::Default<Word> for Mock<'a, Word> where
-    Word: PartialEq + std::fmt::Debug + Clone
-{
-}
+impl<Word> write::Default<Word> for Mock<Word> where Word: PartialEq + std::fmt::Debug + Clone {}
 
 #[cfg(test)]
 mod test {
