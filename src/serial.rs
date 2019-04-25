@@ -407,7 +407,7 @@ mod test {
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic(expected = "called serial::write with no expectation")]
     fn test_serial_mock_blocking_write_more_than_expected() {
         let ts = [Transaction::write([0xAB, 0xCD])];
         let mut ser = Mock::new(&ts);
@@ -416,7 +416,7 @@ mod test {
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic(expected = "unsatisfied expectations")]
     fn test_serial_mock_blocking_write_not_enough() {
         let ts = [Transaction::write([0xAB, 0xCD, 0xEF, 0x00])];
         let mut ser = Mock::new(&ts);
@@ -425,7 +425,7 @@ mod test {
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic(expected = "serial::write expected to write")]
     fn test_serial_mock_wrong_write() {
         let ts = [Transaction::write([0x12])];
         let mut ser = Mock::new(&ts);
@@ -449,7 +449,7 @@ mod test {
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic(expected = "unsatisfied expectations")]
     fn test_serial_mock_pending_transactions() {
         let ts = [Transaction::read(0x54)];
         let ser = Mock::new(&ts);
@@ -457,7 +457,7 @@ mod test {
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic(expected = "expected to perform a serial transaction 'Read(")]
     fn test_serial_mock_expected_read() {
         let ts = [Transaction::read(0x54)];
         let mut ser = Mock::new(&ts);
@@ -465,7 +465,7 @@ mod test {
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic(expected = "expected to perform a serial transaction 'Write(")]
     fn test_serial_mock_expected_write() {
         let ts = [Transaction::write([0x54])];
         let mut ser = Mock::new(&ts);
@@ -473,7 +473,7 @@ mod test {
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic(expected = "expected to perform a serial transaction 'Flush'")]
     fn test_serial_mock_expected_flush() {
         let ts = [Transaction::flush()];
         let mut ser: Mock<u128> = Mock::new(&ts);
