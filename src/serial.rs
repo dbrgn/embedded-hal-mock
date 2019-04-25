@@ -263,10 +263,9 @@ impl<'a, Word: Clone> Mock<'a, Word> {
         );
     }
 
-    /// Consumes the mock, asserting that all exepctations were met
-    pub fn done(self) {
-        // Note that we take self by value, unlike the generic versions that
-        // take by mut reference. It wouldn't make sense to call done() twice anyway :P
+    /// Asserts that all expectations up to this point were satisfied.
+    /// Panics if there are unsatisfied expectations.
+    pub fn done(&mut self) {
         let mut lock = self
             .expected_modes
             .lock()
@@ -452,7 +451,19 @@ mod test {
     #[should_panic(expected = "unsatisfied expectations")]
     fn test_serial_mock_pending_transactions() {
         let ts = [Transaction::read(0x54)];
-        let ser = Mock::new(&ts);
+        let mut ser = Mock::new(&ts);
+        ser.done();
+    }
+
+    #[test]
+    #[should_panic(expected = "unsatisfied expectations")]
+    fn test_serial_mock_reuse_pending_transactions() {
+        let ts = [Transaction::read(0x54)];
+        let mut ser = Mock::new(&ts);
+        let r = ser.read().expect("failed to read");
+        assert_eq!(r, 0x54);
+        ser.done();
+        ser.expect(&ts);
         ser.done();
     }
 
