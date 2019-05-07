@@ -92,13 +92,48 @@ impl Transaction {
 ///
 /// This supports the specification and evaluation of expectations to allow automated testing of I2C based drivers.
 /// Mismatches between expectations will cause runtime assertions to assist in locating the source of the fault.
-pub type Mock = Generic<Transaction>;
+#[derive(Clone)]
+pub struct Mock<T: Iterator<Item=Transaction>> {
+    iter: T,
+}
 
-impl i2c::Read for Mock {
+impl <T> Mock<T> 
+where T: Iterator<Item=Transaction>,
+{
+    pub fn done(&mut self) {
+        let next = self.iter.next();
+        assert_eq!(next, None);
+    }
+
+    pub fn inner(&mut self) -> &mut T {
+        &mut self.iter
+    }
+}
+
+impl <'a> Mock<Generic<Transaction>> {
+    pub fn new<E>(expected: E) -> Mock<Generic<Transaction>>
+    where
+        E: IntoIterator<Item = &'a Transaction>,
+    {
+        Self{iter: Generic::new(expected)}
+    }
+}
+
+impl <T> From<T> for Mock<T> 
+where T: Iterator<Item=Transaction>,
+{
+    fn from(iter: T) -> Self {
+        Self{iter}
+    }
+}
+
+impl <T>i2c::Read for Mock<T> 
+where T: Iterator<Item=Transaction>,
+{
     type Error = MockError;
 
     fn read(&mut self, address: u8, buffer: &mut [u8]) -> Result<(), Self::Error> {
-        let w = self
+        let w = self.iter
             .next()
             .expect("no pending expectation for i2c::read call");
 
@@ -116,11 +151,13 @@ impl i2c::Read for Mock {
     }
 }
 
-impl i2c::Write for Mock {
+impl <T>i2c::Write for Mock<T> 
+where T: Iterator<Item=Transaction>,
+{
     type Error = MockError;
 
     fn write(&mut self, address: u8, bytes: &[u8]) -> Result<(), Self::Error> {
-        let w = self
+        let w = self.iter
             .next()
             .expect("no pending expectation for i2c::write call");
 
@@ -135,7 +172,9 @@ impl i2c::Write for Mock {
     }
 }
 
-impl i2c::WriteRead for Mock {
+impl <T>i2c::WriteRead for Mock<T> 
+where T: Iterator<Item=Transaction>,
+{
     type Error = MockError;
 
     fn write_read(
@@ -144,7 +183,7 @@ impl i2c::WriteRead for Mock {
         bytes: &[u8],
         buffer: &mut [u8],
     ) -> Result<(), Self::Error> {
-        let w = self
+        let w = self.iter
             .next()
             .expect("no pending expectation for i2c::write_read call");
 
