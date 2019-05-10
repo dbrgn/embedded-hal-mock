@@ -1,11 +1,11 @@
 [package]
 name = "embedded-hal-mock"
-version = "0.5.0"
+version = "0.6.0"
 authors = ["Danilo Bargen <mail@dbrgn.ch>"]
 categories = ["embedded", "hardware-support", "development-tools::testing"]
 description = "A collection of mocked devices that implement the embedded-hal traits"
 documentation = "https://docs.rs/embedded-hal"
-keywords = ["hal", "IO", "spi", "i2c", "delay"]
+keywords = ["hal", "io", "spi", "i2c", "delay"]
 license = "MIT OR Apache-2.0"
 readme = "README.md"
 repository = "https://github.com/dbrgn/embedded-hal-mock"
