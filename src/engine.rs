@@ -117,6 +117,7 @@ impl Engine {
     }
 }
 
+#[derive(Clone)]
 pub struct Peripheral<Type> {
     id: u32,
     expected: Arc<Mutex<VecDeque<(u32, Transaction)>>>,
@@ -140,6 +141,7 @@ impl <Type>Peripheral<Type> {
 }
 
 /// Empty struct for type-state programming
+#[derive(Clone)]
 pub struct Spi {}
 
 impl Iterator for Peripheral<Spi>
@@ -166,6 +168,8 @@ impl Peripheral<Spi> {
 }
 
 /// Empty struct for type-state programming
+
+#[derive(Clone)]
 pub struct I2c {}
 
 impl Iterator for Peripheral<I2c>
@@ -193,8 +197,9 @@ impl Peripheral<I2c> {
 
 
 /// Empty struct for type-state programming
-pub struct Pin {}
 
+#[derive(Clone)]
+pub struct Pin {}
 impl Peripheral<Pin>
 {
     fn next(&self) -> Option<PinTransaction> {
@@ -286,6 +291,7 @@ impl InputPin for Peripheral<Pin> {
 }
 
 /// Empty struct for type-state programming
+#[derive(Clone)]
 pub struct Delay {}
 
 impl Iterator for Peripheral<Delay>
@@ -328,7 +334,7 @@ mod test {
     use std::io::ErrorKind;
 
     use embedded_hal::digital::v2::{OutputPin as _, InputPin as _};
-    use embedded_hal::blocking::spi::Write as _;
+    use embedded_hal::blocking::spi::{Write, Transfer};
     use embedded_hal::blocking::i2c::Write as _;
     use embedded_hal::blocking::delay::DelayMs as _;
 
@@ -340,6 +346,9 @@ mod test {
         let mut i2c1 = engine.i2c();
         let mut pin1 = engine.pin();
         let mut delay1 = engine.delay();
+
+        let mut _t: Box<Transfer<u8, Error=()>> = Box::new(spi1.clone());
+        let mut _w: Box<Write<u8, Error=()>> = Box::new(spi1.clone());
 
         pin1.expect(PinTransaction::set(PinState::High));
         spi1.inner().expect(SpiTransaction::write(vec![1, 2]));

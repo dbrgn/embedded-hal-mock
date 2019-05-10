@@ -119,12 +119,12 @@ impl Transaction {
 ///
 /// See the usage section in the module level docs for an example.
 #[derive(Clone)]
-pub struct Mock<T: Iterator<Item=Transaction>> {
+pub struct Mock<T: Iterator<Item=Transaction> + Clone> {
     iter: T,
 }
 
 impl <T> Mock<T> 
-where T: Iterator<Item=Transaction>,
+where T: Iterator<Item=Transaction> + Clone,
 {
     pub fn done(&mut self) {
         let next = self.iter.next();
@@ -146,7 +146,7 @@ impl <'a> Mock<Generic<Transaction>> {
 }
 
 impl <T> From<T> for Mock<T> 
-where T: Iterator<Item=Transaction>,
+where T: Iterator<Item=Transaction> + Clone,
 {
     fn from(iter: T) -> Self {
         Self{iter}
@@ -154,9 +154,9 @@ where T: Iterator<Item=Transaction>,
 }
 
 impl <T> spi::Write<u8> for Mock<T> 
-where T: Iterator<Item=Transaction>,
+where T: Iterator<Item=Transaction> + Clone,
 {
-    type Error = MockError;
+    type Error = ();
 
     /// spi::Write implementation for Mock
     ///
@@ -173,9 +173,9 @@ where T: Iterator<Item=Transaction>,
 }
 
 impl <T> FullDuplex<u8> for Mock <T> 
-where T: Iterator<Item=Transaction>,
+where T: Iterator<Item=Transaction> + Clone,
 {
-    type Error = MockError;
+    type Error = ();
     /// spi::FullDuplex implementeation for Mock
     ///
     /// This will call the nonblocking read/write primitives.
@@ -206,9 +206,9 @@ where T: Iterator<Item=Transaction>,
 }
 
 impl <T> spi::Transfer<u8> for Mock<T>
-where T: Iterator<Item=Transaction>,
+where T: Iterator<Item=Transaction> + Clone,
 {
-    type Error = MockError;
+    type Error = ();
 
     /// spi::Transfer implementation for Mock
     ///
@@ -239,6 +239,16 @@ mod test {
     use super::*;
 
     use embedded_hal::blocking::spi::{Transfer, Write};
+
+    #[test]
+    fn test_spi_mock_cast() {
+        let mut spi = Mock::new(&[]);
+
+        let mut _t: Box<Transfer<u8, Error=()>> = Box::new(spi.clone());
+        let mut _w: Box<Write<u8, Error=()>> = Box::new(spi.clone());
+
+        spi.done();
+    }
 
     #[test]
     fn test_spi_mock_send() {
