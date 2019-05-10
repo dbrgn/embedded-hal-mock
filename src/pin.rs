@@ -183,12 +183,14 @@ impl InputPin for Mock {
 
 #[cfg(test)]
 mod test {
-    use super::*;
 
     use std::io::ErrorKind;
 
     use embedded_hal::digital::v2::{OutputPin, InputPin};
-    use TransactionKind::{Get, Set};
+    use crate::error::MockError;
+    
+    use crate::pin::{Mock, Transaction, State};
+    use crate::pin::TransactionKind::{Get, Set};
 
     #[test]
     fn test_input_pin() {
