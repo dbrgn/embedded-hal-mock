@@ -1,17 +1,17 @@
 //! Mock digital [`InputPin`] and [`OutputPin`] implementations
-//! 
+//!
 //! [`InputPin`]: https://docs.rs/embedded-hal/latest/embedded_hal/digital/trait.InputPin.html
 //! [`OutputPin`]: https://docs.rs/embedded-hal/latest/embedded_hal/digital/trait.OutputPin.html
-//! 
+//!
 //! ```
 //! use std::io::ErrorKind;
-//! 
+//!
 //! use embedded_hal_mock::MockError;
 //! use embedded_hal_mock::pin::{Transaction as PinTransaction, Mock as PinMock, State as PinState};
 //! use embedded_hal::digital::v2::{InputPin, OutputPin};
-//! 
+//!
 //! let err = MockError::Io(ErrorKind::NotConnected);
-//! 
+//!
 //! // Configure expectations
 //! let expectations = [
 //!     PinTransaction::get(PinState::High),
@@ -19,31 +19,30 @@
 //!     PinTransaction::set(PinState::Low),
 //!     PinTransaction::set(PinState::High).with_error(err.clone()),
 //! ];
-//! 
+//!
 //! // Create pin
 //! let mut pin = PinMock::new(&expectations);
-//! 
+//!
 //! // Run and test
 //! assert_eq!(pin.is_high().unwrap(), true);
 //! assert_eq!(pin.is_low().unwrap(), false);
-//! 
+//!
 //! pin.set_low().unwrap();
 //! pin.set_high().expect_err("expected error return");
-//! 
+//!
 //! pin.done();
-//! 
+//!
 //! // Update expectations
 //! pin.expect(&[]);
 //! // ...
 //! pin.done();
-//! 
+//!
 //! ```
-
 
 use crate::common::Generic;
 use crate::error::MockError;
 
-use embedded_hal::digital::v2::{OutputPin, InputPin};
+use embedded_hal::digital::v2::{InputPin, OutputPin};
 
 /// MockPin transaction
 #[derive(PartialEq, Clone, Debug)]
@@ -68,7 +67,7 @@ pub enum State {
 impl Transaction {
     /// Create a new pin transaction
     pub fn new(kind: TransactionKind) -> Transaction {
-        Transaction{kind, err: None}
+        Transaction { kind, err: None }
     }
 
     /// Create a new get transaction
@@ -118,10 +117,14 @@ impl OutputPin for Mock {
 
     /// Drives the pin low
     fn set_low(&mut self) -> Result<(), Self::Error> {
-        let Transaction{kind, err} = self.next().expect("no expectation for pin::set_low call");
+        let Transaction { kind, err } = self.next().expect("no expectation for pin::set_low call");
 
-        assert_eq!(kind, TransactionKind::Set(State::Low), "expected pin::set_low");
-        
+        assert_eq!(
+            kind,
+            TransactionKind::Set(State::Low),
+            "expected pin::set_low"
+        );
+
         match err {
             Some(e) => Err(e.clone()),
             None => Ok(()),
@@ -130,10 +133,14 @@ impl OutputPin for Mock {
 
     /// Drives the pin high
     fn set_high(&mut self) -> Result<(), Self::Error> {
-        let Transaction{kind, err} = self.next().expect("no expectation for pin::set_high call");
+        let Transaction { kind, err } = self.next().expect("no expectation for pin::set_high call");
 
-        assert_eq!(kind, TransactionKind::Set(State::High), "expected pin::set_high");
-        
+        assert_eq!(
+            kind,
+            TransactionKind::Set(State::High),
+            "expected pin::set_high"
+        );
+
         match err {
             Some(e) => Err(e.clone()),
             None => Ok(()),
@@ -149,11 +156,11 @@ impl InputPin for Mock {
     fn is_high(&self) -> Result<bool, Self::Error> {
         let mut s = self.clone();
 
-        let Transaction{kind, err} = s.next().expect("no expectation for pin::is_high call");
+        let Transaction { kind, err } = s.next().expect("no expectation for pin::is_high call");
 
         assert_eq!(kind.is_get(), true, "expected pin::get");
 
-        if let Some(e) = err { 
+        if let Some(e) = err {
             Err(e.clone())
         } else if let TransactionKind::Get(v) = kind {
             Ok(v == State::High)
@@ -166,11 +173,11 @@ impl InputPin for Mock {
     fn is_low(&self) -> Result<bool, Self::Error> {
         let mut s = self.clone();
 
-        let Transaction{kind, err} = s.next().expect("no expectation for pin::is_low call");
+        let Transaction { kind, err } = s.next().expect("no expectation for pin::is_low call");
 
         assert_eq!(kind.is_get(), true, "expected pin::get");
 
-        if let Some(e) = err { 
+        if let Some(e) = err {
             Err(e.clone())
         } else if let TransactionKind::Get(v) = kind {
             Ok(v == State::Low)
@@ -180,17 +187,16 @@ impl InputPin for Mock {
     }
 }
 
-
 #[cfg(test)]
 mod test {
 
     use std::io::ErrorKind;
 
-    use embedded_hal::digital::v2::{OutputPin, InputPin};
     use crate::error::MockError;
-    
-    use crate::pin::{Mock, Transaction, State};
+    use embedded_hal::digital::v2::{InputPin, OutputPin};
+
     use crate::pin::TransactionKind::{Get, Set};
+    use crate::pin::{Mock, State, Transaction};
 
     #[test]
     fn test_input_pin() {
@@ -224,7 +230,7 @@ mod test {
 
         pin.set_high().unwrap();
         pin.set_low().unwrap();
-        
+
         pin.set_high().expect_err("expected error return");
 
         pin.done();
