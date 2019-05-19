@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 
+## 0.7.0 - unreleased
+
+### Added
+
+- The serial transaction API now has two new constructor methods: `read_many`
+  and `write_many`.
+
+### Changed
+
+- The serial transaction API changed: The `Transaction::write` function now
+  expects a single word, not a collection of words. To add a transaction for
+  many writes, use `Transaction::write_many` instead.
+
+
 ## 0.6.0 - 2019-05-10
 
 ### Added
