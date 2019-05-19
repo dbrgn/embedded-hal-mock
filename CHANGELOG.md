@@ -19,6 +19,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   expects a single word, not a collection of words. To add a transaction for
   many writes, use `Transaction::write_many` instead.
 
+### Fixed
+
+- Make the serial mock actually cloneable
+
 
 ## 0.6.0 - 2019-05-10
 
