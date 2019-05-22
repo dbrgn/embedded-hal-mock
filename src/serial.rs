@@ -223,6 +223,7 @@ where
 /// device user. Under the hood, both cloned mocks will share
 /// the same state, allowing your handle to eventually call `done()`,
 /// if desired.
+#[derive(Clone)]
 pub struct Mock<Word> {
     /// The expected operations upon the mock
     ///
