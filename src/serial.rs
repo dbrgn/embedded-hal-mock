@@ -21,18 +21,17 @@
 //! // Configure expectations
 //! let expectations = [
 //!     SerialTransaction::read(0x0A),
-//!     SerialTransaction::read(0xFF),
-//!     SerialTransaction::write([1, 2]), // (1)
+//!     SerialTransaction::read_many(b"xy"),
+//!     SerialTransaction::write_many([1, 2]), // (1)
 //!     SerialTransaction::flush(),
 //! ];
 //!
 //! let mut serial = SerialMock::new(&expectations);
 //!
-//! // Expect two reads
-//! let word = serial.read().unwrap();
-//! assert_eq!(word, 0x0A);
-//! let word = serial.read().unwrap();
-//! assert_eq!(word, 0xFF);
+//! // Expect three reads
+//! assert_eq!(serial.read().unwrap(), 0x0A);
+//! assert_eq!(serial.read().unwrap(), b'x');
+//! assert_eq!(serial.read().unwrap(), b'y');
 //!
 //! // When designing against the non-blocking serial
 //! // trait, we expect two separate writes. These could be
@@ -65,18 +64,17 @@
 //! // Configure expectations
 //! let expectations = [
 //!     SerialTransaction::read(0x0A),
-//!     SerialTransaction::read(0xFF),
-//!     SerialTransaction::write([1, 2]), // (2)
+//!     SerialTransaction::read_many(b"xy"),
+//!     SerialTransaction::write_many([1, 2]), // (2)
 //!     SerialTransaction::flush(),
 //! ];
 //!
 //! let mut serial = SerialMock::new(&expectations);
 //!
-//! // Expect two reads
-//! let word = serial.read().unwrap();
-//! assert_eq!(word, 0x0A);
-//! let word = serial.read().unwrap();
-//! assert_eq!(word, 0xFF);
+//! // Expect three reads
+//! assert_eq!(serial.read().unwrap(), 0x0A);
+//! assert_eq!(serial.read().unwrap(), b'x');
+//! assert_eq!(serial.read().unwrap(), b'y');
 //!
 //! // We use the blocking write here, and we assert that
 //! // two words are written. See (2) above.
@@ -126,7 +124,7 @@ use std::sync::{Arc, Mutex};
 /// Serial communication mode
 #[derive(Debug, Clone)]
 enum Mode<Word> {
-    /// A serial read that produces a word
+    /// A serial read that returns a word
     Read(Word),
     /// A serial write that transmits a word
     Write(Word),
@@ -147,12 +145,12 @@ enum Mode<Word> {
 /// use embedded_hal_mock::serial::Mock;
 ///
 /// // We expect, in order,
-/// // 1. A read that producers 0x23,
+/// // 1. A read that returns 0x23,
 /// // 2. A write of [0x55, 0xAA]
 /// // 3. A flush
 /// let transactions = [
 ///     Transaction::read(0x23),
-///     Transaction::write([0x55, 0xAA]),
+///     Transaction::write_many([0x55, 0xAA]),
 ///     Transaction::flush()
 /// ];
 ///
@@ -173,21 +171,31 @@ where
     Word: Clone,
 {
     /// Expect a serial read that returns the expected word
-    pub fn read(expected: Word) -> Self {
+    pub fn read(word: Word) -> Self {
         Transaction {
-            mode: vec![Mode::Read(expected)],
+            mode: vec![Mode::Read(word)],
         }
     }
 
-    /// Expect a serial write that transmits the specified word
-    ///
-    /// `write()` accepts a collection of words. If you're expecting
-    /// a blocking write, you may want to supply a slice of words that
-    /// would be used in the write, rather than listing them out one-by-
-    /// one. Or, if you're expecting multiple, non-blocking writes, you
-    /// may choose to aggregate them into a slice instead of listing them
-    /// out one-by-one.
-    pub fn write<Ws>(words: Ws) -> Self
+    /// Expect a serial read that returns the expected words
+    pub fn read_many<Ws>(words: Ws) -> Self
+    where
+        Ws: AsRef<[Word]>,
+    {
+        Transaction {
+            mode: words.as_ref().iter().cloned().map(Mode::Read).collect(),
+        }
+    }
+
+    /// Expect a serial write that transmits the specified words
+    pub fn write(word: Word) -> Self {
+        Transaction {
+            mode: vec![Mode::Write(word)],
+        }
+    }
+
+    /// Expect a serial write that transmits the specified words
+    pub fn write_many<Ws>(words: Ws) -> Self
     where
         Ws: AsRef<[Word]>,
     {
@@ -368,7 +376,7 @@ mod test {
 
     #[test]
     fn test_serial_mock_write_single_value_nonblocking() {
-        let ts = [Transaction::write([0xAB])];
+        let ts = [Transaction::write(0xAB)];
         let mut ser = Mock::new(&ts);
         ser.write(0xAB).unwrap();
         ser.done();
@@ -376,7 +384,7 @@ mod test {
 
     #[test]
     fn test_serial_mock_write_many_values_nonblocking() {
-        let ts = [Transaction::write([0xAB, 0xCD, 0xEF])];
+        let ts = [Transaction::write_many([0xAB, 0xCD, 0xEF])];
         let mut ser = Mock::new(&ts);
         ser.write(0xAB).unwrap();
         ser.write(0xCD).unwrap();
@@ -386,7 +394,7 @@ mod test {
 
     #[test]
     fn test_serial_mock_blocking_write() {
-        let ts = [Transaction::write([0xAB, 0xCD, 0xEF])];
+        let ts = [Transaction::write_many([0xAB, 0xCD, 0xEF])];
         let mut ser = Mock::new(&ts);
         ser.bwrite_all(&[0xAB, 0xCD, 0xEF]).unwrap();
         ser.done();
@@ -395,7 +403,7 @@ mod test {
     #[test]
     #[should_panic(expected = "called serial::write with no expectation")]
     fn test_serial_mock_blocking_write_more_than_expected() {
-        let ts = [Transaction::write([0xAB, 0xCD])];
+        let ts = [Transaction::write_many([0xAB, 0xCD])];
         let mut ser = Mock::new(&ts);
         ser.bwrite_all(&[0xAB, 0xCD, 0xEF]).unwrap();
         ser.done();
@@ -404,7 +412,7 @@ mod test {
     #[test]
     #[should_panic(expected = "unsatisfied expectations")]
     fn test_serial_mock_blocking_write_not_enough() {
-        let ts = [Transaction::write([0xAB, 0xCD, 0xEF, 0x00])];
+        let ts = [Transaction::write_many([0xAB, 0xCD, 0xEF, 0x00])];
         let mut ser = Mock::new(&ts);
         ser.bwrite_all(&[0xAB, 0xCD, 0xEF]).unwrap();
         ser.done();
@@ -413,7 +421,7 @@ mod test {
     #[test]
     #[should_panic(expected = "serial::write expected to write")]
     fn test_serial_mock_wrong_write() {
-        let ts = [Transaction::write([0x12])];
+        let ts = [Transaction::write(0x12)];
         let mut ser = Mock::new(&ts);
         ser.write(0x14).unwrap();
     }
@@ -465,7 +473,7 @@ mod test {
     #[test]
     #[should_panic(expected = "expected to perform a serial transaction 'Write(")]
     fn test_serial_mock_expected_write() {
-        let ts = [Transaction::write([0x54])];
+        let ts = [Transaction::write(0x54)];
         let mut ser = Mock::new(&ts);
         ser.flush().unwrap();
     }
