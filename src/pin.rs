@@ -1,7 +1,7 @@
-//! Mock digital [`InputPin`] and [`OutputPin`] implementations
+//! Mock digital [`InputPin`] and [`OutputPin`] v2 implementations
 //!
-//! [`InputPin`]: https://docs.rs/embedded-hal/latest/embedded_hal/digital/trait.InputPin.html
-//! [`OutputPin`]: https://docs.rs/embedded-hal/latest/embedded_hal/digital/trait.OutputPin.html
+//! [`InputPin`]: https://docs.rs/embedded-hal/0.2/embedded_hal/digital/v2/trait.InputPin.html
+//! [`OutputPin`]: https://docs.rs/embedded-hal/0.2/embedded_hal/digital/v2/trait.OutputPin.html
 //!
 //! ```
 //! use std::io::ErrorKind;
