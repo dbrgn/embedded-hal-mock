@@ -28,6 +28,15 @@
 //! // Finalise expectations
 //! i2c.done();
 //! ```
+//!
+//! ## Transactions
+//!
+//! There are currently three transaction types:
+//!
+//! - `Read`: This expects an I²C `read` command and will return the wrapped bytes.
+//! - `Write`: This expects an I²C `write` command with the wrapped bytes.
+//! - `WriteRead`: This expects an I²C `write_read` command where the
+//!   `expected` bytes are written and the `response` bytes are returned.
 
 use embedded_hal::blocking::i2c;
 
