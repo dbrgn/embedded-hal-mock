@@ -81,11 +81,11 @@ impl Transaction {
     }
 
     /// Add an error return to a transaction
-    /// This is used to mock failure behaviours
-    pub fn with_error(self, error: MockError) -> Self {
-        let mut t = self;
-        t.err = Some(error);
-        t
+    ///
+    /// This is used to mock failure behaviours.
+    pub fn with_error(mut self, error: MockError) -> Self {
+        self.err = Some(error);
+        self
     }
 }
 
@@ -235,5 +235,4 @@ mod test {
 
         pin.done();
     }
-
 }
