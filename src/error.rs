@@ -1,4 +1,4 @@
-use std::io;
+use std::{error::Error as StdError, fmt, io};
 
 /// Errors that may occur during mocking.
 #[derive(PartialEq, Clone, Debug)]
@@ -12,3 +12,13 @@ impl From<io::Error> for MockError {
         MockError::Io(e.kind())
     }
 }
+
+impl fmt::Display for MockError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            MockError::Io(kind) => write!(f, "I/O error: {:?}", kind),
+        }
+    }
+}
+
+impl StdError for MockError {}
