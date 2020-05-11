@@ -140,6 +140,9 @@ impl Transaction {
     /// Add an error return to a transaction
     ///
     /// This is used to mock failure behaviours.
+    ///
+    /// Note: When attaching this to a read transaction, the response in the
+    /// expectation will not actually be written to the buffer.
     pub fn with_error(mut self, error: MockError) -> Self {
         self.expected_err = Some(error);
         self
