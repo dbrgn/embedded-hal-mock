@@ -13,25 +13,22 @@
 //!
 //! let mut clock = MockClock::new();
 //! let mut timer = clock.get_timer();
-//! timer.start(100.nanoseconds());
+//! timer.try_start(100.nanoseconds());
 //! // hand over timer to embedded-hal based driver
 //! // continue to tick clock
 //! clock.tick(50.nanoseconds());
-//! assert_eq!(timer.wait(), Err(nb::Error::WouldBlock));
+//! assert_eq!(timer.try_wait(), Err(nb::Error::WouldBlock));
 //! clock.tick(50.nanoseconds());
-//! assert_eq!(timer.wait(), Ok(()));
+//! assert_eq!(timer.try_wait(), Ok(()));
 //! clock.tick(50.nanoseconds());
-//! assert_eq!(timer.wait(), Err(nb::Error::WouldBlock));
+//! assert_eq!(timer.try_wait(), Err(nb::Error::WouldBlock));
 //! clock.tick(50.nanoseconds());
-//! assert_eq!(timer.wait(), Ok(()));
+//! assert_eq!(timer.try_wait(), Ok(()));
 //! ```
 
-use std::{
-    convert::Infallible,
-    sync::{
-        atomic::{AtomicU64, Ordering},
-        Arc,
-    },
+use std::sync::{
+    atomic::{AtomicU64, Ordering},
+    Arc,
 };
 use void::Void;
 
@@ -106,8 +103,9 @@ pub struct MockTimer {
 
 impl CountDown for MockTimer {
     type Time = Nanoseconds<u64>;
+    type Error = Void;
 
-    fn start<T>(&mut self, count: T)
+    fn try_start<T>(&mut self, count: T) -> Result<(), Self::Error>
     where
         T: Into<Self::Time>,
     {
@@ -115,9 +113,10 @@ impl CountDown for MockTimer {
         self.duration = count.into();
         self.expiration = now + self.duration;
         self.started = true;
+        Ok(())
     }
 
-    fn wait(&mut self) -> nb::Result<(), Void> {
+    fn try_wait(&mut self) -> nb::Result<(), Void> {
         let now = self.clock.try_now().unwrap();
         if self.started && now >= self.expiration {
             self.expiration = now + self.duration;
@@ -131,9 +130,7 @@ impl CountDown for MockTimer {
 impl Periodic for MockTimer {}
 
 impl Cancel for MockTimer {
-    type Error = Infallible;
-
-    fn cancel(&mut self) -> Result<(), Self::Error> {
+    fn try_cancel(&mut self) -> Result<(), Self::Error> {
         self.started = false;
         Ok(())
     }
@@ -147,14 +144,14 @@ mod test {
     fn count_down() {
         let mut clock = MockClock::new();
         let mut timer = clock.get_timer();
-        timer.start(100.nanoseconds());
+        timer.try_start(100.nanoseconds()).unwrap();
         clock.tick(50.nanoseconds());
-        assert_eq!(timer.wait(), Err(nb::Error::WouldBlock));
+        assert_eq!(timer.try_wait(), Err(nb::Error::WouldBlock));
         clock.tick(50.nanoseconds());
-        assert_eq!(timer.wait(), Ok(()));
+        assert_eq!(timer.try_wait(), Ok(()));
         clock.tick(50.nanoseconds());
-        assert_eq!(timer.wait(), Err(nb::Error::WouldBlock));
+        assert_eq!(timer.try_wait(), Err(nb::Error::WouldBlock));
         clock.tick(50.nanoseconds());
-        assert_eq!(timer.wait(), Ok(()));
+        assert_eq!(timer.try_wait(), Ok(()));
     }
 }

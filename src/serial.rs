@@ -27,18 +27,18 @@
 //! let mut serial = SerialMock::new(&expectations);
 //!
 //! // Expect three reads
-//! assert_eq!(serial.read().unwrap(), 0x0A);
-//! assert_eq!(serial.read().unwrap(), b'x');
-//! assert_eq!(serial.read().unwrap(), b'y');
+//! assert_eq!(serial.try_read().unwrap(), 0x0A);
+//! assert_eq!(serial.try_read().unwrap(), b'x');
+//! assert_eq!(serial.try_read().unwrap(), b'y');
 //!
 //! // When designing against the non-blocking serial
 //! // trait, we expect two separate writes. These could be
 //! // expressed as two separate transactions, too. See (1) above.
-//! serial.write(1).unwrap();
-//! serial.write(2).unwrap();
+//! serial.try_write(1).unwrap();
+//! serial.try_write(2).unwrap();
 //!
 //! // Finally, we expect a flush
-//! serial.flush().unwrap();
+//! serial.try_flush().unwrap();
 //!
 //! // When you believe there are no more calls on the mock,
 //! // call done() to assert there are no pending transactions.
@@ -67,17 +67,17 @@
 //! let mut serial = SerialMock::new(&expectations);
 //!
 //! // Expect three reads
-//! assert_eq!(serial.read().unwrap(), 0x0A);
-//! assert_eq!(serial.read().unwrap(), b'x');
-//! assert_eq!(serial.read().unwrap(), b'y');
+//! assert_eq!(serial.try_read().unwrap(), 0x0A);
+//! assert_eq!(serial.try_read().unwrap(), b'x');
+//! assert_eq!(serial.try_read().unwrap(), b'y');
 //!
 //! // We use the blocking write here, and we assert that
 //! // two words are written. See (2) above.
-//! serial.bwrite_all(&[1, 2]).unwrap();
+//! serial.try_bwrite_all(&[1, 2]).unwrap();
 //!
 //! // Finally, we expect a flush. Note that this is
 //! // a *blocking* flush from the blocking serial trait.
-//! serial.bflush().unwrap();
+//! serial.try_bflush().unwrap();
 //!
 //! // When you believe there are no more calls on the mock,
 //! // call done() to assert there are no pending transactions.
@@ -108,18 +108,18 @@
 //! let mut serial = SerialMock::new(&expectations);
 //!
 //! // The first read will succeed
-//! assert_eq!(serial.read().unwrap(), 42);
+//! assert_eq!(serial.try_read().unwrap(), 42);
 //!
 //! // The second read will return an error
-//! assert_eq!(serial.read().unwrap_err(), nb::Error::WouldBlock);
+//! assert_eq!(serial.try_read().unwrap_err(), nb::Error::WouldBlock);
 //!
 //! // The following write/flush calls will return errors as well
 //! assert_eq!(
-//!     serial.write(23).unwrap_err(),
+//!     serial.try_write(23).unwrap_err(),
 //!     nb::Error::Other(MockError::Io(ErrorKind::Other))
 //! );
 //! assert_eq!(
-//!     serial.flush().unwrap_err(),
+//!     serial.try_flush().unwrap_err(),
 //!     nb::Error::Other(MockError::Io(ErrorKind::Interrupted))
 //! );
 //!
@@ -366,8 +366,10 @@ where
 {
     type Error = MockError;
 
-    fn read(&mut self) -> nb::Result<Word, Self::Error> {
-        let t = self.pop().expect("called serial::read with no expectation");
+    fn try_read(&mut self) -> nb::Result<Word, Self::Error> {
+        let t = self
+            .pop()
+            .expect("called serial::try_read with no expectation");
         match t {
             Mode::Read(word) => Ok(word),
             Mode::ReadError(error) => Err(error),
@@ -385,15 +387,15 @@ where
 {
     type Error = MockError;
 
-    fn write(&mut self, word: Word) -> nb::Result<(), Self::Error> {
+    fn try_write(&mut self, word: Word) -> nb::Result<(), Self::Error> {
         let t = self
             .pop()
-            .expect("called serial::write with no expectation");
+            .expect("called serial::try_write with no expectation");
 
         let assert_write = |expectation: Word| {
             assert_eq!(
                 expectation, word,
-                "serial::write expected to write {:?} but actually wrote {:?}",
+                "serial::try_write expected to write {:?} but actually wrote {:?}",
                 expectation, word
             );
         };
@@ -414,10 +416,10 @@ where
         }
     }
 
-    fn flush(&mut self) -> nb::Result<(), Self::Error> {
+    fn try_flush(&mut self) -> nb::Result<(), Self::Error> {
         let t = self
             .pop()
-            .expect("called serial::flush with no expectation");
+            .expect("called serial::try_flush with no expectation");
         match t {
             Mode::Flush => Ok(()),
             Mode::FlushError(error) => Err(error),
@@ -457,7 +459,7 @@ mod test {
     fn test_serial_mock_read() {
         let ts = [Transaction::read(0x54)];
         let mut ser = Mock::new(&ts);
-        let r = ser.read().expect("failed to read");
+        let r = ser.try_read().expect("failed to read");
         assert_eq!(r, 0x54);
         ser.done();
     }
@@ -466,7 +468,7 @@ mod test {
     fn test_serial_mock_write_single_value_nonblocking() {
         let ts = [Transaction::write(0xAB)];
         let mut ser = Mock::new(&ts);
-        ser.write(0xAB).unwrap();
+        ser.try_write(0xAB).unwrap();
         ser.done();
     }
 
@@ -474,9 +476,9 @@ mod test {
     fn test_serial_mock_write_many_values_nonblocking() {
         let ts = [Transaction::write_many([0xAB, 0xCD, 0xEF])];
         let mut ser = Mock::new(&ts);
-        ser.write(0xAB).unwrap();
-        ser.write(0xCD).unwrap();
-        ser.write(0xEF).unwrap();
+        ser.try_write(0xAB).unwrap();
+        ser.try_write(0xCD).unwrap();
+        ser.try_write(0xEF).unwrap();
         ser.done();
     }
 
@@ -494,16 +496,16 @@ mod test {
     fn test_serial_mock_blocking_write() {
         let ts = [Transaction::write_many([0xAB, 0xCD, 0xEF])];
         let mut ser = Mock::new(&ts);
-        ser.bwrite_all(&[0xAB, 0xCD, 0xEF]).unwrap();
+        ser.try_bwrite_all(&[0xAB, 0xCD, 0xEF]).unwrap();
         ser.done();
     }
 
     #[test]
-    #[should_panic(expected = "called serial::write with no expectation")]
+    #[should_panic(expected = "called serial::try_write with no expectation")]
     fn test_serial_mock_blocking_write_more_than_expected() {
         let ts = [Transaction::write_many([0xAB, 0xCD])];
         let mut ser = Mock::new(&ts);
-        ser.bwrite_all(&[0xAB, 0xCD, 0xEF]).unwrap();
+        ser.try_bwrite_all(&[0xAB, 0xCD, 0xEF]).unwrap();
         ser.done();
     }
 
@@ -512,23 +514,23 @@ mod test {
     fn test_serial_mock_blocking_write_not_enough() {
         let ts = [Transaction::write_many([0xAB, 0xCD, 0xEF, 0x00])];
         let mut ser = Mock::new(&ts);
-        ser.bwrite_all(&[0xAB, 0xCD, 0xEF]).unwrap();
+        ser.try_bwrite_all(&[0xAB, 0xCD, 0xEF]).unwrap();
         ser.done();
     }
 
     #[test]
-    #[should_panic(expected = "serial::write expected to write")]
+    #[should_panic(expected = "serial::try_write expected to write")]
     fn test_serial_mock_wrong_write() {
         let ts = [Transaction::write(0x12)];
         let mut ser = Mock::new(&ts);
-        ser.write(0x14).unwrap();
+        ser.try_write(0x14).unwrap();
     }
 
     #[test]
     fn test_serial_mock_flush() {
         let ts = [Transaction::flush()];
         let mut ser: Mock<u8> = Mock::new(&ts);
-        ser.flush().unwrap();
+        ser.try_flush().unwrap();
         ser.done();
     }
 
@@ -536,7 +538,7 @@ mod test {
     fn test_serial_mock_blocking_flush() {
         let ts = [Transaction::flush()];
         let mut ser: Mock<u8> = Mock::new(&ts);
-        ser.bflush().unwrap();
+        ser.try_bflush().unwrap();
         ser.done();
     }
 
@@ -553,7 +555,7 @@ mod test {
     fn test_serial_mock_reuse_pending_transactions() {
         let ts = [Transaction::read(0x54)];
         let mut ser = Mock::new(&ts);
-        let r = ser.read().expect("failed to read");
+        let r = ser.try_read().expect("failed to read");
         assert_eq!(r, 0x54);
         ser.done();
         ser.expect(&ts);
@@ -565,7 +567,7 @@ mod test {
     fn test_serial_mock_expected_read() {
         let ts = [Transaction::read(0x54)];
         let mut ser = Mock::new(&ts);
-        ser.bwrite_all(&[0x77]).unwrap();
+        ser.try_bwrite_all(&[0x77]).unwrap();
     }
 
     #[test]
@@ -573,7 +575,7 @@ mod test {
     fn test_serial_mock_expected_write() {
         let ts = [Transaction::write(0x54)];
         let mut ser = Mock::new(&ts);
-        ser.flush().unwrap();
+        ser.try_flush().unwrap();
     }
 
     #[test]
@@ -581,7 +583,7 @@ mod test {
     fn test_serial_mock_expected_flush() {
         let ts = [Transaction::flush()];
         let mut ser: Mock<u128> = Mock::new(&ts);
-        ser.read().unwrap();
+        ser.try_read().unwrap();
     }
 
     #[test]
@@ -589,7 +591,7 @@ mod test {
         let error = nb::Error::WouldBlock;
         let ts = [Transaction::read_error(error.clone())];
         let mut ser: Mock<u8> = Mock::new(&ts);
-        assert_eq!(ser.read().unwrap_err(), error);
+        assert_eq!(ser.try_read().unwrap_err(), error);
         ser.done();
     }
 
@@ -598,19 +600,19 @@ mod test {
         let error = nb::Error::Other(MockError::Io(io::ErrorKind::NotConnected));
         let ts = [Transaction::write_error(42, error.clone())];
         let mut ser: Mock<u8> = Mock::new(&ts);
-        assert_eq!(ser.write(42).unwrap_err(), error);
+        assert_eq!(ser.try_write(42).unwrap_err(), error);
         ser.done();
     }
 
     #[test]
-    #[should_panic(expected = "serial::write expected to write 42 but actually wrote 23")]
+    #[should_panic(expected = "serial::try_write expected to write 42 but actually wrote 23")]
     fn test_serial_mock_write_error_wrong_data() {
         let error = nb::Error::Other(MockError::Io(io::ErrorKind::NotConnected));
         let ts = [Transaction::write_error(42, error.clone())];
         let mut ser: Mock<u8> = Mock::new(&ts);
         // The data to be written should still be verified, even if there's an
         // error attached.
-        ser.write(23).unwrap();
+        ser.try_write(23).unwrap();
     }
 
     #[test]
@@ -618,7 +620,7 @@ mod test {
         let error = nb::Error::Other(MockError::Io(io::ErrorKind::TimedOut));
         let ts = [Transaction::flush_error(error.clone())];
         let mut ser: Mock<u8> = Mock::new(&ts);
-        assert_eq!(ser.flush().unwrap_err(), error);
+        assert_eq!(ser.try_flush().unwrap_err(), error);
         ser.done();
     }
 }

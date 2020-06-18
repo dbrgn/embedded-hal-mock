@@ -1,14 +1,14 @@
 //! Mock digital [`InputPin`] and [`OutputPin`] v2 implementations
 //!
-//! [`InputPin`]: https://docs.rs/embedded-hal/0.2/embedded_hal/digital/v2/trait.InputPin.html
-//! [`OutputPin`]: https://docs.rs/embedded-hal/0.2/embedded_hal/digital/v2/trait.OutputPin.html
+//! [`InputPin`]: https://docs.rs/embedded-hal/1.0.0-alpha.1/embedded_hal/digital/trait.InputPin.html
+//! [`OutputPin`]: https://docs.rs/embedded-hal/1.0.0-alpha.1/embedded_hal/digital/trait.OutputPin.html
 //!
 //! ```
 //! use std::io::ErrorKind;
 //!
 //! use embedded_hal_mock::MockError;
 //! use embedded_hal_mock::pin::{Transaction as PinTransaction, Mock as PinMock, State as PinState};
-//! use embedded_hal::digital::v2::{InputPin, OutputPin};
+//! use embedded_hal::digital::{InputPin, OutputPin};
 //!
 //! let err = MockError::Io(ErrorKind::NotConnected);
 //!
@@ -24,11 +24,11 @@
 //! let mut pin = PinMock::new(&expectations);
 //!
 //! // Run and test
-//! assert_eq!(pin.is_high().unwrap(), true);
-//! assert_eq!(pin.is_low().unwrap(), false);
+//! assert_eq!(pin.try_is_high().unwrap(), true);
+//! assert_eq!(pin.try_is_low().unwrap(), false);
 //!
-//! pin.set_low().unwrap();
-//! pin.set_high().expect_err("expected error return");
+//! pin.try_set_low().unwrap();
+//! pin.try_set_high().expect_err("expected error return");
 //!
 //! pin.done();
 //!
@@ -42,8 +42,8 @@
 use crate::common::Generic;
 use crate::error::MockError;
 
-use embedded_hal::digital::v2::{InputPin, OutputPin};
-use embedded_hal::PwmPin;
+use embedded_hal::digital::{InputPin, OutputPin};
+use embedded_hal::pwm::PwmPin;
 
 /// The type used for the duty of the [`PwmPin`] mock.
 pub type PwmDuty = u16;
@@ -170,13 +170,15 @@ impl OutputPin for Mock {
     type Error = MockError;
 
     /// Drives the pin low
-    fn set_low(&mut self) -> Result<(), Self::Error> {
-        let Transaction { kind, err } = self.next().expect("no expectation for pin::set_low call");
+    fn try_set_low(&mut self) -> Result<(), Self::Error> {
+        let Transaction { kind, err } = self
+            .next()
+            .expect("no expectation for pin::try_set_low call");
 
         assert_eq!(
             kind,
             TransactionKind::Set(State::Low),
-            "expected pin::set_low"
+            "expected pin::try_set_low"
         );
 
         match err {
@@ -186,13 +188,15 @@ impl OutputPin for Mock {
     }
 
     /// Drives the pin high
-    fn set_high(&mut self) -> Result<(), Self::Error> {
-        let Transaction { kind, err } = self.next().expect("no expectation for pin::set_high call");
+    fn try_set_high(&mut self) -> Result<(), Self::Error> {
+        let Transaction { kind, err } = self
+            .next()
+            .expect("no expectation for pin::try_set_high call");
 
         assert_eq!(
             kind,
             TransactionKind::Set(State::High),
-            "expected pin::set_high"
+            "expected pin::try_set_high"
         );
 
         match err {
@@ -207,10 +211,10 @@ impl InputPin for Mock {
     type Error = MockError;
 
     /// Is the input pin high?
-    fn is_high(&self) -> Result<bool, Self::Error> {
+    fn try_is_high(&self) -> Result<bool, Self::Error> {
         let mut s = self.clone();
 
-        let Transaction { kind, err } = s.next().expect("no expectation for pin::is_high call");
+        let Transaction { kind, err } = s.next().expect("no expectation for pin::try_is_high call");
 
         assert!(kind.is_get(), "expected pin::get");
 
@@ -224,10 +228,10 @@ impl InputPin for Mock {
     }
 
     /// Is the input pin low?
-    fn is_low(&self) -> Result<bool, Self::Error> {
+    fn try_is_low(&self) -> Result<bool, Self::Error> {
         let mut s = self.clone();
 
-        let Transaction { kind, err } = s.next().expect("no expectation for pin::is_low call");
+        let Transaction { kind, err } = s.next().expect("no expectation for pin::try_is_low call");
 
         assert!(kind.is_get(), "expected pin::get");
 
@@ -242,49 +246,52 @@ impl InputPin for Mock {
 }
 
 impl PwmPin for Mock {
+    type Error = MockError;
     type Duty = PwmDuty;
 
-    fn disable(&mut self) {
+    fn try_disable(&mut self) -> Result<(), MockError> {
         // Note: Error is being ignored, because method doesn't return a result
         let Transaction { kind, .. } = self.next().expect("no expectation for pin::disable call");
 
         assert_eq!(kind, TransactionKind::Disable, "expected pin::disable");
+        Ok(())
     }
 
-    fn enable(&mut self) {
+    fn try_enable(&mut self) -> Result<(), MockError> {
         // Note: Error is being ignored, because method doesn't return a result
         let Transaction { kind, .. } = self.next().expect("no expectation for pin::enable call");
 
         assert_eq!(kind, TransactionKind::Enable, "expected pin::enable");
+        Ok(())
     }
 
-    fn get_duty(&self) -> Self::Duty {
+    fn try_get_duty(&self) -> Result<Self::Duty, Self::Error> {
         let mut s = self.clone();
 
         // Note: Error is being ignored, because method doesn't return a result
         let Transaction { kind, .. } = s.next().expect("no expectation for pin::get_duty call");
 
         if let TransactionKind::GetDuty(duty) = kind {
-            duty
+            Ok(duty)
         } else {
             panic!("expected pin::get_duty");
         }
     }
 
-    fn get_max_duty(&self) -> Self::Duty {
+    fn try_get_max_duty(&self) -> Result<Self::Duty, Self::Error> {
         let mut s = self.clone();
 
         // Note: Error is being ignored, because method doesn't return a result
         let Transaction { kind, .. } = s.next().expect("no expectation for pin::get_max_duty call");
 
         if let TransactionKind::GetMaxDuty(max_duty) = kind {
-            max_duty
+            Ok(max_duty)
         } else {
             panic!("expected pin::get_max_duty");
         }
     }
 
-    fn set_duty(&mut self, duty: Self::Duty) {
+    fn try_set_duty(&mut self, duty: Self::Duty) -> Result<(), Self::Error> {
         // Note: Error is being ignored, because method doesn't return a result
         let Transaction { kind, .. } = self.next().expect("no expectation for pin::set_duty call");
 
@@ -293,6 +300,7 @@ impl PwmPin for Mock {
             TransactionKind::SetDuty(duty),
             "expected pin::set_duty"
         );
+        Ok(())
     }
 }
 
@@ -301,8 +309,8 @@ mod test {
     use std::io::ErrorKind;
 
     use crate::error::MockError;
-    use embedded_hal::digital::v2::{InputPin, OutputPin};
-    use embedded_hal::PwmPin;
+    use embedded_hal::digital::{InputPin, OutputPin};
+    use embedded_hal::pwm::PwmPin;
 
     use crate::pin::TransactionKind::{Disable, Enable, Get, GetDuty, GetMaxDuty, Set, SetDuty};
     use crate::pin::{Mock, State, Transaction};
@@ -318,12 +326,12 @@ mod test {
         ];
         let mut pin = Mock::new(&expectations);
 
-        assert_eq!(pin.is_high().unwrap(), true);
-        assert_eq!(pin.is_low().unwrap(), false);
-        assert_eq!(pin.is_high().unwrap(), false);
-        assert_eq!(pin.is_low().unwrap(), true);
+        assert_eq!(pin.try_is_high().unwrap(), true);
+        assert_eq!(pin.try_is_low().unwrap(), false);
+        assert_eq!(pin.try_is_high().unwrap(), false);
+        assert_eq!(pin.try_is_low().unwrap(), true);
 
-        pin.is_low().expect_err("expected error return");
+        pin.try_is_low().expect_err("expected error return");
 
         pin.done();
     }
@@ -337,10 +345,10 @@ mod test {
         ];
         let mut pin = Mock::new(&expectations);
 
-        pin.set_high().unwrap();
-        pin.set_low().unwrap();
+        pin.try_set_high().unwrap();
+        pin.try_set_low().unwrap();
 
-        pin.set_high().expect_err("expected error return");
+        pin.try_set_high().expect_err("expected error return");
 
         pin.done();
     }
@@ -357,11 +365,11 @@ mod test {
         ];
         let mut pin = Mock::new(&expectations);
 
-        pin.enable();
-        let max_duty = pin.get_max_duty();
-        pin.set_duty(max_duty);
-        assert_eq!(pin.get_duty(), expected_duty);
-        pin.disable();
+        pin.try_enable().unwrap();
+        let max_duty = pin.try_get_max_duty().unwrap();
+        pin.try_set_duty(max_duty).unwrap();
+        assert_eq!(pin.try_get_duty().unwrap(), expected_duty);
+        pin.try_disable().unwrap();
 
         pin.done();
     }
