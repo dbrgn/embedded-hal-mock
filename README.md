@@ -55,14 +55,20 @@ compile with older versions but that may change in any new patch release.
 
 ## Development Version of `embedded-hal`
 
-If you would like to use the current development version of `embedded-hal` (or any other version), 
-so long as they are API compatible you can use a patch field in your `Cargo.toml` file to override 
+If you would like to use the current development version of `embedded-hal` (or any other version),
+so long as they are API compatible you can use a patch field in your `Cargo.toml` file to override
 the dependency version.
 
 ```yaml
 [patch.crates-io]
 embedded-hal = { git = "https://github.com/rust-embedded/embedded-hal" }
 ```
+
+
+# Minimum Supported Rust Version (MSRV)
+
+This crate is guaranteed to compile on stable Rust 1.35 and up. It *might*
+compile with older versions but that may change in any new patch release.
 
 
 ## License
