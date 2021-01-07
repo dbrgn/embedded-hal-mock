@@ -22,3 +22,9 @@ edition = "2018"
 [dependencies]
 embedded-hal = { version = "0.2.3", features = ["unproven"] }
 nb = "0.1.1"
+
+[dependencies.void]
+version = "1.0.2"
+default-features = false
+[dev-dependencies.futures]
+version = "0.1.17"
