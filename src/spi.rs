@@ -45,7 +45,6 @@
 //! ```
 use embedded_hal::blocking::spi;
 use embedded_hal::spi::FullDuplex;
-use nb;
 
 use crate::common::Generic;
 use crate::error::MockError;

@@ -27,6 +27,12 @@ impl MockNoop {
     }
 }
 
+impl Default for MockNoop {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 macro_rules! impl_noop_delay_us {
     ($type:ty) => {
         impl delay::DelayUs<$type> for MockNoop {
@@ -62,6 +68,12 @@ impl StdSleep {
     /// Create a new `StdSleep` instance.
     pub fn new() -> Self {
         StdSleep
+    }
+}
+
+impl Default for StdSleep {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
