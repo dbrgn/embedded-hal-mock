@@ -1,6 +1,6 @@
 [package]
 name = "embedded-hal-mock"
-version = "0.7.2"
+version = "0.8.0"
 authors = ["Danilo Bargen <mail@dbrgn.ch>"]
 categories = ["embedded", "hardware-support", "development-tools::testing"]
 description = "A collection of mocked devices that implement the embedded-hal traits"
@@ -20,5 +20,5 @@ include = [
 edition = "2018"
 
 [dependencies]
-embedded-hal = { version = "0.2.3", features = ["unproven"] }
+embedded-hal = "=1.0.0-alpha.1"
 nb = "0.1.1"
