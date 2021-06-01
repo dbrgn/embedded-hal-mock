@@ -126,7 +126,7 @@ impl OutputPin for Mock {
         );
 
         match err {
-            Some(e) => Err(e.clone()),
+            Some(e) => Err(e),
             None => Ok(()),
         }
     }
@@ -142,7 +142,7 @@ impl OutputPin for Mock {
         );
 
         match err {
-            Some(e) => Err(e.clone()),
+            Some(e) => Err(e),
             None => Ok(()),
         }
     }
@@ -161,7 +161,7 @@ impl InputPin for Mock {
         assert_eq!(kind.is_get(), true, "expected pin::get");
 
         if let Some(e) = err {
-            Err(e.clone())
+            Err(e)
         } else if let TransactionKind::Get(v) = kind {
             Ok(v == State::High)
         } else {
@@ -178,7 +178,7 @@ impl InputPin for Mock {
         assert_eq!(kind.is_get(), true, "expected pin::get");
 
         if let Some(e) = err {
-            Err(e.clone())
+            Err(e)
         } else if let TransactionKind::Get(v) = kind {
             Ok(v == State::Low)
         } else {

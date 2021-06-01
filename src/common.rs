@@ -44,7 +44,7 @@ where
     where
         E: IntoIterator<Item = &'a T>,
     {
-        let v: Vec<T> = expected.into_iter().map(|v| v.clone()).collect();
+        let v: Vec<T> = expected.into_iter().cloned().collect();
         let mut e = self.expected.lock().unwrap();
         e.0 = 0;
         e.1 = v;
@@ -82,7 +82,7 @@ where
     fn next(&mut self) -> Option<Self::Item> {
         let mut e = self.expected.lock().unwrap();
         e.0 += 1;
-        e.1.get(e.0 - 1).map(|v| v.clone())
+        e.1.get(e.0 - 1).cloned()
     }
 }
 

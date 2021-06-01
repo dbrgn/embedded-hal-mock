@@ -365,7 +365,7 @@ where
     fn read(&mut self) -> nb::Result<Word, Self::Error> {
         let t = self.pop().expect("called serial::read with no expectation");
         match t {
-            Mode::Read(word) => Ok(word.clone()),
+            Mode::Read(word) => Ok(word),
             Mode::ReadError(error) => Err(error),
             other => panic!(
                 "expected to perform a serial transaction '{:?}', but instead did a read",
@@ -473,6 +473,16 @@ mod test {
         ser.write(0xAB).unwrap();
         ser.write(0xCD).unwrap();
         ser.write(0xEF).unwrap();
+        ser.done();
+    }
+
+    #[test]
+    fn test_serial_mock_read_many_values_nonblocking() {
+        let ts = [Transaction::read_many([0xAB, 0xCD, 0xEF])];
+        let mut ser = Mock::new(&ts);
+        assert_eq!(0xAB, ser.read().unwrap());
+        assert_eq!(0xCD, ser.read().unwrap());
+        assert_eq!(0xEF, ser.read().unwrap());
         ser.done();
     }
 
