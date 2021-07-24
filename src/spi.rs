@@ -13,7 +13,7 @@
 //!
 //! use embedded_hal::blocking::spi::{Transfer, Write};
 //! use embedded_hal_mock::spi::{Mock as SpiMock, Transaction as SpiTransaction};
-//! use embedded_hal::spi::FullDuplex;
+//! use embedded_hal::nb::spi::FullDuplex;
 //!
 //! // Configure expectations
 //! let expectations = [
@@ -27,24 +27,24 @@
 //!
 //! let mut spi = SpiMock::new(&expectations);
 //! // FullDuplex transfers
-//! spi.send(0x09);
-//! assert_eq!(spi.read().unwrap(), 0x0A);
-//! spi.send(0xFE);
-//! assert_eq!(spi.read().unwrap(), 0xFF);
+//! FullDuplex::write(&mut spi, 0x09);
+//! assert_eq!(FullDuplex::read(&mut spi).unwrap(), 0x0A);
+//! FullDuplex::write(&mut spi, 0xFE);
+//! assert_eq!(FullDuplex::read(&mut spi).unwrap(), 0xFF);
 //!
 //! // Writing
-//! spi.write(&vec![1, 2]).unwrap();
+//! Write::write(&mut spi, &vec![1, 2]).unwrap();
 //!
 //! // Transferring
 //! let mut buf = vec![3, 4];
-//! spi.transfer(&mut buf).unwrap();
+//! Transfer::transfer(&mut spi, &mut buf).unwrap();
 //! assert_eq!(buf, vec![5, 6]);
 //!
 //! // Finalise expectations
 //! spi.done();
 //! ```
 use embedded_hal::blocking::spi;
-use embedded_hal::spi::FullDuplex;
+use embedded_hal::nb::spi::FullDuplex;
 
 use crate::common::Generic;
 use crate::error::MockError;
@@ -136,36 +136,6 @@ impl spi::Write<u8> for Mock {
     }
 }
 
-impl FullDuplex<u8> for Mock {
-    type Error = MockError;
-    /// spi::FullDuplex implementeation for Mock
-    ///
-    /// This will call the nonblocking read/write primitives.
-    fn send(&mut self, buffer: u8) -> nb::Result<(), Self::Error> {
-        let data = self.next().expect("no expectation for spi::send call");
-        assert_eq!(data.expected_mode, Mode::Send, "spi::send unexpected mode");
-        assert_eq!(
-            data.expected_data[0], buffer,
-            "spi::send data does not match expectation"
-        );
-        Ok(())
-    }
-
-    /// spi::FullDuplex implementeation for Mock
-    ///
-    /// This will call the nonblocking read/write primitives.
-    fn read(&mut self) -> nb::Result<u8, Self::Error> {
-        let w = self.next().expect("no expectation for spi::read call");
-        assert_eq!(w.expected_mode, Mode::Read, "spi::Read unexpected mode");
-        assert_eq!(
-            1,
-            w.response.len(),
-            "mismatched response length for spi::read"
-        );
-        let buffer: u8 = w.response[0];
-        Ok(buffer)
-    }
-}
 impl spi::Transfer<u8> for Mock {
     type Error = MockError;
 
@@ -193,6 +163,37 @@ impl spi::Transfer<u8> for Mock {
     }
 }
 
+impl FullDuplex<u8> for Mock {
+    type Error = MockError;
+    /// spi::FullDuplex implementeation for Mock
+    ///
+    /// This will call the nonblocking read/write primitives.
+    fn write(&mut self, buffer: u8) -> nb::Result<(), Self::Error> {
+        let data = self.next().expect("no expectation for spi::send call");
+        assert_eq!(data.expected_mode, Mode::Send, "spi::send unexpected mode");
+        assert_eq!(
+            data.expected_data[0], buffer,
+            "spi::send data does not match expectation"
+        );
+        Ok(())
+    }
+
+    /// spi::FullDuplex implementeation for Mock
+    ///
+    /// This will call the nonblocking read/write primitives.
+    fn read(&mut self) -> nb::Result<u8, Self::Error> {
+        let w = self.next().expect("no expectation for spi::read call");
+        assert_eq!(w.expected_mode, Mode::Read, "spi::Read unexpected mode");
+        assert_eq!(
+            1,
+            w.response.len(),
+            "mismatched response length for spi::read"
+        );
+        let buffer: u8 = w.response[0];
+        Ok(buffer)
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -203,7 +204,7 @@ mod test {
     fn test_spi_mock_send() {
         let mut spi = Mock::new(&[Transaction::send(10)]);
 
-        let _ = spi.send(10).unwrap();
+        let _ = FullDuplex::write(&mut spi, 10).unwrap();
 
         spi.done();
     }
@@ -212,7 +213,7 @@ mod test {
     fn test_spi_mock_read() {
         let mut spi = Mock::new(&[Transaction::read(10)]);
 
-        let ans = spi.read().unwrap();
+        let ans = FullDuplex::read(&mut spi).unwrap();
 
         assert_eq!(ans, 10);
 
@@ -231,14 +232,14 @@ mod test {
         ];
         let mut spi = Mock::new(&expectations);
 
-        spi.write(&vec![1, 2]).unwrap();
+        Write::write(&mut spi, &vec![1, 2]).unwrap();
 
-        let _ = spi.send(0x09);
-        assert_eq!(spi.read().unwrap(), 0x0a);
-        let _ = spi.send(0xfe);
-        assert_eq!(spi.read().unwrap(), 0xFF);
+        let _ = FullDuplex::write(&mut spi, 0x09);
+        assert_eq!(FullDuplex::read(&mut spi).unwrap(), 0x0a);
+        let _ = FullDuplex::write(&mut spi, 0xfe);
+        assert_eq!(FullDuplex::read(&mut spi).unwrap(), 0xFF);
         let mut v = vec![3, 4];
-        spi.transfer(&mut v).unwrap();
+        Transfer::transfer(&mut spi, &mut v).unwrap();
 
         assert_eq!(v, vec![5, 6]);
 
@@ -250,7 +251,7 @@ mod test {
         let expectations = [Transaction::write(vec![10, 12])];
         let mut spi = Mock::new(&expectations);
 
-        spi.write(&vec![10, 12]).unwrap();
+        Write::write(&mut spi, &vec![10, 12]).unwrap();
 
         spi.done();
     }
@@ -261,7 +262,7 @@ mod test {
         let mut spi = Mock::new(&expectations);
 
         let mut v = vec![10, 12];
-        spi.transfer(&mut v).unwrap();
+        Transfer::transfer(&mut spi, &mut v).unwrap();
 
         assert_eq!(v, vec![12, 13]);
 
@@ -276,10 +277,10 @@ mod test {
         ];
         let mut spi = Mock::new(&expectations);
 
-        spi.write(&vec![1, 2]).unwrap();
+        Write::write(&mut spi, &vec![1, 2]).unwrap();
 
         let mut v = vec![3, 4];
-        spi.transfer(&mut v).unwrap();
+        Transfer::transfer(&mut spi, &mut v).unwrap();
 
         assert_eq!(v, vec![5, 6]);
 
@@ -292,7 +293,7 @@ mod test {
         let expectations = [Transaction::write(vec![10, 12])];
         let mut spi = Mock::new(&expectations);
 
-        spi.write(&vec![10, 12, 12]).unwrap();
+        Write::write(&mut spi, &vec![10, 12, 12]).unwrap();
 
         spi.done();
     }
@@ -304,7 +305,7 @@ mod test {
         let mut spi = Mock::new(&expectations);
 
         let mut v = vec![10, 12];
-        spi.transfer(&mut v).unwrap();
+        Transfer::transfer(&mut spi, &mut v).unwrap();
 
         assert_eq!(v, vec![12, 13]);
 
@@ -318,7 +319,7 @@ mod test {
         let mut spi = Mock::new(&expectations);
 
         let mut v = vec![10, 12];
-        spi.transfer(&mut v).unwrap();
+        Transfer::transfer(&mut spi, &mut v).unwrap();
 
         assert_eq!(v, vec![12, 13]);
 
@@ -331,7 +332,7 @@ mod test {
         let expectations = [Transaction::transfer(vec![10, 12], vec![])];
         let mut spi = Mock::new(&expectations);
 
-        spi.write(&vec![10, 12, 12]).unwrap();
+        Write::write(&mut spi, &vec![10, 12, 12]).unwrap();
 
         spi.done();
     }
@@ -345,7 +346,7 @@ mod test {
         ];
         let mut spi = Mock::new(&expectations);
 
-        spi.write(&vec![10, 12, 12]).unwrap();
+        Write::write(&mut spi, &vec![10, 12, 12]).unwrap();
 
         spi.done();
     }

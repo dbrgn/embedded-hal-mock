@@ -12,6 +12,7 @@
 //! [`std::thread::sleep`](https://doc.rust-lang.org/std/thread/fn.sleep.html)
 //! to implement the delay.
 
+use std::convert::Infallible;
 use std::thread;
 use std::time::Duration;
 
@@ -36,8 +37,11 @@ impl Default for MockNoop {
 macro_rules! impl_noop_delay_us {
     ($type:ty) => {
         impl delay::DelayUs<$type> for MockNoop {
+            type Error = Infallible;
             /// A no-op delay implementation.
-            fn delay_us(&mut self, _n: $type) {}
+            fn delay_us(&mut self, _n: $type) -> Result<(), Infallible> {
+                Ok(())
+            }
         }
     };
 }
@@ -50,8 +54,11 @@ impl_noop_delay_us!(u64);
 macro_rules! impl_noop_delay_ms {
     ($type:ty) => {
         impl delay::DelayMs<$type> for MockNoop {
+            type Error = Infallible;
             /// A no-op delay implementation.
-            fn delay_ms(&mut self, _n: $type) {}
+            fn delay_ms(&mut self, _n: $type) -> Result<(), Infallible> {
+                Ok(())
+            }
         }
     };
 }
@@ -80,9 +87,12 @@ impl Default for StdSleep {
 macro_rules! impl_stdsleep_delay_us {
     ($type:ty) => {
         impl delay::DelayUs<$type> for StdSleep {
+            type Error = Infallible;
+
             /// A `Delay` implementation that uses `std::thread::sleep`.
-            fn delay_us(&mut self, n: $type) {
+            fn delay_us(&mut self, n: $type) -> Result<(), Infallible> {
                 thread::sleep(Duration::from_micros(n as u64));
+                Ok(())
             }
         }
     };
@@ -96,9 +106,12 @@ impl_stdsleep_delay_us!(u64);
 macro_rules! impl_stdsleep_delay_ms {
     ($type:ty) => {
         impl delay::DelayMs<$type> for StdSleep {
+            type Error = Infallible;
+
             /// A `Delay` implementation that uses `std::thread::sleep`.
-            fn delay_ms(&mut self, n: $type) {
+            fn delay_ms(&mut self, n: $type) -> Result<(), Infallible> {
                 thread::sleep(Duration::from_millis(n as u64));
+                Ok(())
             }
         }
     };
