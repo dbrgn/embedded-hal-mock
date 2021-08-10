@@ -26,6 +26,7 @@ This crate requires Rust 1.31+!
 - [x] Serial
 - [ ] RNG
 - [x] I/O pins
+- [x] ADC
 - [ ] Timers
 - [ ] ...
 
