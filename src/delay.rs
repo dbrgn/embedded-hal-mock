@@ -16,7 +16,7 @@ use core::convert::Infallible;
 use std::thread;
 use std::time::Duration;
 
-use embedded_hal::blocking::delay;
+use embedded_hal::delay::blocking as delay;
 
 /// A `Delay` implementation that does not actually block.
 pub struct NoopDelay;
@@ -34,41 +34,14 @@ impl Default for NoopDelay {
     }
 }
 
-macro_rules! impl_noop_delay_us {
-    ($type:ty) => {
-        impl delay::DelayUs<$type> for NoopDelay {
-            type Error = Infallible;
+impl delay::DelayUs for NoopDelay {
+    type Error = Infallible;
 
-            /// A no-op delay implementation.
-            fn try_delay_us(&mut self, _n: $type) -> Result<(), Self::Error> {
-                Ok(())
-            }
-        }
-    };
+    /// A no-op delay implementation.
+    fn delay_us(&mut self, _n: u32) -> Result<(), Self::Error> {
+        Ok(())
+    }
 }
-
-impl_noop_delay_us!(u8);
-impl_noop_delay_us!(u16);
-impl_noop_delay_us!(u32);
-impl_noop_delay_us!(u64);
-
-macro_rules! impl_noop_delay_ms {
-    ($type:ty) => {
-        impl delay::DelayMs<$type> for NoopDelay {
-            type Error = Infallible;
-
-            /// A no-op delay implementation.
-            fn try_delay_ms(&mut self, _n: $type) -> Result<(), Self::Error> {
-                Ok(())
-            }
-        }
-    };
-}
-
-impl_noop_delay_ms!(u8);
-impl_noop_delay_ms!(u16);
-impl_noop_delay_ms!(u32);
-impl_noop_delay_ms!(u64);
 
 /// A `Delay` implementation that uses `std::thread::sleep`.
 pub struct StdSleep;
@@ -86,40 +59,12 @@ impl Default for StdSleep {
     }
 }
 
-macro_rules! impl_stdsleep_delay_us {
-    ($type:ty) => {
-        impl delay::DelayUs<$type> for StdSleep {
-            type Error = Infallible;
+impl delay::DelayUs for StdSleep {
+    type Error = Infallible;
 
-            /// A `Delay` implementation that uses `std::thread::sleep`.
-            fn try_delay_us(&mut self, n: $type) -> Result<(), Self::Error> {
-                thread::sleep(Duration::from_micros(n as u64));
-                Ok(())
-            }
-        }
-    };
+    /// A `Delay` implementation that uses `std::thread::sleep`.
+    fn delay_us(&mut self, n: u32) -> Result<(), Self::Error> {
+        thread::sleep(Duration::from_micros(n as u64));
+        Ok(())
+    }
 }
-
-impl_stdsleep_delay_us!(u8);
-impl_stdsleep_delay_us!(u16);
-impl_stdsleep_delay_us!(u32);
-impl_stdsleep_delay_us!(u64);
-
-macro_rules! impl_stdsleep_delay_ms {
-    ($type:ty) => {
-        impl delay::DelayMs<$type> for StdSleep {
-            type Error = Infallible;
-
-            /// A `Delay` implementation that uses `std::thread::sleep`.
-            fn try_delay_ms(&mut self, n: $type) -> Result<(), Self::Error> {
-                thread::sleep(Duration::from_millis(n as u64));
-                Ok(())
-            }
-        }
-    };
-}
-
-impl_stdsleep_delay_ms!(u8);
-impl_stdsleep_delay_ms!(u16);
-impl_stdsleep_delay_ms!(u32);
-impl_stdsleep_delay_ms!(u64);

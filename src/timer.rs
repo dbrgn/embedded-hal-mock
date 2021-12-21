@@ -7,23 +7,23 @@
 //! # Usage
 //!
 //! ```rust
-//! use embedded_hal::timer::CountDown;
+//! use embedded_hal::timer::nb::CountDown;
 //! use embedded_time::duration::*;
 //! use embedded_hal_mock::timer::MockClock;
 //!
 //! let mut clock = MockClock::new();
 //! let mut timer = clock.get_timer();
-//! timer.try_start(100.nanoseconds());
+//! timer.start(100.nanoseconds());
 //! // hand over timer to embedded-hal based driver
 //! // continue to tick clock
 //! clock.tick(50.nanoseconds());
-//! assert_eq!(timer.try_wait(), Err(nb::Error::WouldBlock));
+//! assert_eq!(timer.wait(), Err(nb::Error::WouldBlock));
 //! clock.tick(50.nanoseconds());
-//! assert_eq!(timer.try_wait(), Ok(()));
+//! assert_eq!(timer.wait(), Ok(()));
 //! clock.tick(50.nanoseconds());
-//! assert_eq!(timer.try_wait(), Err(nb::Error::WouldBlock));
+//! assert_eq!(timer.wait(), Err(nb::Error::WouldBlock));
 //! clock.tick(50.nanoseconds());
-//! assert_eq!(timer.try_wait(), Ok(()));
+//! assert_eq!(timer.wait(), Ok(()));
 //! ```
 
 use std::sync::{
@@ -32,7 +32,8 @@ use std::sync::{
 };
 use void::Void;
 
-use embedded_hal::timer::{Cancel, CountDown, Periodic};
+use embedded_hal::timer::nb::{Cancel, CountDown};
+use embedded_hal::timer::Periodic;
 pub use embedded_time::Clock;
 use embedded_time::{clock, duration::*, fraction::Fraction, Instant};
 
@@ -105,7 +106,7 @@ impl CountDown for MockTimer {
     type Time = Nanoseconds<u64>;
     type Error = Void;
 
-    fn try_start<T>(&mut self, count: T) -> Result<(), Self::Error>
+    fn start<T>(&mut self, count: T) -> Result<(), Self::Error>
     where
         T: Into<Self::Time>,
     {
@@ -116,7 +117,7 @@ impl CountDown for MockTimer {
         Ok(())
     }
 
-    fn try_wait(&mut self) -> nb::Result<(), Void> {
+    fn wait(&mut self) -> nb::Result<(), Void> {
         let now = self.clock.try_now().unwrap();
         if self.started && now >= self.expiration {
             self.expiration = now + self.duration;
@@ -130,7 +131,7 @@ impl CountDown for MockTimer {
 impl Periodic for MockTimer {}
 
 impl Cancel for MockTimer {
-    fn try_cancel(&mut self) -> Result<(), Self::Error> {
+    fn cancel(&mut self) -> Result<(), Self::Error> {
         self.started = false;
         Ok(())
     }
@@ -144,14 +145,14 @@ mod test {
     fn count_down() {
         let mut clock = MockClock::new();
         let mut timer = clock.get_timer();
-        timer.try_start(100.nanoseconds()).unwrap();
+        timer.start(100.nanoseconds()).unwrap();
         clock.tick(50.nanoseconds());
-        assert_eq!(timer.try_wait(), Err(nb::Error::WouldBlock));
+        assert_eq!(timer.wait(), Err(nb::Error::WouldBlock));
         clock.tick(50.nanoseconds());
-        assert_eq!(timer.try_wait(), Ok(()));
+        assert_eq!(timer.wait(), Ok(()));
         clock.tick(50.nanoseconds());
-        assert_eq!(timer.try_wait(), Err(nb::Error::WouldBlock));
+        assert_eq!(timer.wait(), Err(nb::Error::WouldBlock));
         clock.tick(50.nanoseconds());
-        assert_eq!(timer.try_wait(), Ok(()));
+        assert_eq!(timer.wait(), Ok(()));
     }
 }
