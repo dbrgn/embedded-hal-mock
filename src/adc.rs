@@ -3,7 +3,7 @@
 //! ## Usage
 //!
 //! ```
-//! use embedded_hal::adc::OneShot;
+//! use embedded_hal::adc::nb::OneShot;
 //! use embedded_hal_mock::adc::Mock;
 //! use embedded_hal_mock::adc::Transaction;
 //! use embedded_hal_mock::adc::{MockChan0, MockChan1};
@@ -28,7 +28,7 @@
 //! Attach an error to test error handling. An error is returned when such a transaction is executed.
 //!
 //! ```
-//! use embedded_hal::adc::OneShot;
+//! use embedded_hal::adc::nb::OneShot;
 //! use embedded_hal_mock::adc::Mock;
 //! use embedded_hal_mock::adc::Transaction;
 //! use embedded_hal_mock::adc::MockChan1;
@@ -49,8 +49,8 @@
 //! adc.done();
 //! ```
 
-use embedded_hal::adc::Channel;
-use embedded_hal::adc::OneShot;
+use embedded_hal::adc::nb::Channel;
+use embedded_hal::adc::nb::OneShot;
 use nb;
 use std::fmt::Debug;
 
@@ -100,7 +100,7 @@ macro_rules! mock_channel {
             impl Channel<$ADC> for $pin {
                 type ID = u8;
 
-                fn channel() -> u8 { $chan }
+                fn channel(&self) -> u8 { $chan }
             }
         )+
     };
@@ -126,9 +126,9 @@ where
 {
     type Error = MockError;
 
-    fn read(&mut self, _pin: &mut Pin) -> nb::Result<T, Self::Error> {
+    fn read(&mut self, pin: &mut Pin) -> nb::Result<T, Self::Error> {
         let w = self.next().expect("unexpected read call");
-        assert_eq!(w.expected_chan, Pin::channel(), "unexpected channel");
+        assert_eq!(w.expected_chan, pin.channel(), "unexpected channel");
         match w.err {
             Some(e) => Err(nb::Error::Other(e)),
             None => Ok(w.response),
@@ -138,7 +138,7 @@ where
 
 #[cfg(test)]
 mod test {
-    use embedded_hal::adc::OneShot;
+    use embedded_hal::adc::nb::OneShot;
 
     use crate::adc::{Mock, MockChan0, MockChan1, MockChan2, Transaction};
     use crate::MockError;
