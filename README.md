@@ -4,6 +4,11 @@
 ![Minimum Rust Version][min-rust-badge]
 [![Crates.io Version][version-badge]][crates-io]
 
+_(Note: This create currently targets the latest stable version of embedded-hal.
+If you're looking for a version that's compatible with the 1.0.0 alpha of
+embedded-hal, check out the [`1-alpha`
+branch](https://github.com/dbrgn/embedded-hal-mock/tree/1-alpha).)_
+
 This is a collection of types that implement the embedded-hal traits.
 
 The implementations never access real hardware. Instead, the hardware is mocked
