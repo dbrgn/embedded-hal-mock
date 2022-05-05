@@ -193,11 +193,35 @@ impl spi::Transfer<u8> for Mock {
     }
 }
 
+impl spi::WriteIter<u8> for Mock {
+    type Error = MockError;
+
+    fn write_iter<WI>(&mut self, words: WI) -> Result<(), Self::Error>
+    where
+        WI: IntoIterator<Item = u8>,
+    {
+        let w = self
+            .next()
+            .expect("no expectation for spi::write_iter call");
+        let buffer = words.into_iter().collect::<Vec<_>>();
+        assert_eq!(
+            w.expected_mode,
+            Mode::Write,
+            "spi::write_iter unexpected mode"
+        );
+        assert_eq!(
+            &w.expected_data, &buffer,
+            "spi::write data does not match expectation"
+        );
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
 
-    use embedded_hal::blocking::spi::{Transfer, Write};
+    use embedded_hal::blocking::spi::{Transfer, Write, WriteIter};
 
     #[test]
     fn test_spi_mock_send() {
@@ -256,6 +280,16 @@ mod test {
     }
 
     #[test]
+    fn test_spi_mock_write_iter() {
+        let expectations = [Transaction::write(vec![10, 12])];
+        let mut spi = Mock::new(&expectations);
+
+        spi.write_iter(vec![10, 12u8]).unwrap();
+
+        spi.done();
+    }
+
+    #[test]
     fn test_spi_mock_transfer() {
         let expectations = [Transaction::transfer(vec![10, 12], vec![12, 13])];
         let mut spi = Mock::new(&expectations);
@@ -293,6 +327,17 @@ mod test {
         let mut spi = Mock::new(&expectations);
 
         spi.write(&vec![10, 12, 12]).unwrap();
+
+        spi.done();
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_spi_mock_write_iter_err() {
+        let expectations = [Transaction::write(vec![10, 12])];
+        let mut spi = Mock::new(&expectations);
+
+        spi.write_iter(vec![10, 12, 12u8]).unwrap();
 
         spi.done();
     }
