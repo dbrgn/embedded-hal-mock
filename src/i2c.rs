@@ -244,6 +244,39 @@ impl i2c::WriteRead for Mock {
     }
 }
 
+impl i2c::WriteIterRead for Mock {
+    type Error = MockError;
+
+    fn write_iter_read<B>(
+        &mut self,
+        address: u8,
+        bytes: B,
+        buffer: &mut [u8],
+    ) -> Result<(), Self::Error>
+    where
+        B: IntoIterator<Item = u8>,
+    {
+        // Just collect the bytes and pass them on to the WriteRead::write_read implementation
+        use i2c::WriteRead;
+        let bytes: Vec<_> = bytes.into_iter().collect();
+        self.write_read(address, bytes.as_slice(), buffer)
+    }
+}
+
+impl i2c::WriteIter for Mock {
+    type Error = MockError;
+
+    fn write<B>(&mut self, address: u8, bytes: B) -> Result<(), Self::Error>
+    where
+        B: IntoIterator<Item = u8>,
+    {
+        // Just collect the bytes and pass them on to the Write::write implementation
+        use i2c::Write;
+        let bytes: Vec<_> = bytes.into_iter().collect();
+        Write::write(self, address, bytes.as_slice())
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
