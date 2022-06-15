@@ -257,7 +257,7 @@ impl i2c::WriteIterRead for Mock {
         B: IntoIterator<Item = u8>,
     {
         // Just collect the bytes and pass them on to the WriteRead::write_read implementation
-        use i2c::WriteRead;
+        use embedded_hal::blocking::i2c::WriteRead;
         let bytes: Vec<_> = bytes.into_iter().collect();
         self.write_read(address, bytes.as_slice(), buffer)
     }
@@ -271,7 +271,7 @@ impl i2c::WriteIter for Mock {
         B: IntoIterator<Item = u8>,
     {
         // Just collect the bytes and pass them on to the Write::write implementation
-        use i2c::Write;
+        use embedded_hal::blocking::i2c::Write;
         let bytes: Vec<_> = bytes.into_iter().collect();
         Write::write(self, address, bytes.as_slice())
     }
