@@ -42,7 +42,10 @@
 use crate::common::Generic;
 use crate::error::MockError;
 
-use embedded_hal::digital::blocking::{InputPin, OutputPin};
+use embedded_hal::digital::{
+    blocking::{InputPin, OutputPin},
+    ErrorType,
+};
 
 /// MockPin transaction
 #[derive(PartialEq, Clone, Debug)]
@@ -110,11 +113,12 @@ impl TransactionKind {
 /// Mock Pin implementation
 pub type Mock = Generic<Transaction>;
 
+impl ErrorType for Mock {
+    type Error = MockError;
+}
+
 /// Single digital push-pull output pin
 impl OutputPin for Mock {
-    /// Error type
-    type Error = MockError;
-
     /// Drives the pin low
     fn set_low(&mut self) -> Result<(), Self::Error> {
         let Transaction { kind, err } = self.next().expect("no expectation for pin::set_low call");
@@ -149,9 +153,6 @@ impl OutputPin for Mock {
 }
 
 impl InputPin for Mock {
-    /// Error type
-    type Error = MockError;
-
     /// Is the input pin high?
     fn is_high(&self) -> Result<bool, Self::Error> {
         let mut s = self.clone();

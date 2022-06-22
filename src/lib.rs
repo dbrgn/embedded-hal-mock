@@ -20,7 +20,6 @@
 mod error;
 pub use crate::error::MockError;
 
-pub mod adc;
 pub mod common;
 pub mod delay;
 pub mod i2c;
