@@ -63,9 +63,11 @@ pub enum Mode {
     TransferInplace,
     /// After a write transaction in real HW a Read is available
     Read,
-    /// Mark the start of a transaction
+    /// Flush transaction
+    Flush,
+    /// Mark the start of a group of transactions
     TransactionStart,
-    /// Mark the end of a transaction
+    /// Mark the end of a group of transactions
     TransactionEnd,
 }
 
@@ -125,6 +127,15 @@ impl Transaction {
         }
     }
 
+    /// Create flush transaction
+    pub fn flush() -> Transaction {
+        Transaction {
+            expected_mode: Mode::Flush,
+            expected_data: Vec::new(),
+            response: Vec::new(),
+        }
+    }
+
     /// Create nested transactions
     pub fn transaction_start() -> Transaction {
         Transaction {
@@ -160,6 +171,8 @@ impl ErrorType for Mock {
 
 impl SpiBusFlush for Mock {
     fn flush(&mut self) -> Result<(), Self::Error> {
+        let w = self.next().expect("no expectation for spi::flush call");
+        assert_eq!(w.expected_mode, Mode::Flush, "spi::flush unexpected mode");
         Ok(())
     }
 }
@@ -344,6 +357,13 @@ mod test {
 
         assert_eq!(buff, [10]);
 
+        spi.done();
+    }
+
+    #[test]
+    fn test_spi_mock_flush() {
+        let mut spi = Mock::new(&[Transaction::flush()]);
+        spi.flush().unwrap();
         spi.done();
     }
 
