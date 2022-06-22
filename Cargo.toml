@@ -21,11 +21,5 @@ edition = "2021"
 rust-version = "1.60"
 
 [dependencies]
-embedded-hal = "=1.0.0-alpha.6"
-embedded-time = { version = "0.12", optional = true }
-void = { version = "^1.0", optional = true }
+embedded-hal = "=1.0.0-alpha.8"
 nb = "0.1.1"
-
-[features]
-default = ["embedded-time"]
-embedded-time = ["dep:embedded-time", "dep:void"]

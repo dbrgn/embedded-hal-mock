@@ -148,8 +148,8 @@ use std::{
 };
 
 use embedded_hal::serial::nb as serial;
-
 use embedded_hal::serial::ErrorKind;
+use embedded_hal::serial::ErrorType;
 
 use crate::common::DoneCallDetector;
 
@@ -361,12 +361,14 @@ impl<Word: Clone> Mock<Word> {
     }
 }
 
+impl<Word> ErrorType for Mock<Word> {
+    type Error = ErrorKind;
+}
+
 impl<Word> serial::Read<Word> for Mock<Word>
 where
-    Word: Clone + std::fmt::Debug,
+    Word: Copy + Clone + std::fmt::Debug,
 {
-    type Error = ErrorKind;
-
     fn read(&mut self) -> nb::Result<Word, Self::Error> {
         let t = self.pop().expect("called serial::read with no expectation");
         match t {
@@ -382,10 +384,8 @@ where
 
 impl<Word> serial::Write<Word> for Mock<Word>
 where
-    Word: PartialEq + std::fmt::Debug + Clone,
+    Word: PartialEq + std::fmt::Debug + Copy + Clone,
 {
-    type Error = ErrorKind;
-
     fn write(&mut self, word: Word) -> nb::Result<(), Self::Error> {
         let t = self
             .pop()
@@ -432,10 +432,8 @@ where
 
 impl<Word> embedded_hal::serial::blocking::Write<Word> for Mock<Word>
 where
-    Word: PartialEq + std::fmt::Debug + Clone,
+    Word: PartialEq + std::fmt::Debug + Clone + Copy,
 {
-    type Error = ErrorKind;
-
     fn write(&mut self, buffer: &[Word]) -> Result<(), Self::Error> {
         for word in buffer {
             nb::block!(serial::Write::write(self, word.clone()))?;

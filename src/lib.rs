@@ -26,12 +26,9 @@
 mod error;
 pub use crate::error::MockError;
 
-pub mod adc;
 pub mod common;
 pub mod delay;
 pub mod i2c;
 pub mod pin;
 pub mod serial;
 pub mod spi;
-#[cfg(feature = "embedded-time")]
-pub mod timer;
