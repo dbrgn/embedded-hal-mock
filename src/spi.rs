@@ -247,7 +247,7 @@ impl spi::SpiBusRead<u8> for Mock {
         assert_eq!(
             buffer.len(),
             w.response.len(),
-            "i2c:read mismatched response length"
+            "spi:read mismatched response length"
         );
         buffer.copy_from_slice(&w.response);
         Ok(())
