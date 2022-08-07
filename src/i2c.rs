@@ -7,7 +7,8 @@
 //! extern crate embedded_hal_mock;
 //!
 //! use embedded_hal::i2c::ErrorKind;
-//! use embedded_hal::i2c::blocking::{Read, Write, WriteRead};
+//! use embedded_hal::i2c::blocking::I2c;
+//! use embedded_hal::i2c::blocking::Operation;
 //! use embedded_hal_mock::i2c::{Mock as I2cMock, Transaction as I2cTransaction};
 //!
 //! // Configure expectations
@@ -46,7 +47,7 @@
 //! ```
 //! # extern crate embedded_hal;
 //! # extern crate embedded_hal_mock;
-//! # use embedded_hal::i2c::blocking::{Read, Write, WriteRead};
+//! # use embedded_hal::i2c::blocking::I2c;
 //! # use embedded_hal::i2c::ErrorKind;
 //! # use embedded_hal_mock::i2c::{Mock as I2cMock, Transaction as I2cTransaction};
 //!
@@ -71,6 +72,7 @@
 
 use embedded_hal::i2c::blocking as i2c;
 use embedded_hal::i2c::ErrorKind;
+use embedded_hal::i2c::ErrorType;
 
 use crate::common::Generic;
 
@@ -83,6 +85,10 @@ pub enum Mode {
     Read,
     /// Write and read transaction
     WriteRead,
+    /// Mark the start of a transaction
+    TransactionStart,
+    /// Mark the end of a transaction
+    TransactionEnd,
 }
 
 /// I2C Transaction type
@@ -135,6 +141,28 @@ impl Transaction {
         }
     }
 
+    /// Create nested transactions
+    pub fn transaction_start(addr: u8) -> Transaction {
+        Transaction {
+            expected_mode: Mode::TransactionStart,
+            expected_addr: addr,
+            expected_data: Vec::new(),
+            response_data: Vec::new(),
+            expected_err: None,
+        }
+    }
+
+    /// Create nested transactions
+    pub fn transaction_end(addr: u8) -> Transaction {
+        Transaction {
+            expected_mode: Mode::TransactionEnd,
+            expected_addr: addr,
+            expected_data: Vec::new(),
+            response_data: Vec::new(),
+            expected_err: None,
+        }
+    }
+
     /// Add an error return to a transaction
     ///
     /// This is used to mock failure behaviours.
@@ -153,9 +181,11 @@ impl Transaction {
 /// Mismatches between expectations will cause runtime assertions to assist in locating the source of the fault.
 pub type Mock = Generic<Transaction>;
 
-impl i2c::Read for Mock {
+impl ErrorType for Mock {
     type Error = ErrorKind;
+}
 
+impl i2c::I2c for Mock {
     fn read(&mut self, address: u8, buffer: &mut [u8]) -> Result<(), Self::Error> {
         let w = self
             .next()
@@ -178,10 +208,6 @@ impl i2c::Read for Mock {
             }
         }
     }
-}
-
-impl i2c::Write for Mock {
-    type Error = ErrorKind;
 
     fn write(&mut self, address: u8, bytes: &[u8]) -> Result<(), Self::Error> {
         let w = self
@@ -200,10 +226,31 @@ impl i2c::Write for Mock {
             None => Ok(()),
         }
     }
-}
 
-impl i2c::WriteRead for Mock {
-    type Error = ErrorKind;
+    fn write_iter<B>(&mut self, address: u8, bytes: B) -> Result<(), Self::Error>
+    where
+        B: IntoIterator<Item = u8>,
+    {
+        let w = self
+            .next()
+            .expect("no pending expectation for i2c::write call");
+
+        assert_eq!(
+            w.expected_mode,
+            Mode::Write,
+            "i2c::write_iter unexpected mode"
+        );
+        assert_eq!(w.expected_addr, address, "i2c::write_iter address mismatch");
+        assert!(
+            bytes.into_iter().eq(w.expected_data),
+            "i2c::write_iter data does not match expectation"
+        );
+
+        match w.expected_err {
+            Some(err) => Err(err),
+            None => Ok(()),
+        }
+    }
 
     fn write_read(
         &mut self,
@@ -240,13 +287,126 @@ impl i2c::WriteRead for Mock {
             }
         }
     }
+
+    fn write_iter_read<B>(
+        &mut self,
+        address: u8,
+        bytes: B,
+        buffer: &mut [u8],
+    ) -> Result<(), Self::Error>
+    where
+        B: IntoIterator<Item = u8>,
+    {
+        let w = self
+            .next()
+            .expect("no pending expectation for i2c::write_read call");
+
+        assert_eq!(
+            w.expected_mode,
+            Mode::WriteRead,
+            "i2c::write_iter_read unexpected mode"
+        );
+        assert_eq!(
+            w.expected_addr, address,
+            "i2c::write_iter_read address mismatch"
+        );
+        assert!(
+            bytes.into_iter().eq(w.expected_data),
+            "i2c::write_iter_read write data does not match expectation"
+        );
+
+        assert_eq!(
+            buffer.len(),
+            w.response_data.len(),
+            "i2c::write_iter_read mismatched response length"
+        );
+
+        match w.expected_err {
+            Some(err) => Err(err),
+            None => {
+                buffer.copy_from_slice(&w.response_data);
+                Ok(())
+            }
+        }
+    }
+
+    fn transaction<'a>(
+        &mut self,
+        address: u8,
+        operations: &mut [i2c::Operation<'a>],
+    ) -> Result<(), Self::Error> {
+        let w = self
+            .next()
+            .expect("no pending expectation for i2c::transaction call");
+
+        assert_eq!(
+            w.expected_mode,
+            Mode::TransactionStart,
+            "i2c::transaction_start unexpected mode"
+        );
+
+        for op in operations {
+            match op {
+                i2c::Operation::Read(r) => self.read(address, r),
+                i2c::Operation::Write(w) => self.write(address, w),
+            }
+            .unwrap();
+        }
+
+        let w = self
+            .next()
+            .expect("no pending expectation for i2c::transaction call");
+
+        assert_eq!(
+            w.expected_mode,
+            Mode::TransactionEnd,
+            "i2c::transaction_end unexpected mode"
+        );
+
+        Ok(())
+    }
+
+    fn transaction_iter<'a, O>(&mut self, address: u8, operations: O) -> Result<(), Self::Error>
+    where
+        O: IntoIterator<Item = i2c::Operation<'a>>,
+    {
+        let w = self
+            .next()
+            .expect("no pending expectation for i2c::transaction call");
+
+        assert_eq!(
+            w.expected_mode,
+            Mode::TransactionStart,
+            "i2c::transaction_start unexpected mode"
+        );
+
+        for op in operations {
+            match op {
+                i2c::Operation::Read(r) => self.read(address, r),
+                i2c::Operation::Write(w) => self.write(address, w),
+            }
+            .unwrap();
+        }
+
+        let w = self
+            .next()
+            .expect("no pending expectation for i2c::transaction call");
+
+        assert_eq!(
+            w.expected_mode,
+            Mode::TransactionEnd,
+            "i2c::transaction_end unexpected mode"
+        );
+
+        Ok(())
+    }
 }
 
 #[cfg(test)]
 mod test {
     use super::*;
 
-    use embedded_hal::i2c::blocking::{Read, Write, WriteRead};
+    use embedded_hal::i2c::blocking::I2c;
 
     #[test]
     fn test_i2c_mock_write() {
@@ -254,6 +414,16 @@ mod test {
         let mut i2c = Mock::new(&expectations);
 
         i2c.write(0xaa, &vec![10, 12]).unwrap();
+
+        i2c.done();
+    }
+
+    #[test]
+    fn test_i2c_mock_write_iter() {
+        let expectations = [Transaction::write(0xaa, vec![10, 12])];
+        let mut i2c = Mock::new(&expectations);
+
+        i2c.write_iter(0xaa, vec![10, 12]).unwrap();
 
         i2c.done();
     }
@@ -284,6 +454,19 @@ mod test {
     }
 
     #[test]
+    fn test_i2c_mock_write_iter_read() {
+        let expectations = [Transaction::write_read(0xaa, vec![1, 2], vec![3, 4])];
+        let mut i2c = Mock::new(&expectations);
+
+        let v = vec![1, 2];
+        let mut buff = vec![0u8; 2];
+        i2c.write_iter_read(0xaa, v, &mut buff).unwrap();
+        assert_eq!(vec![3, 4], buff);
+
+        i2c.done();
+    }
+
+    #[test]
     fn test_i2c_mock_multiple() {
         let expectations = [
             Transaction::write(0xaa, vec![1, 2]),
@@ -295,6 +478,56 @@ mod test {
 
         let mut v = vec![0u8; 2];
         i2c.read(0xbb, &mut v).unwrap();
+
+        assert_eq!(v, vec![3, 4]);
+
+        i2c.done();
+    }
+
+    #[test]
+    fn test_i2c_mock_multiple_transaction() {
+        let expectations = [
+            Transaction::transaction_start(0xaa),
+            Transaction::write(0xaa, vec![1, 2]),
+            Transaction::read(0xaa, vec![3, 4]),
+            Transaction::transaction_end(0xaa),
+        ];
+        let mut i2c = Mock::new(&expectations);
+
+        let mut v = vec![0u8; 2];
+        i2c.transaction(
+            0xaa,
+            &mut [
+                i2c::Operation::Write(&vec![1, 2]),
+                i2c::Operation::Read(&mut v),
+            ],
+        )
+        .unwrap();
+
+        assert_eq!(v, vec![3, 4]);
+
+        i2c.done();
+    }
+
+    #[test]
+    fn test_i2c_mock_multiple_transaction_iter() {
+        let expectations = [
+            Transaction::transaction_start(0xaa),
+            Transaction::write(0xaa, vec![1, 2]),
+            Transaction::read(0xaa, vec![3, 4]),
+            Transaction::transaction_end(0xaa),
+        ];
+        let mut i2c = Mock::new(&expectations);
+
+        let mut v = vec![0u8; 2];
+        i2c.transaction_iter(
+            0xaa,
+            [
+                i2c::Operation::Write(&vec![1, 2]),
+                i2c::Operation::Read(&mut v),
+            ],
+        )
+        .unwrap();
 
         assert_eq!(v, vec![3, 4]);
 
