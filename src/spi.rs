@@ -127,6 +127,15 @@ impl Transaction {
         }
     }
 
+    /// Create a read transaction
+    pub fn read_vec(response: Vec<u8>) -> Transaction {
+        Transaction {
+            expected_mode: Mode::Read,
+            expected_data: Vec::new(),
+            response,
+        }
+    }
+
     /// Create flush transaction
     pub fn flush() -> Transaction {
         Transaction {
