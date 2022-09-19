@@ -94,6 +94,7 @@
 //! #     Mock as SerialMock,
 //! #     Transaction as SerialTransaction,
 //! # };
+//! use embedded_hal::nb;
 //! use embedded_hal::serial::nb::{Read, Write};
 //! use embedded_hal::serial::ErrorKind;
 //!
@@ -142,6 +143,7 @@
 // make the public API any more confusing for users, and it permits
 // maximal flexibility.
 
+use embedded_hal::nb;
 use embedded_hal::serial::nb as serial;
 use embedded_hal::serial::ErrorKind;
 use embedded_hal::serial::ErrorType;
@@ -444,7 +446,7 @@ mod test {
     use embedded_hal::serial::nb::{Read, Write};
     use embedded_hal::serial::ErrorKind;
 
-    use super::{Mock, Transaction};
+    use super::{nb, Mock, Transaction};
 
     #[test]
     fn test_serial_mock_read() {
