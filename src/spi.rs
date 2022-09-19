@@ -43,12 +43,12 @@
 //! // Finalise expectations
 //! spi.done();
 //! ```
+use embedded_hal::nb;
 use embedded_hal::spi::blocking as spi;
 use embedded_hal::spi::blocking::SpiBusFlush;
 use embedded_hal::spi::nb::FullDuplex;
 use embedded_hal::spi::ErrorKind;
 use embedded_hal::spi::ErrorType;
-use nb;
 
 use crate::common::Generic;
 
