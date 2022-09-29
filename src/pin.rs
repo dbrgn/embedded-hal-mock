@@ -8,7 +8,7 @@
 //!
 //! use embedded_hal_mock::MockError;
 //! use embedded_hal_mock::pin::{Transaction as PinTransaction, Mock as PinMock, State as PinState};
-//! use embedded_hal::digital::blocking::{InputPin, OutputPin};
+//! use embedded_hal::digital::{InputPin, OutputPin};
 //!
 //! let err = MockError::Io(ErrorKind::NotConnected);
 //!
@@ -42,10 +42,7 @@
 use crate::common::Generic;
 use crate::error::MockError;
 
-use embedded_hal::digital::{
-    blocking::{InputPin, OutputPin},
-    ErrorType,
-};
+use embedded_hal::digital::{ErrorType, InputPin, OutputPin};
 
 /// MockPin transaction
 #[derive(PartialEq, Clone, Debug)]
@@ -194,7 +191,7 @@ mod test {
     use std::io::ErrorKind;
 
     use crate::error::MockError;
-    use embedded_hal::digital::blocking::{InputPin, OutputPin};
+    use embedded_hal::digital::{InputPin, OutputPin};
 
     use crate::pin::TransactionKind::{Get, Set};
     use crate::pin::{Mock, State, Transaction};
