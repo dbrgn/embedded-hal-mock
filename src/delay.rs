@@ -16,7 +16,7 @@ use core::convert::Infallible;
 use std::thread;
 use std::time::Duration;
 
-use embedded_hal::delay::blocking as delay;
+use embedded_hal::delay;
 
 /// A `Delay` implementation that does not actually block.
 pub struct NoopDelay;

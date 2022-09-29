@@ -11,9 +11,9 @@
 //! extern crate embedded_hal;
 //! extern crate embedded_hal_mock;
 //!
-//! use embedded_hal::spi::blocking::{SpiBus, SpiBusWrite};
+//! use embedded_hal::spi::{SpiBus, SpiBusWrite};
 //! use embedded_hal_mock::spi::{Mock as SpiMock, Transaction as SpiTransaction};
-//! use embedded_hal::spi::nb::FullDuplex;
+//! use embedded_hal_nb::spi::FullDuplex;
 //!
 //! // Configure expectations
 //! let expectations = [
@@ -43,12 +43,12 @@
 //! // Finalise expectations
 //! spi.done();
 //! ```
-use embedded_hal::nb;
-use embedded_hal::spi::blocking as spi;
-use embedded_hal::spi::blocking::SpiBusFlush;
-use embedded_hal::spi::nb::FullDuplex;
+use embedded_hal::spi;
 use embedded_hal::spi::ErrorKind;
 use embedded_hal::spi::ErrorType;
+use embedded_hal::spi::SpiBusFlush;
+use embedded_hal_nb::nb;
+use embedded_hal_nb::spi::FullDuplex;
 
 use crate::common::Generic;
 
@@ -335,7 +335,7 @@ impl spi::SpiDevice for Mock {
 mod test {
     use super::*;
 
-    use embedded_hal::spi::blocking::{SpiBus, SpiBusRead, SpiBusWrite, SpiDevice};
+    use embedded_hal::spi::{SpiBus, SpiBusRead, SpiBusWrite, SpiDevice};
 
     #[test]
     fn test_spi_mock_write() {

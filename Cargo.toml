@@ -21,4 +21,5 @@ edition = "2021"
 rust-version = "1.60"
 
 [dependencies]
-embedded-hal = "=1.0.0-alpha.8"
+embedded-hal = "=1.0.0-alpha.9"
+embedded-hal-nb = "=1.0.0-alpha.1"
