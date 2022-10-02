@@ -10,7 +10,7 @@
 //!
 //! ```
 //! // Note that we're using the non-blocking serial traits
-//! use embedded_hal::serial::nb::{Read, Write};
+//! use embedded_hal_nb::serial::{Read, Write};
 //! use embedded_hal_mock::serial::{
 //!     Mock as SerialMock,
 //!     Transaction as SerialTransaction,
@@ -49,8 +49,8 @@
 //!
 //! ```
 //! // Note that we're using the blocking serial write trait
-//! use embedded_hal::serial::blocking::Write;
-//! use embedded_hal::serial::nb::Read;
+//! use embedded_hal::serial::Write;
+//! use embedded_hal_nb::serial::Read;
 //! use embedded_hal_mock::serial::{
 //!     Mock as SerialMock,
 //!     Transaction as SerialTransaction,
@@ -94,8 +94,8 @@
 //! #     Mock as SerialMock,
 //! #     Transaction as SerialTransaction,
 //! # };
-//! use embedded_hal::nb;
-//! use embedded_hal::serial::nb::{Read, Write};
+//! use embedded_hal_nb::nb;
+//! use embedded_hal_nb::serial::{Read, Write};
 //! use embedded_hal::serial::ErrorKind;
 //!
 //! // Configure expectations
@@ -143,10 +143,10 @@
 // make the public API any more confusing for users, and it permits
 // maximal flexibility.
 
-use embedded_hal::nb;
-use embedded_hal::serial::nb as serial;
 use embedded_hal::serial::ErrorKind;
 use embedded_hal::serial::ErrorType;
+use embedded_hal_nb::nb;
+use embedded_hal_nb::serial;
 
 use std::collections::VecDeque;
 use std::sync::{Arc, Mutex};
@@ -425,7 +425,7 @@ where
     }
 }
 
-impl<Word> embedded_hal::serial::blocking::Write<Word> for Mock<Word>
+impl<Word> embedded_hal::serial::Write<Word> for Mock<Word>
 where
     Word: PartialEq + std::fmt::Debug + Clone + Copy,
 {
@@ -443,8 +443,8 @@ where
 
 #[cfg(test)]
 mod test {
-    use embedded_hal::serial::nb::{Read, Write};
     use embedded_hal::serial::ErrorKind;
+    use embedded_hal_nb::serial::{Read, Write};
 
     use super::{nb, Mock, Transaction};
 
@@ -487,7 +487,7 @@ mod test {
 
     #[test]
     fn test_serial_mock_blocking_write() {
-        use embedded_hal::serial::blocking::Write as BWrite;
+        use embedded_hal::serial::Write as BWrite;
         let ts = [Transaction::write_many([0xAB, 0xCD, 0xEF])];
         let mut ser = Mock::new(&ts);
         BWrite::write(&mut ser, &[0xAB, 0xCD, 0xEF]).unwrap();
@@ -497,7 +497,7 @@ mod test {
     #[test]
     #[should_panic(expected = "called serial::write with no expectation")]
     fn test_serial_mock_blocking_write_more_than_expected() {
-        use embedded_hal::serial::blocking::Write as BWrite;
+        use embedded_hal::serial::Write as BWrite;
         let ts = [Transaction::write_many([0xAB, 0xCD])];
         let mut ser = Mock::new(&ts);
         BWrite::write(&mut ser, &[0xAB, 0xCD, 0xEF]).unwrap();
@@ -507,7 +507,7 @@ mod test {
     #[test]
     #[should_panic(expected = "unsatisfied expectations")]
     fn test_serial_mock_blocking_write_not_enough() {
-        use embedded_hal::serial::blocking::Write as BWrite;
+        use embedded_hal::serial::Write as BWrite;
         let ts = [Transaction::write_many([0xAB, 0xCD, 0xEF, 0x00])];
         let mut ser = Mock::new(&ts);
         BWrite::write(&mut ser, &[0xAB, 0xCD, 0xEF]).unwrap();
@@ -532,7 +532,7 @@ mod test {
 
     #[test]
     fn test_serial_mock_blocking_flush() {
-        use embedded_hal::serial::blocking::Write as BWrite;
+        use embedded_hal::serial::Write as BWrite;
         let ts = [Transaction::flush()];
         let mut ser: Mock<u8> = Mock::new(&ts);
         BWrite::flush(&mut ser).unwrap();
@@ -562,7 +562,7 @@ mod test {
     #[test]
     #[should_panic(expected = "expected to perform a serial transaction 'Read(")]
     fn test_serial_mock_expected_read() {
-        use embedded_hal::serial::blocking::Write as BWrite;
+        use embedded_hal::serial::Write as BWrite;
         let ts = [Transaction::read(0x54)];
         let mut ser = Mock::new(&ts);
         BWrite::write(&mut ser, &[0x77]).unwrap();
