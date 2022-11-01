@@ -32,7 +32,7 @@ This crate requires Rust 1.56+!
 - [ ] RNG
 - [x] I/O pins (including PWM)
 - [x] ADC
-- [ ] Timers
+- [x] Timers
 - [ ] ...
 
 Pull requests for more mock implementations are welcome! :)

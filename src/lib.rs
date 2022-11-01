@@ -27,3 +27,4 @@ pub mod i2c;
 pub mod pin;
 pub mod serial;
 pub mod spi;
+pub mod timer;
