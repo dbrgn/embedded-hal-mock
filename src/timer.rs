@@ -9,9 +9,9 @@
 //! ```rust
 //! use embedded_hal::timer::CountDown;
 //! use embedded_time::duration::*;
-//! use embedded_hal_mock::timer::SimClock;
+//! use embedded_hal_mock::timer::MockClock;
 //!
-//! let mut clock = SimClock::new();
+//! let mut clock = MockClock::new();
 //! let mut timer = clock.get_timer();
 //! timer.start(100.nanoseconds());
 //! // hand over timer to embedded-hal based driver
@@ -26,9 +26,13 @@
 //! assert_eq!(timer.wait(), Ok(()));
 //! ```
 
-use std::convert::Infallible;
-use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::Arc;
+use std::{
+    convert::Infallible,
+    sync::{
+        atomic::{AtomicU64, Ordering},
+        Arc,
+    },
+};
 use void::Void;
 
 use embedded_hal::timer::{Cancel, CountDown, Periodic};
@@ -37,11 +41,11 @@ use embedded_time::{clock, duration::*, fraction::Fraction, Instant};
 
 /// A simulated clock that can be used in tests.
 #[derive(Clone, Debug)]
-pub struct SimClock {
+pub struct MockClock {
     ticks: Arc<AtomicU64>,
 }
 
-impl Clock for SimClock {
+impl Clock for MockClock {
     type T = u64;
     const SCALING_FACTOR: Fraction = Fraction::new(1, 1_000_000_000);
 
@@ -51,15 +55,15 @@ impl Clock for SimClock {
     }
 }
 
-impl Default for SimClock {
+impl Default for MockClock {
     fn default() -> Self {
-        SimClock {
+        MockClock {
             ticks: Arc::new(AtomicU64::new(0)),
         }
     }
 }
 
-impl SimClock {
+impl MockClock {
     /// Creates a new simulated clock.
     pub fn new() -> Self {
         Self::default()
@@ -79,11 +83,11 @@ impl SimClock {
     }
 
     /// Get a new timer based on the clock.
-    pub fn get_timer(&self) -> SimTimer {
+    pub fn get_timer(&self) -> MockTimer {
         let clock = self.clone();
         let duration = Nanoseconds(1);
         let expiration = clock.try_now().unwrap();
-        SimTimer {
+        MockTimer {
             clock: self.clone(),
             duration,
             expiration,
@@ -93,14 +97,14 @@ impl SimClock {
 }
 
 /// A simulated timer that can be used in tests.
-pub struct SimTimer {
-    clock: SimClock,
+pub struct MockTimer {
+    clock: MockClock,
     duration: Nanoseconds<u64>,
-    expiration: Instant<SimClock>,
+    expiration: Instant<MockClock>,
     started: bool,
 }
 
-impl CountDown for SimTimer {
+impl CountDown for MockTimer {
     type Time = Nanoseconds<u64>;
 
     fn start<T>(&mut self, count: T)
@@ -124,9 +128,9 @@ impl CountDown for SimTimer {
     }
 }
 
-impl Periodic for SimTimer {}
+impl Periodic for MockTimer {}
 
-impl Cancel for SimTimer {
+impl Cancel for MockTimer {
     type Error = Infallible;
 
     fn cancel(&mut self) -> Result<(), Self::Error> {
@@ -141,7 +145,7 @@ mod test {
 
     #[test]
     fn count_down() {
-        let mut clock = SimClock::new();
+        let mut clock = MockClock::new();
         let mut timer = clock.get_timer();
         timer.start(100.nanoseconds());
         clock.tick(50.nanoseconds());
