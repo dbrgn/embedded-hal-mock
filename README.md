@@ -17,7 +17,7 @@ or no-op implementations are used.
 The goal of the crate is to be able to test drivers in CI without having access
 to hardware.
 
-This crate requires Rust 1.31+!
+This crate requires Rust 1.56+!
 
 [Docs](https://docs.rs/embedded-hal-mock/)
 
