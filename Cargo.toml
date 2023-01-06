@@ -21,4 +21,10 @@ edition = "2021"
 
 [dependencies]
 embedded-hal = { version = "0.2.7", features = ["unproven"] }
+embedded-time = { version = "0.12", optional = true }
+void = { version = "^1.0", optional = true }
 nb = "0.1.1"
+
+[features]
+default = ["embedded-time"]
+embedded-time = ["dep:embedded-time", "dep:void"]

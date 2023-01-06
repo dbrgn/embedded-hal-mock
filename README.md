@@ -17,7 +17,7 @@ or no-op implementations are used.
 The goal of the crate is to be able to test drivers in CI without having access
 to hardware.
 
-This crate requires Rust 1.56+!
+This crate requires Rust 1.60+!
 
 [Docs](https://docs.rs/embedded-hal-mock/)
 
@@ -32,7 +32,7 @@ This crate requires Rust 1.56+!
 - [ ] RNG
 - [x] I/O pins (including PWM)
 - [x] ADC
-- [ ] Timers
+- [x] Timers (with `embedded-time` Cargo feature)
 - [ ] ...
 
 Pull requests for more mock implementations are welcome! :)

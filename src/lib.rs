@@ -10,6 +10,12 @@
 //!
 //! See module-level docs for more information.
 //!
+//! ## Cargo Features
+//!
+//! There are currently the following cargo features:
+//!
+//! - `embedded-time`: Enable the `timer` module (enabled by default)
+//!
 //! ## no\_std
 //!
 //! Currently this crate is not `no_std`. If you think this is important, let
@@ -27,3 +33,5 @@ pub mod i2c;
 pub mod pin;
 pub mod serial;
 pub mod spi;
+#[cfg(feature = "embedded-time")]
+pub mod timer;
