@@ -1,8 +1,7 @@
 on:
-  # trigger on pushes to the master branch and 1-alpha
+  # trigger on pushes to the main branch and 1-alpha
   push:
     branches:
-      - master
       - main
       - 1-alpha
   # trigger on all pull requests
