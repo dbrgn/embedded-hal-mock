@@ -1,6 +1,6 @@
 [package]
 name = "embedded-hal-mock"
-version = "0.8.0"
+version = "0.9.0"
 authors = ["Danilo Bargen <mail@dbrgn.ch>"]
 categories = ["embedded", "hardware-support", "development-tools::testing"]
 description = "A collection of mocked devices that implement the embedded-hal traits"
