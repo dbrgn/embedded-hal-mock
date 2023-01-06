@@ -49,7 +49,7 @@ use embedded_hal::PwmPin;
 pub type PwmDuty = u16;
 
 /// MockPin transaction
-#[derive(PartialEq, Clone, Debug)]
+#[derive(PartialEq, Eq, Clone, Debug)]
 pub struct Transaction {
     /// Kind is the transaction kind (and data) expected
     kind: TransactionKind,
@@ -59,7 +59,7 @@ pub struct Transaction {
     err: Option<MockError>,
 }
 
-#[derive(PartialEq, Clone, Debug)]
+#[derive(PartialEq, Eq, Copy, Clone, Debug)]
 /// Digital pin value enumeration
 pub enum State {
     /// Digital low state
@@ -126,7 +126,7 @@ impl Transaction {
 }
 
 /// MockPin transaction kind.
-#[derive(PartialEq, Clone, Debug)]
+#[derive(PartialEq, Eq, Clone, Debug)]
 pub enum TransactionKind {
     /// Set the pin state
     Set(State),
@@ -212,7 +212,7 @@ impl InputPin for Mock {
 
         let Transaction { kind, err } = s.next().expect("no expectation for pin::is_high call");
 
-        assert_eq!(kind.is_get(), true, "expected pin::get");
+        assert!(kind.is_get(), "expected pin::get");
 
         if let Some(e) = err {
             Err(e)
@@ -229,7 +229,7 @@ impl InputPin for Mock {
 
         let Transaction { kind, err } = s.next().expect("no expectation for pin::is_low call");
 
-        assert_eq!(kind.is_get(), true, "expected pin::get");
+        assert!(kind.is_get(), "expected pin::get");
 
         if let Some(e) = err {
             Err(e)

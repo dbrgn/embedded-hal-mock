@@ -77,7 +77,7 @@ use crate::common::Generic;
 use crate::error::MockError;
 
 /// I2C Transaction modes
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Mode {
     /// Write transaction
     Write,
@@ -90,7 +90,7 @@ pub enum Mode {
 /// I2C Transaction type
 ///
 /// Models an I2C read or write
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Transaction {
     expected_mode: Mode,
     expected_addr: u8,

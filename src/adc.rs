@@ -60,7 +60,7 @@ use crate::error::MockError;
 /// ADC transaction type
 ///
 /// Models an ADC read
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Transaction<T> {
     expected_chan: u8,
     response: T,
@@ -94,7 +94,7 @@ macro_rules! mock_channel {
     ($ADC:ident, $($pin:ident => $chan:expr),+ $(,)*) => {
         $(
             /// Mock ADC channel implementation
-            #[derive(Clone, Debug, PartialEq)]
+            #[derive(Clone, Debug, PartialEq, Eq)]
             pub struct $pin;
 
             impl Channel<$ADC> for $pin {
