@@ -125,12 +125,12 @@ impl Transaction {
     }
 }
 
-/// MockPin transaction kind, either Get or Set with the associated State
+/// MockPin transaction kind.
 #[derive(PartialEq, Clone, Debug)]
 pub enum TransactionKind {
-    /// `Set(true)` for [`OutputPin::set_high`] or `Set(false)` for [`OutputPin::set_low`]
+    /// Set the pin state
     Set(State),
-    /// `Get(true)` for high value or `Get(false)` for low value. To be used with [`InputPin::is_high`] and [`InputPin::is_low`].
+    /// Get the pin state
     Get(State),
     /// Disable a [`PwmPin`] using [`PwmPin::disable`]
     Disable,
