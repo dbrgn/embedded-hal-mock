@@ -35,19 +35,20 @@ jobs:
           rustc --version
           cargo --version
 
-      # Build main crate
-      - name: Build
-        run: cargo build
-      - name: Build (all features)
-        if: ${{ matrix.toolchain == 'nightly' }}
-        run: cargo build --all-features
+      # Check crate
+      - name: Check
+        run: cargo check
+      - name: Check (no default features)
+        run: cargo check --no-default-features
+      - name: Check (all features)
+        run: cargo check --all-features
 
-      # Test main crate
+      # Test crate
       - name: Test
-        if: ${{ matrix.toolchain != 'nightly' }} 
         run: cargo test
+      - name: Test (no default features)
+        run: cargo test --no-default-features
       - name: Test (all features)
-        if: ${{ matrix.toolchain == 'nightly' }}
         run: cargo test --all-features
 
   # Check code formatting
