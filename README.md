@@ -30,7 +30,7 @@ This crate requires Rust 1.31+!
 - [x] Actual delay
 - [x] Serial
 - [ ] RNG
-- [x] I/O pins
+- [x] I/O pins (including PWM)
 - [x] ADC
 - [ ] Timers
 - [ ] ...
