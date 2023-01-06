@@ -17,7 +17,7 @@ include = [
     "LICENSE-MIT",
     "LICENSE-APACHE",
 ]
-edition = "2018"
+edition = "2021"
 
 [dependencies]
 embedded-hal = { version = "0.2.7", features = ["unproven"] }
