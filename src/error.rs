@@ -1,7 +1,7 @@
 use std::{error::Error as StdError, fmt, io};
 
 /// Errors that may occur during mocking.
-#[derive(PartialEq, Clone, Debug)]
+#[derive(PartialEq, Eq, Clone, Debug)]
 pub enum MockError {
     /// An I/O-Error occurred
     Io(io::ErrorKind),
