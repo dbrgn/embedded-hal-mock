@@ -20,7 +20,7 @@ use std::{
 /// Note that the implementation uses an `Arc<Mutex<...>>` internally, so a
 /// cloned instance of the mock can be used to check the expectations of the
 /// original instance that has been moved into a driver.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Generic<T: Clone + Debug + PartialEq> {
     expected: Arc<Mutex<VecDeque<T>>>,
     done_called: Arc<Mutex<DoneCallDetector>>,
@@ -69,19 +69,6 @@ where
 
         let e = self.expected.lock().unwrap();
         assert!(e.is_empty(), "Not all expectations consumed");
-    }
-}
-
-/// Clone allows a single mock to be duplicated for control and evaluation
-impl<T> Clone for Generic<T>
-where
-    T: Clone + Debug + PartialEq,
-{
-    fn clone(&self) -> Self {
-        Generic {
-            expected: self.expected.clone(),
-            done_called: self.done_called.clone(),
-        }
     }
 }
 
