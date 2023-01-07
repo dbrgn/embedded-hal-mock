@@ -159,23 +159,23 @@ impl i2c::Read for Mock {
     type Error = MockError;
 
     fn read(&mut self, address: u8, buffer: &mut [u8]) -> Result<(), Self::Error> {
-        let w = self
+        let e = self
             .next()
             .expect("no pending expectation for i2c::read call");
 
-        assert_eq!(w.expected_mode, Mode::Read, "i2c::read unexpected mode");
-        assert_eq!(w.expected_addr, address, "i2c::read address mismatch");
+        assert_eq!(e.expected_mode, Mode::Read, "i2c::read unexpected mode");
+        assert_eq!(e.expected_addr, address, "i2c::read address mismatch");
 
         assert_eq!(
             buffer.len(),
-            w.response_data.len(),
+            e.response_data.len(),
             "i2c:read mismatched response length"
         );
 
-        match w.expected_err {
+        match e.expected_err {
             Some(err) => Err(err),
             None => {
-                buffer.copy_from_slice(&w.response_data);
+                buffer.copy_from_slice(&e.response_data);
                 Ok(())
             }
         }
@@ -186,18 +186,18 @@ impl i2c::Write for Mock {
     type Error = MockError;
 
     fn write(&mut self, address: u8, bytes: &[u8]) -> Result<(), Self::Error> {
-        let w = self
+        let e = self
             .next()
             .expect("no pending expectation for i2c::write call");
 
-        assert_eq!(w.expected_mode, Mode::Write, "i2c::write unexpected mode");
-        assert_eq!(w.expected_addr, address, "i2c::write address mismatch");
+        assert_eq!(e.expected_mode, Mode::Write, "i2c::write unexpected mode");
+        assert_eq!(e.expected_addr, address, "i2c::write address mismatch");
         assert_eq!(
-            w.expected_data, bytes,
+            e.expected_data, bytes,
             "i2c::write data does not match expectation"
         );
 
-        match w.expected_err {
+        match e.expected_err {
             Some(err) => Err(err),
             None => Ok(()),
         }
@@ -213,31 +213,31 @@ impl i2c::WriteRead for Mock {
         bytes: &[u8],
         buffer: &mut [u8],
     ) -> Result<(), Self::Error> {
-        let w = self
+        let e = self
             .next()
             .expect("no pending expectation for i2c::write_read call");
 
         assert_eq!(
-            w.expected_mode,
+            e.expected_mode,
             Mode::WriteRead,
             "i2c::write_read unexpected mode"
         );
-        assert_eq!(w.expected_addr, address, "i2c::write_read address mismatch");
+        assert_eq!(e.expected_addr, address, "i2c::write_read address mismatch");
         assert_eq!(
-            w.expected_data, bytes,
+            e.expected_data, bytes,
             "i2c::write_read write data does not match expectation"
         );
 
         assert_eq!(
             buffer.len(),
-            w.response_data.len(),
+            e.response_data.len(),
             "i2c::write_read mismatched response length"
         );
 
-        match w.expected_err {
+        match e.expected_err {
             Some(err) => Err(err),
             None => {
-                buffer.copy_from_slice(&w.response_data);
+                buffer.copy_from_slice(&e.response_data);
                 Ok(())
             }
         }
