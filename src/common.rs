@@ -81,8 +81,11 @@ where
     type Item = T;
     fn next(&mut self) -> Option<Self::Item> {
         let mut e = self.expected.lock().unwrap();
-        e.0 += 1;
-        e.1.get(e.0 - 1).cloned()
+        let val = e.1.get(e.0).cloned();
+        if val.is_some() {
+            e.0 += 1;
+        }
+        val
     }
 }
 
@@ -98,5 +101,7 @@ mod tests {
         assert_eq!(mock.next(), Some(0u8));
         assert_eq!(mock.next(), Some(1u8));
         assert_eq!(mock.next(), None);
+
+        mock.done();
     }
 }
