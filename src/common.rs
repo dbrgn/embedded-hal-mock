@@ -56,8 +56,11 @@ where
         E: IntoIterator<Item = &'a T>,
     {
         let v: VecDeque<T> = expected.into_iter().cloned().collect();
-        let mut e = self.expected.lock().unwrap();
-        *e = v;
+
+        let mut expected = self.expected.lock().unwrap();
+        let mut done_called = self.done_called.lock().unwrap();
+        *expected = v;
+        done_called.called = false;
     }
 
     /// Assert that all expectations on a given mock have been consumed.
@@ -105,7 +108,11 @@ impl DoneCallDetector {
     }
 
     /// Mark the `.done()` method as called.
+    ///
+    /// Note: When calling this method twice, an assertion failure will be
+    /// triggered.
     fn mark_as_called(&mut self) {
+        assert!(!self.called, "The `.done()` method was called twice!");
         self.called = true;
     }
 }
@@ -129,6 +136,10 @@ impl Drop for DoneCallDetector {
             stderr.write_all(msg.as_bytes()).ok();
             stderr.write_all(b"\x1b[m\n").ok();
             stderr.flush().ok();
+
+            // Panic. This probably results in an abort:
+            // https://doc.rust-lang.org/std/ops/trait.Drop.html#panics
+            panic!("{}", msg);
         }
     }
 }
@@ -137,15 +148,41 @@ impl Drop for DoneCallDetector {
 mod tests {
     use super::*;
 
-    #[test]
-    fn test_generic_mock() {
-        let expectations = [0u8, 1u8];
-        let mut mock: Generic<u8> = Generic::new(&expectations);
+    mod generic_mock {
+        use super::*;
 
-        assert_eq!(mock.next(), Some(0u8));
-        assert_eq!(mock.next(), Some(1u8));
-        assert_eq!(mock.next(), None);
+        #[test]
+        fn success() {
+            let expectations = [0u8, 1u8];
+            let mut mock: Generic<u8> = Generic::new(&expectations);
 
-        mock.done();
+            assert_eq!(mock.next(), Some(0u8));
+            assert_eq!(mock.next(), Some(1u8));
+            assert_eq!(mock.next(), None);
+            assert_eq!(mock.next(), None);
+
+            mock.done();
+        }
+
+        #[test]
+        #[should_panic]
+        fn panic_if_drop_not_called() {
+            let expectations = [0u8, 1u8];
+            let mut mock: Generic<u8> = Generic::new(&expectations);
+            assert_eq!(mock.next(), Some(0u8));
+            assert_eq!(mock.next(), Some(1u8));
+            // Note: done() not called
+        }
+
+        #[test]
+        #[should_panic]
+        fn panic_if_drop_called_twice() {
+            let expectations = [0u8, 1u8];
+            let mut mock: Generic<u8> = Generic::new(&expectations);
+            assert_eq!(mock.next(), Some(0u8));
+            assert_eq!(mock.next(), Some(1u8));
+            mock.done();
+            mock.done(); // This will panic
+        }
     }
 }

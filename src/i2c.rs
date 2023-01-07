@@ -411,7 +411,7 @@ mod test {
         i2c.read(0xaa, &mut buff).unwrap();
         assert_eq!(vec![1, 2], buff);
 
-        i2c.done();
+        // Call `.done()` on the clone, not on the original instance
         i2c_clone.done();
     }
 
