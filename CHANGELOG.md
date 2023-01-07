@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## Unreleased
 
+### Added
+
+- Print a warning to stderr if a mock is dropped without having calling
+  `.done()` on it (#59)
+
 ### Fixed
 
 - `Generic` mock: Fix a bug that caused the call to `.done()` to fail if

@@ -4,12 +4,13 @@ use std::{
     collections::VecDeque,
     fmt::Debug,
     sync::{Arc, Mutex},
+    thread,
 };
 
 /// Generic mock implementation.
 ///
-/// ⚠️ **Do not use this directly as end user! This is only a building
-/// block for creating mocks.**
+/// ⚠️ **Do not use this directly as end user! This is only a building block
+/// for creating mocks.**
 ///
 /// This type supports the specification and evaluation of expectations to
 /// allow automated testing of hal drivers. Mismatches between expectations
@@ -22,6 +23,7 @@ use std::{
 #[derive(Debug)]
 pub struct Generic<T: Clone + Debug + PartialEq> {
     expected: Arc<Mutex<VecDeque<T>>>,
+    done_called: Arc<Mutex<DoneCallDetector>>,
 }
 
 impl<'a, T: 'a> Generic<T>
@@ -37,6 +39,7 @@ where
     {
         let mut g = Generic {
             expected: Arc::new(Mutex::new(VecDeque::new())),
+            done_called: Arc::new(Mutex::new(DoneCallDetector::new())),
         };
 
         g.expect(expected);
@@ -59,6 +62,8 @@ where
 
     /// Assert that all expectations on a given mock have been consumed.
     pub fn done(&mut self) {
+        self.done_called.lock().unwrap().mark_as_called();
+
         let e = self.expected.lock().unwrap();
         assert!(e.is_empty(), "Not all expectations consumed");
     }
@@ -72,6 +77,7 @@ where
     fn clone(&self) -> Self {
         Generic {
             expected: self.expected.clone(),
+            done_called: self.done_called.clone(),
         }
     }
 }
@@ -84,6 +90,46 @@ where
     type Item = T;
     fn next(&mut self) -> Option<Self::Item> {
         self.expected.lock().unwrap().pop_front()
+    }
+}
+
+/// Struct used to detect whether or not the `.done()` method was called.
+#[derive(Debug)]
+struct DoneCallDetector {
+    called: bool,
+}
+
+impl DoneCallDetector {
+    fn new() -> Self {
+        Self { called: false }
+    }
+
+    /// Mark the `.done()` method as called.
+    fn mark_as_called(&mut self) {
+        self.called = true;
+    }
+}
+
+impl Drop for DoneCallDetector {
+    fn drop(&mut self) {
+        // Ensure that the `.done()` method was called on the mock before
+        // dropping.
+        if !self.called && !thread::panicking() {
+            let msg = "WARNING: A mock (from embedded-hal-mock) was dropped \
+                       without calling the `.done()` method. \
+                       See https://github.com/dbrgn/embedded-hal-mock/issues/34 \
+                       for more details.";
+
+            // Note: We cannot use the print macros here, since they get
+            // captured by the Cargo test runner. Instead, write to stderr
+            // directly.
+            use std::io::Write;
+            let mut stderr = std::io::stderr();
+            stderr.write_all(b"\x1b[31m").ok();
+            stderr.write_all(msg.as_bytes()).ok();
+            stderr.write_all(b"\x1b[m\n").ok();
+            stderr.flush().ok();
+        }
     }
 }
 
