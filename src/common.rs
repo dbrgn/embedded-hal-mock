@@ -1,19 +1,27 @@
 //! Common functionality used by the mock implementations.
 
-use std::fmt::Debug;
-use std::sync::{Arc, Mutex};
+use std::{
+    collections::VecDeque,
+    fmt::Debug,
+    sync::{Arc, Mutex},
+};
 
-/// Generic Mock implementation
+/// Generic mock implementation.
 ///
-/// This supports the specification and evaluation of expectations to allow automated testing of hal drivers.
-/// Mismatches between expectations will cause runtime assertions to assist in locating the source of the fault.
+/// ⚠️ **Do not use this directly as end user! This is only a building
+/// block for creating mocks.**
+///
+/// This type supports the specification and evaluation of expectations to
+/// allow automated testing of hal drivers. Mismatches between expectations
+/// will cause runtime assertions to assist in locating the source of the
+/// fault.
 ///
 /// Note that the implementation uses an `Arc<Mutex<...>>` internally, so a
 /// cloned instance of the mock can be used to check the expectations of the
 /// original instance that has been moved into a driver.
 #[derive(Debug)]
 pub struct Generic<T: Clone + Debug + PartialEq> {
-    expected: Arc<Mutex<(usize, Vec<T>)>>,
+    expected: Arc<Mutex<VecDeque<T>>>,
 }
 
 impl<'a, T: 'a> Generic<T>
@@ -28,7 +36,7 @@ where
         E: IntoIterator<Item = &'a T>,
     {
         let mut g = Generic {
-            expected: Arc::new(Mutex::new((0, vec![]))),
+            expected: Arc::new(Mutex::new(VecDeque::new())),
         };
 
         g.expect(expected);
@@ -38,26 +46,21 @@ where
 
     /// Set expectations on the interface
     ///
-    /// This is a list of transactions to be executed in order
-    /// Note that setting this will overwrite any existing expectations
+    /// This is a list of transactions to be executed in order. Note that
+    /// setting this will overwrite any existing expectations.
     pub fn expect<E>(&mut self, expected: E)
     where
         E: IntoIterator<Item = &'a T>,
     {
-        let v: Vec<T> = expected.into_iter().cloned().collect();
+        let v: VecDeque<T> = expected.into_iter().cloned().collect();
         let mut e = self.expected.lock().unwrap();
-        e.0 = 0;
-        e.1 = v;
+        *e = v;
     }
 
-    /// Assert that all expectations on a given Mock have been met
+    /// Assert that all expectations on a given mock have been consumed.
     pub fn done(&mut self) {
         let e = self.expected.lock().unwrap();
-        assert_eq!(
-            e.0,
-            e.1.len(),
-            "Mock call number(left) and expectations(right) do not match"
-        );
+        assert!(e.is_empty(), "Not all expectations consumed");
     }
 }
 
@@ -80,12 +83,7 @@ where
 {
     type Item = T;
     fn next(&mut self) -> Option<Self::Item> {
-        let mut e = self.expected.lock().unwrap();
-        let val = e.1.get(e.0).cloned();
-        if val.is_some() {
-            e.0 += 1;
-        }
-        val
+        self.expected.lock().unwrap().pop_front()
     }
 }
 
