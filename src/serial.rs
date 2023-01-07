@@ -143,13 +143,14 @@
 // make the public API any more confusing for users, and it permits
 // maximal flexibility.
 
-use embedded_hal::blocking::serial::write;
-use embedded_hal::serial;
+use std::{
+    collections::VecDeque,
+    sync::{Arc, Mutex},
+};
 
-use crate::error::MockError;
+use embedded_hal::{blocking::serial::write, serial};
 
-use std::collections::VecDeque;
-use std::sync::{Arc, Mutex};
+use crate::{common::DoneCallDetector, error::MockError};
 
 // Note that mode is private
 //
@@ -185,7 +186,7 @@ enum Mode<Word> {
 ///
 /// # Example
 ///
-/// ```
+/// ```no_run
 /// use embedded_hal_mock::serial::Transaction;
 /// use embedded_hal_mock::serial::Mock;
 ///
@@ -199,7 +200,7 @@ enum Mode<Word> {
 ///     Transaction::flush()
 /// ];
 ///
-/// let serial = Mock::new(&transactions);
+/// let mut serial = Mock::new(&transactions);
 /// ```
 pub struct Transaction<Word> {
     /// A collection of modes
@@ -298,6 +299,7 @@ pub struct Mock<Word> {
     /// to make it thread safe. It's then wrapped in an `Option`
     /// so that we can take it in the call to `done()`.
     expected_modes: Arc<Mutex<Option<VecDeque<Mode<Word>>>>>,
+    done_called: Arc<Mutex<DoneCallDetector>>,
 }
 
 impl<Word: Clone> Mock<Word> {
@@ -305,6 +307,7 @@ impl<Word: Clone> Mock<Word> {
     pub fn new(transactions: &[Transaction<Word>]) -> Self {
         let mut ser = Mock {
             expected_modes: Arc::new(Mutex::new(None)),
+            done_called: Arc::new(Mutex::new(DoneCallDetector::new())),
         };
         ser.expect(transactions);
         ser
@@ -315,11 +318,9 @@ impl<Word: Clone> Mock<Word> {
     /// This is a list of transactions to be executed in order.
     /// Note that setting this will overwrite any existing expectations
     pub fn expect(&mut self, transactions: &[Transaction<Word>]) {
-        let mut lock = self
-            .expected_modes
-            .lock()
-            .expect("unable to lock serial mock in call to expect");
-        *lock = Some(
+        let mut expected = self.expected_modes.lock().unwrap();
+        let mut done_called = self.done_called.lock().unwrap();
+        *expected = Some(
             transactions
                 .iter()
                 .fold(VecDeque::new(), |mut modes, transaction| {
@@ -327,11 +328,14 @@ impl<Word: Clone> Mock<Word> {
                     modes
                 }),
         );
+        done_called.reset();
     }
 
     /// Asserts that all expectations up to this point were satisfied.
     /// Panics if there are unsatisfied expectations.
     pub fn done(&mut self) {
+        self.done_called.lock().unwrap().mark_as_called();
+
         let mut lock = self
             .expected_modes
             .lock()
@@ -586,6 +590,7 @@ mod test {
         let ts = [Transaction::read_error(error.clone())];
         let mut ser: Mock<u8> = Mock::new(&ts);
         assert_eq!(ser.read().unwrap_err(), error);
+        ser.done();
     }
 
     #[test]
@@ -594,6 +599,7 @@ mod test {
         let ts = [Transaction::write_error(42, error.clone())];
         let mut ser: Mock<u8> = Mock::new(&ts);
         assert_eq!(ser.write(42).unwrap_err(), error);
+        ser.done();
     }
 
     #[test]
@@ -613,5 +619,6 @@ mod test {
         let ts = [Transaction::flush_error(error.clone())];
         let mut ser: Mock<u8> = Mock::new(&ts);
         assert_eq!(ser.flush().unwrap_err(), error);
+        ser.done();
     }
 }
