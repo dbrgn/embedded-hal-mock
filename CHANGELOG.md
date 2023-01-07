@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 
 - Print a warning to stderr and fail test if a mock is dropped without having
-  calling `.done()` on it, or if `.done()` is called twice (#59)
+  calling `.done()` on it, or if `.done()` is called twice (#59, #61)
 
 ### Fixed
 
