@@ -60,7 +60,7 @@ where
         let mut expected = self.expected.lock().unwrap();
         let mut done_called = self.done_called.lock().unwrap();
         *expected = v;
-        done_called.called = false;
+        done_called.reset();
     }
 
     /// Assert that all expectations on a given mock have been consumed.
@@ -98,12 +98,12 @@ where
 
 /// Struct used to detect whether or not the `.done()` method was called.
 #[derive(Debug)]
-struct DoneCallDetector {
+pub(crate) struct DoneCallDetector {
     called: bool,
 }
 
 impl DoneCallDetector {
-    fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self { called: false }
     }
 
@@ -111,9 +111,14 @@ impl DoneCallDetector {
     ///
     /// Note: When calling this method twice, an assertion failure will be
     /// triggered.
-    fn mark_as_called(&mut self) {
+    pub(crate) fn mark_as_called(&mut self) {
         assert!(!self.called, "The `.done()` method was called twice!");
         self.called = true;
+    }
+
+    /// Reset the detector.
+    pub(crate) fn reset(&mut self) {
+        self.called = false;
     }
 }
 
