@@ -44,9 +44,11 @@
 //! spi.done();
 //! ```
 use embedded_hal::spi;
-use embedded_hal::spi::ErrorKind;
 use embedded_hal::spi::ErrorType;
 use embedded_hal::spi::SpiBusFlush;
+use embedded_hal::spi::{
+    ErrorKind, Operation, SpiBusRead, SpiBusWrite, SpiDeviceRead, SpiDeviceWrite,
+};
 use embedded_hal_nb::nb;
 use embedded_hal_nb::spi::FullDuplex;
 
@@ -297,16 +299,31 @@ impl FullDuplex<u8> for Mock {
     }
 }
 
-impl spi::SpiDevice for Mock {
-    type Bus = Mock;
+impl SpiDeviceRead<u8> for Mock {
+    fn read_transaction(&mut self, operations: &mut [&mut [u8]]) -> Result<(), Self::Error> {
+        for op in operations {
+            SpiBusRead::read(self, op)?;
+        }
 
+        Ok(())
+    }
+}
+
+impl SpiDeviceWrite<u8> for Mock {
+    fn write_transaction(&mut self, operations: &[&[u8]]) -> Result<(), Self::Error> {
+        for op in operations {
+            SpiBusWrite::write(self, op)?;
+        }
+
+        Ok(())
+    }
+}
+
+impl spi::SpiDevice for Mock {
     /// spi::SpiDevice implementation for Mock
     ///
     /// This writes the provided response to the buffer and will cause an assertion if the written data does not match the next expectation
-    fn transaction<R>(
-        &mut self,
-        f: impl FnOnce(&mut Self::Bus) -> Result<R, <Self::Bus as ErrorType>::Error>,
-    ) -> Result<R, Self::Error> {
+    fn transaction(&mut self, operations: &mut [Operation<'_, u8>]) -> Result<(), Self::Error> {
         let w = self
             .next()
             .expect("no expectation for spi::transaction call");
@@ -316,7 +333,22 @@ impl spi::SpiDevice for Mock {
             "spi::transaction unexpected mode"
         );
 
-        let result = f(self);
+        for op in operations {
+            match op {
+                Operation::Read(buffer) => {
+                    SpiBusRead::read(self, buffer)?;
+                }
+                Operation::Write(buffer) => {
+                    SpiBusWrite::write(self, buffer)?;
+                }
+                Operation::Transfer(read, write) => {
+                    spi::SpiBus::transfer(self, read, write)?;
+                }
+                Operation::TransferInPlace(buffer) => {
+                    spi::SpiBus::transfer_in_place(self, buffer)?;
+                }
+            }
+        }
 
         let w = self
             .next()
@@ -327,7 +359,7 @@ impl spi::SpiDevice for Mock {
             "spi::transaction unexpected mode"
         );
 
-        result
+        Ok(())
     }
 }
 
@@ -413,11 +445,11 @@ mod test {
         ];
         let mut spi = Mock::new(&expectations);
         let mut ans = [0u8; 1];
-        spi.transaction(|mut spi| {
-            SpiBusWrite::write(&mut spi, &[1, 2]).unwrap();
-            SpiBusWrite::write(&mut spi, &[0x09]).unwrap();
-            SpiBusRead::read(&mut spi, &mut ans)
-        })
+        spi.transaction(&mut [
+            Operation::Write(&[1, 2]),
+            Operation::Write(&[0x09]),
+            Operation::Read(&mut ans),
+        ])
         .unwrap();
 
         assert_eq!(ans, [10]);

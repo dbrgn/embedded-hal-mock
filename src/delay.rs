@@ -12,7 +12,6 @@
 //! [`std::thread::sleep`](https://doc.rust-lang.org/std/thread/fn.sleep.html)
 //! to implement the delay.
 
-use core::convert::Infallible;
 use std::thread;
 use std::time::Duration;
 
@@ -35,11 +34,9 @@ impl Default for NoopDelay {
 }
 
 impl delay::DelayUs for NoopDelay {
-    type Error = Infallible;
-
     /// A no-op delay implementation.
-    fn delay_us(&mut self, _n: u32) -> Result<(), Self::Error> {
-        Ok(())
+    fn delay_us(&mut self, _n: u32) {
+        // no-op
     }
 }
 
@@ -60,11 +57,8 @@ impl Default for StdSleep {
 }
 
 impl delay::DelayUs for StdSleep {
-    type Error = Infallible;
-
     /// A `Delay` implementation that uses `std::thread::sleep`.
-    fn delay_us(&mut self, n: u32) -> Result<(), Self::Error> {
+    fn delay_us(&mut self, n: u32) {
         thread::sleep(Duration::from_micros(n as u64));
-        Ok(())
     }
 }

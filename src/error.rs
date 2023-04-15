@@ -1,3 +1,4 @@
+use embedded_hal::digital::ErrorKind::{self, Other};
 use std::{error::Error as StdError, fmt, io};
 
 /// Errors that may occur during mocking.
@@ -5,6 +6,12 @@ use std::{error::Error as StdError, fmt, io};
 pub enum MockError {
     /// An I/O-Error occurred
     Io(io::ErrorKind),
+}
+
+impl embedded_hal::digital::Error for MockError {
+    fn kind(&self) -> ErrorKind {
+        Other
+    }
 }
 
 impl From<io::Error> for MockError {
