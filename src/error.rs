@@ -1,10 +1,17 @@
 use std::{error::Error as StdError, fmt, io};
+use embedded_hal::digital::ErrorKind::{self, Other};
 
 /// Errors that may occur during mocking.
 #[derive(PartialEq, Clone, Debug)]
 pub enum MockError {
     /// An I/O-Error occurred
     Io(io::ErrorKind),
+}
+
+impl embedded_hal::digital::Error for MockError {
+    fn kind(&self) -> ErrorKind {
+        Other
+    }
 }
 
 impl From<io::Error> for MockError {
