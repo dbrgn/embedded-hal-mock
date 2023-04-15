@@ -99,6 +99,7 @@ impl Transaction {
             response: Vec::new(),
         }
     }
+
     /// Create a transfer transaction
     pub fn read(response: u8) -> Transaction {
         Transaction {
@@ -166,6 +167,7 @@ impl FullDuplex<u8> for Mock {
         Ok(buffer)
     }
 }
+
 impl spi::Transfer<u8> for Mock {
     type Error = MockError;
 
@@ -211,7 +213,7 @@ impl spi::WriteIter<u8> for Mock {
         );
         assert_eq!(
             &w.expected_data, &buffer,
-            "spi::write data does not match expectation"
+            "spi::write_iter data does not match expectation"
         );
         Ok(())
     }
