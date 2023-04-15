@@ -20,6 +20,13 @@ include = [
 edition = "2021"
 rust-version = "1.60"
 
+[features]
+embedded-hal-async = ["dep:embedded-hal-async"]
+
 [dependencies]
 embedded-hal = "=1.0.0-alpha.10"
 embedded-hal-nb = "=1.0.0-alpha.2"
+embedded-hal-async = { version = "=0.2.0-alpha.1", optional = true }
+
+[dev-dependencies]
+tokio = { version = "1.21.1", features = ["rt", "macros"] }

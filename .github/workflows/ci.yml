@@ -20,8 +20,8 @@ jobs:
     strategy:
       matrix:
         toolchain:
-          - "1.35"
-          - "nightly"
+          - "1.61"
+          - "nightly-2023-04-10"
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@master
@@ -34,20 +34,18 @@ jobs:
           rustc --version
           cargo --version
 
-      # Check crate
-      - name: Check
-        run: cargo check
-      - name: Check (no default features)
-        run: cargo check --no-default-features
-      - name: Check (all features)
-        run: cargo check --all-features
+      # Build main crate
+      - name: Build
+        run: cargo build
+      - name: Build (all features)
+        if: ${{ matrix.toolchain == 'nightly-2023-04-10' }}
+        run: cargo build --all-features
 
-      # Test crate
+      # Test main crate
       - name: Test
         run: cargo test
-      - name: Test (no default features)
-        run: cargo test --no-default-features
       - name: Test (all features)
+        if: ${{ matrix.toolchain == 'nightly-2023-04-10' }}
         run: cargo test --all-features
 
   # Check code formatting
