@@ -1,5 +1,6 @@
-use embedded_hal::digital::ErrorKind::{self, Other};
 use std::{error::Error as StdError, fmt, io};
+
+use embedded_hal::digital::ErrorKind::{self, Other};
 
 /// Errors that may occur during mocking.
 #[derive(PartialEq, Eq, Clone, Debug)]
