@@ -2,6 +2,7 @@ on:
   # trigger on pushes to the main branch and 1-alpha
   push:
     branches:
+      - master
       - main
       - 1-alpha
   # trigger on all pull requests
@@ -20,8 +21,8 @@ jobs:
     strategy:
       matrix:
         toolchain:
-          - "1.61"
-          - "nightly-2023-04-10"
+          - "1.60"
+          - "nightly"
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@master
@@ -34,19 +35,20 @@ jobs:
           rustc --version
           cargo --version
 
-      # Build main crate
-      - name: Build
-        run: cargo build
-      - name: Build (all features)
-        if: ${{ matrix.toolchain == 'nightly-2023-04-10' }}
-        run: cargo build --all-features
+      # Check crate
+      - name: Check
+        run: cargo check
+      - name: Check (no default features)
+        run: cargo check --no-default-features
+      - name: Check (all features)
+        run: cargo check --all-features
 
-      # Test main crate
+      # Test crate
       - name: Test
-        if: ${{ matrix.toolchain != 'nightly-2023-04-10' }} 
         run: cargo test
+      - name: Test (no default features)
+        run: cargo test --no-default-features
       - name: Test (all features)
-        if: ${{ matrix.toolchain == 'nightly-2023-04-10' }}
         run: cargo test --all-features
 
   # Check code formatting

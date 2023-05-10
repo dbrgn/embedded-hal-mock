@@ -51,7 +51,7 @@ use embedded_hal_nb::spi::FullDuplex;
 use crate::common::Generic;
 
 /// SPI Transaction mode
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Mode {
     /// Write transaction
     Write,
@@ -72,7 +72,7 @@ pub enum Mode {
 /// SPI transaction type
 ///
 /// Models an SPI write or transfer (with response)
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Transaction {
     expected_mode: Mode,
     expected_data: Vec<u8>,

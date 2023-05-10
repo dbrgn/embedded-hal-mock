@@ -10,6 +10,8 @@
 //!
 //! See module-level docs for more information.
 //!
+//! ## Cargo Features
+//!
 //! ## no\_std
 //!
 //! Currently this crate is not `no_std`. If you think this is important, let

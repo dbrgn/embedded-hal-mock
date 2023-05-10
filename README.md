@@ -1,8 +1,13 @@
 # embedded-hal-mock
 
-[![CircleCI][circle-ci-badge]][circle-ci]
+[![GitHub Actions][github-actions-badge]][github-actions]
 ![Minimum Rust Version][min-rust-badge]
 [![Crates.io Version][version-badge]][crates-io]
+
+_(Note: This create currently targets the latest stable version of embedded-hal.
+If you're looking for a version that's compatible with the 1.0.0 alpha of
+embedded-hal, check out the [`1-alpha`
+branch](https://github.com/dbrgn/embedded-hal-mock/tree/1-alpha).)_
 
 This is a collection of types that implement the embedded-hal traits.
 
@@ -11,6 +16,8 @@ or no-op implementations are used.
 
 The goal of the crate is to be able to test drivers in CI without having access
 to hardware.
+
+This crate requires Rust 1.60+!
 
 [Docs](https://docs.rs/embedded-hal-mock/)
 
@@ -23,9 +30,9 @@ to hardware.
 - [x] Actual delay
 - [x] Serial
 - [ ] RNG
-- [x] I/O pins
+- [x] I/O pins (including PWM)
 - [x] ADC
-- [ ] Timers
+- [x] Timers (with `embedded-time` Cargo feature)
 - [ ] ...
 
 Pull requests for more mock implementations are welcome! :)
@@ -77,8 +84,8 @@ be dual licensed as above, without any additional terms or conditions.
 
 
 <!-- Badges -->
-[circle-ci]: https://circleci.com/gh/dbrgn/embedded-hal-mock/tree/master
-[circle-ci-badge]: https://circleci.com/gh/dbrgn/embedded-hal-mock/tree/master.svg?style=shield
+[github-actions]: https://github.com/dbrgn/embedded-hal-mock/actions/workflows/ci.yml
+[github-actions-badge]: https://github.com/dbrgn/embedded-hal-mock/actions/workflows/ci.yml/badge.svg
 [min-rust-badge]: https://img.shields.io/badge/rustc-1.31+-blue.svg
 [crates-io]: https://crates.io/crates/embedded-hal-mock
 [version-badge]: https://img.shields.io/crates/v/embedded-hal-mock.svg

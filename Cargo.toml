@@ -1,6 +1,6 @@
 [package]
 name = "embedded-hal-mock"
-version = "0.8.0"
+version = "0.9.0"
 authors = ["Danilo Bargen <mail@dbrgn.ch>"]
 categories = ["embedded", "hardware-support", "development-tools::testing"]
 description = "A collection of mocked devices that implement the embedded-hal traits"
@@ -17,15 +17,16 @@ include = [
     "LICENSE-MIT",
     "LICENSE-APACHE",
 ]
-edition = "2018"
-
-[features]
-embedded-hal-async = ["dep:embedded-hal-async"]
+edition = "2021"
 
 [dependencies]
 embedded-hal = "=1.0.0-alpha.10"
 embedded-hal-nb = "=1.0.0-alpha.2"
 embedded-hal-async = { version = "=0.2.0-alpha.1", optional = true }
+void = { version = "^1.0", optional = true }
 
 [dev-dependencies]
 tokio = { version = "1.21.1", features = ["rt", "macros"] }
+
+[features]
+embedded-hal-async = ["dep:embedded-hal-async"]

@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 
+## 0.9.0 - 2023-01-07
+
+### Added
+
+- Implement `WriteIter` and `WriteIterRead` for i2c mock (#44)
+- Implement `PwmPin` for pin mock (#52)
+- Add mock for timers using embedded-time with nanosecond precision (#40)
+
+### Changed
+
+- Bump minimal supported Rust version (MSRV) to 1.60
+- Switch to Rust 2021 edition (#55)
+- Switch from CircleCI to GitHub Actions (#50)
+
+
 ## 0.8.0 - 2021-08-16
 
 ### Added

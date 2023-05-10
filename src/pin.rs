@@ -1,4 +1,4 @@
-//! Mock digital [`InputPin`] and [`OutputPin`] v2 implementations
+//! Mock digi:set ignorecase smartcasetal [`InputPin`] and [`OutputPin`] v2 implementations
 //!
 //! [`InputPin`]: https://docs.rs/embedded-hal/1.0.0-alpha.6/embedded_hal/digital/trait.InputPin.html
 //! [`OutputPin`]: https://docs.rs/embedded-hal/1.0.0-alpha.6/embedded_hal/digital/trait.OutputPin.html
@@ -45,7 +45,7 @@ use crate::error::MockError;
 use embedded_hal::digital::{ErrorType, InputPin, OutputPin};
 
 /// MockPin transaction
-#[derive(PartialEq, Clone, Debug)]
+#[derive(PartialEq, Eq, Clone, Debug)]
 pub struct Transaction {
     /// Kind is the transaction kind (and data) expected
     kind: TransactionKind,
@@ -55,7 +55,7 @@ pub struct Transaction {
     err: Option<MockError>,
 }
 
-#[derive(PartialEq, Clone, Debug)]
+#[derive(PartialEq, Eq, Copy, Clone, Debug)]
 /// Digital pin value enumeration
 pub enum State {
     /// Digital low state
@@ -83,18 +83,25 @@ impl Transaction {
     /// Add an error return to a transaction
     ///
     /// This is used to mock failure behaviours.
+    ///
+    /// Note that this can only be used for methods which actually return a [`Result`];
+    /// trying to invoke this for others will lead to an assertion error!
     pub fn with_error(mut self, error: MockError) -> Self {
+        assert!(
+            self.kind.supports_errors(),
+            "the transaction kind supports errors"
+        );
         self.err = Some(error);
         self
     }
 }
 
-/// MockPin transaction kind, either Get or Set with the associated State
-#[derive(PartialEq, Clone, Debug)]
+/// MockPin transaction kind.
+#[derive(PartialEq, Eq, Clone, Debug)]
 pub enum TransactionKind {
     /// Set(true) for set_high or Set(false) for try_set_low
     Set(State),
-    /// Get(true) for high value or Get(false) for low value
+    /// Get the pin state
     Get(State),
 }
 
@@ -104,6 +111,11 @@ impl TransactionKind {
             TransactionKind::Get(_) => true,
             _ => false,
         }
+    }
+
+    /// Specifies whether the actual API returns a [`Result`] (= supports errors) or not.
+    fn supports_errors(&self) -> bool {
+        true
     }
 }
 
@@ -156,7 +168,7 @@ impl InputPin for Mock {
 
         let Transaction { kind, err } = s.next().expect("no expectation for pin::is_high call");
 
-        assert_eq!(kind.is_get(), true, "expected pin::get");
+        assert!(kind.is_get(), "expected pin::get");
 
         if let Some(e) = err {
             Err(e)
@@ -173,7 +185,7 @@ impl InputPin for Mock {
 
         let Transaction { kind, err } = s.next().expect("no expectation for pin::is_low call");
 
-        assert_eq!(kind.is_get(), true, "expected pin::get");
+        assert!(kind.is_get(), "expected pin::get");
 
         if let Some(e) = err {
             Err(e)
@@ -187,7 +199,6 @@ impl InputPin for Mock {
 
 #[cfg(test)]
 mod test {
-
     use std::io::ErrorKind;
 
     use crate::error::MockError;
