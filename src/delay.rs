@@ -19,8 +19,6 @@ use embedded_hal::blocking::delay;
 
 /// A `Delay` implementation that does not actually block.
 pub struct NoopDelay;
-/// Deprecated name for no-op `Delay` implementation.
-pub type MockNoop = NoopDelay;
 
 impl NoopDelay {
     /// Create a new `NoopDelay` instance.
