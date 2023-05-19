@@ -3,7 +3,7 @@
 //! ## Usage
 //!
 //! If the actual sleep duration is not important, simply create a
-//! [`MockNoop`](struct.MockNoop.html) instance. There will be no actual
+//! [`NoopDelay`](struct.NoopDelay.html) instance. There will be no actual
 //! delay. This is useful for fast tests, where you don't actually need to wait
 //! for the hardware.
 //!
@@ -18,22 +18,22 @@ use std::time::Duration;
 use embedded_hal::delay;
 
 /// A `Delay` implementation that does not actually block.
-pub struct MockNoop;
+pub struct NoopDelay;
 
-impl MockNoop {
-    /// Create a new `MockNoop` instance.
+impl NoopDelay {
+    /// Create a new `NoopDelay` instance.
     pub fn new() -> Self {
-        MockNoop
+        NoopDelay
     }
 }
 
-impl Default for MockNoop {
+impl Default for NoopDelay {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl delay::DelayUs for MockNoop {
+impl delay::DelayUs for NoopDelay {
     /// A no-op delay implementation.
     fn delay_us(&mut self, _n: u32) {
         // no-op

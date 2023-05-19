@@ -107,10 +107,7 @@ pub enum TransactionKind {
 
 impl TransactionKind {
     fn is_get(&self) -> bool {
-        match self {
-            TransactionKind::Get(_) => true,
-            _ => false,
-        }
+        matches!(self, TransactionKind::Get(_))
     }
 
     /// Specifies whether the actual API returns a [`Result`] (= supports errors) or not.
@@ -218,10 +215,10 @@ mod test {
         ];
         let mut pin = Mock::new(&expectations);
 
-        assert_eq!(pin.is_high().unwrap(), true);
-        assert_eq!(pin.is_low().unwrap(), false);
-        assert_eq!(pin.is_high().unwrap(), false);
-        assert_eq!(pin.is_low().unwrap(), true);
+        assert!(pin.is_high().unwrap());
+        assert!(!pin.is_low().unwrap());
+        assert!(!pin.is_high().unwrap());
+        assert!(pin.is_low().unwrap());
 
         pin.is_low().expect_err("expected error return");
 

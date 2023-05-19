@@ -489,7 +489,7 @@ mod test {
 
         let mut spi = Mock::new(&[Transaction::write(10)]);
 
-        let _ = SpiBusWrite::write(&mut spi, &[10]).unwrap();
+        SpiBusWrite::write(&mut spi, &[10]).unwrap();
 
         spi.done();
     }

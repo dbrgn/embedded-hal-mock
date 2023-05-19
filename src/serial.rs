@@ -147,9 +147,12 @@ use embedded_hal::serial::ErrorKind;
 use embedded_hal::serial::ErrorType;
 use embedded_hal_nb::nb;
 use embedded_hal_nb::serial;
+use std::{
+    collections::VecDeque,
+    sync::{Arc, Mutex},
+};
 
-use std::collections::VecDeque;
-use std::sync::{Arc, Mutex};
+use crate::common::DoneCallDetector;
 
 // Note that mode is private
 //
@@ -185,7 +188,7 @@ enum Mode<Word> {
 ///
 /// # Example
 ///
-/// ```
+/// ```no_run
 /// use embedded_hal_mock::serial::Transaction;
 /// use embedded_hal_mock::serial::Mock;
 ///
@@ -199,7 +202,7 @@ enum Mode<Word> {
 ///     Transaction::flush()
 /// ];
 ///
-/// let serial = Mock::new(&transactions);
+/// let mut serial = Mock::new(&transactions);
 /// ```
 pub struct Transaction<Word> {
     /// A collection of modes
@@ -298,6 +301,7 @@ pub struct Mock<Word> {
     /// to make it thread safe. It's then wrapped in an `Option`
     /// so that we can take it in the call to `done()`.
     expected_modes: Arc<Mutex<Option<VecDeque<Mode<Word>>>>>,
+    done_called: Arc<Mutex<DoneCallDetector>>,
 }
 
 impl<Word: Clone> Mock<Word> {
@@ -305,6 +309,7 @@ impl<Word: Clone> Mock<Word> {
     pub fn new(transactions: &[Transaction<Word>]) -> Self {
         let mut ser = Mock {
             expected_modes: Arc::new(Mutex::new(None)),
+            done_called: Arc::new(Mutex::new(DoneCallDetector::new())),
         };
         ser.expect(transactions);
         ser
@@ -315,11 +320,9 @@ impl<Word: Clone> Mock<Word> {
     /// This is a list of transactions to be executed in order.
     /// Note that setting this will overwrite any existing expectations
     pub fn expect(&mut self, transactions: &[Transaction<Word>]) {
-        let mut lock = self
-            .expected_modes
-            .lock()
-            .expect("unable to lock serial mock in call to expect");
-        *lock = Some(
+        let mut expected = self.expected_modes.lock().unwrap();
+        let mut done_called = self.done_called.lock().unwrap();
+        *expected = Some(
             transactions
                 .iter()
                 .fold(VecDeque::new(), |mut modes, transaction| {
@@ -327,11 +330,14 @@ impl<Word: Clone> Mock<Word> {
                     modes
                 }),
         );
+        done_called.reset();
     }
 
     /// Asserts that all expectations up to this point were satisfied.
     /// Panics if there are unsatisfied expectations.
     pub fn done(&mut self) {
+        self.done_called.lock().unwrap().mark_as_called();
+
         let mut lock = self
             .expected_modes
             .lock()
@@ -431,7 +437,7 @@ where
 {
     fn write(&mut self, buffer: &[Word]) -> Result<(), Self::Error> {
         for word in buffer {
-            nb::block!(serial::Write::write(self, word.clone()))?;
+            nb::block!(serial::Write::write(self, *word))?;
         }
         Ok(())
     }
@@ -587,24 +593,26 @@ mod test {
     #[test]
     fn test_serial_mock_read_error() {
         let error = nb::Error::WouldBlock;
-        let ts = [Transaction::read_error(error.clone())];
+        let ts = [Transaction::read_error(error)];
         let mut ser: Mock<u8> = Mock::new(&ts);
         assert_eq!(ser.read().unwrap_err(), error);
+        ser.done();
     }
 
     #[test]
     fn test_serial_mock_write_error() {
         let error = nb::Error::Other(ErrorKind::Parity);
-        let ts = [Transaction::write_error(42, error.clone())];
+        let ts = [Transaction::write_error(42, error)];
         let mut ser: Mock<u8> = Mock::new(&ts);
         assert_eq!(ser.write(42).unwrap_err(), error);
+        ser.done();
     }
 
     #[test]
     #[should_panic(expected = "serial::write expected to write 42 but actually wrote 23")]
     fn test_serial_mock_write_error_wrong_data() {
         let error = nb::Error::Other(ErrorKind::Parity);
-        let ts = [Transaction::write_error(42, error.clone())];
+        let ts = [Transaction::write_error(42, error)];
         let mut ser: Mock<u8> = Mock::new(&ts);
         // The data to be written should still be verified, even if there's an
         // error attached.
@@ -614,8 +622,9 @@ mod test {
     #[test]
     fn test_serial_mock_flush_error() {
         let error = nb::Error::Other(ErrorKind::Overrun);
-        let ts = [Transaction::flush_error(error.clone())];
+        let ts = [Transaction::flush_error(error)];
         let mut ser: Mock<u8> = Mock::new(&ts);
         assert_eq!(ser.flush().unwrap_err(), error);
+        ser.done();
     }
 }

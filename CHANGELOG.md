@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Added
+
+- Print a warning to stderr and fail test if a mock is dropped without having
+  calling `.done()` on it, or if `.done()` is called twice (#59, #61)
+
+### Fixed
+
+- `Generic` mock: Fix a bug that caused the call to `.done()` to fail if
+  `.next()` was called on the mock after all expectations have already been
+  consumed (#58)
+
+### Changed
+
+- The minimal supported Rust version (MSRV) is specified in the `Cargo.toml` to
+  offer clearer error messages to consumers with outdated Rust versions
+- Renamed `delay::MockNoop` to `delay::NoopDelay`.
+
 
 ## 0.9.0 - 2023-01-07
 
