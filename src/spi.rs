@@ -359,9 +359,27 @@ impl FullDuplex<u8> for Mock {
 
 impl SpiDeviceRead<u8> for Mock {
     fn read_transaction(&mut self, operations: &mut [&mut [u8]]) -> Result<(), Self::Error> {
+        let w = self
+            .next()
+            .expect("no expectation for spi::read_transaction call");
+        assert_eq!(
+            w.expected_mode,
+            Mode::TransactionStart,
+            "spi::read_transaction unexpected mode"
+        );
+
         for op in operations {
             SpiBusRead::read(self, op)?;
         }
+
+        let w = self
+            .next()
+            .expect("no expectation for spi::read_transaction call");
+        assert_eq!(
+            w.expected_mode,
+            Mode::TransactionEnd,
+            "spi::read_transaction unexpected mode"
+        );
 
         Ok(())
     }
@@ -376,9 +394,27 @@ impl embedded_hal_async::spi::SpiDeviceRead<u8> for Mock {
 
 impl SpiDeviceWrite<u8> for Mock {
     fn write_transaction(&mut self, operations: &[&[u8]]) -> Result<(), Self::Error> {
+        let w = self
+            .next()
+            .expect("no expectation for spi::write_transaction call");
+        assert_eq!(
+            w.expected_mode,
+            Mode::TransactionStart,
+            "spi::write_transaction unexpected mode"
+        );
+
         for op in operations {
             SpiBusWrite::write(self, op)?;
         }
+
+        let w = self
+            .next()
+            .expect("no expectation for spi::write_transaction call");
+        assert_eq!(
+            w.expected_mode,
+            Mode::TransactionEnd,
+            "spi::write_transaction unexpected mode"
+        );
 
         Ok(())
     }
