@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - Print a warning to stderr and fail test if a mock is dropped without having
   calling `.done()` on it, or if `.done()` is called twice (#59, #61)
+- Implement mock for `embedded_hal::pwm::SetDutyCycle`
 
 ### Fixed
 
@@ -38,7 +39,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Bump minimal supported Rust version (MSRV) to 1.60
 - Switch to Rust 2021 edition (#55)
 - Switch from CircleCI to GitHub Actions (#50)
-
 
 ## 0.8.0 - 2021-08-16
 

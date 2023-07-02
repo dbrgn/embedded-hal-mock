@@ -30,5 +30,6 @@ pub mod common;
 pub mod delay;
 pub mod i2c;
 pub mod pin;
+pub mod pwm;
 pub mod serial;
 pub mod spi;
