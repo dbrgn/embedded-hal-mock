@@ -22,10 +22,12 @@ rust-version = "1.60"
 
 [features]
 embedded-hal-async = ["dep:embedded-hal-async"]
+eh1 = ["dep:eh1", "dep:embedded-hal-nb"]
+default = ["eh1"]
 
 [dependencies]
-embedded-hal = "=1.0.0-alpha.10"
-embedded-hal-nb = "=1.0.0-alpha.2"
+eh1 = { package = "embedded-hal", version = "=1.0.0-alpha.10", optional = true }
+embedded-hal-nb = { version = "=1.0.0-alpha.2", optional = true }
 embedded-hal-async = { version = "=0.2.0-alpha.1", optional = true }
 
 [dev-dependencies]

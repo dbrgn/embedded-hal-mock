@@ -1,5 +1,6 @@
 use std::{error::Error as StdError, fmt, io};
 
+use eh1 as embedded_hal;
 use embedded_hal::digital::ErrorKind::{self, Other};
 
 /// Errors that may occur during mocking.

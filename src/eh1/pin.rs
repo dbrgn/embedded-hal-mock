@@ -4,10 +4,11 @@
 //! [`OutputPin`]: https://docs.rs/embedded-hal/1.0.0-alpha.6/embedded_hal/digital/trait.OutputPin.html
 //!
 //! ```
+//! # use eh1 as embedded_hal;
 //! use std::io::ErrorKind;
 //!
-//! use embedded_hal_mock::MockError;
-//! use embedded_hal_mock::pin::{Transaction as PinTransaction, Mock as PinMock, State as PinState};
+//! use embedded_hal_mock::eh1::MockError;
+//! use embedded_hal_mock::eh1::pin::{Transaction as PinTransaction, Mock as PinMock, State as PinState};
 //! use embedded_hal::digital::{InputPin, OutputPin};
 //!
 //! let err = MockError::Io(ErrorKind::NotConnected);
@@ -40,7 +41,8 @@
 //! ```
 
 use crate::common::Generic;
-use crate::error::MockError;
+use crate::eh1::error::MockError;
+use eh1 as embedded_hal;
 
 use embedded_hal::digital::{ErrorType, InputPin, OutputPin};
 
@@ -199,13 +201,14 @@ impl InputPin for Mock {
 
 #[cfg(test)]
 mod test {
+    use super::super::error::MockError;
+    use super::TransactionKind::{Get, Set};
+    use super::*;
+
     use std::io::ErrorKind;
 
-    use crate::error::MockError;
+    use eh1 as embedded_hal;
     use embedded_hal::digital::{InputPin, OutputPin};
-
-    use crate::pin::TransactionKind::{Get, Set};
-    use crate::pin::{Mock, State, Transaction};
 
     #[test]
     fn test_input_pin() {

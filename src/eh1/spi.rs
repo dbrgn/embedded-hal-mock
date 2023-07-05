@@ -8,11 +8,9 @@
 //! ## Usage
 //!
 //! ```
-//! extern crate embedded_hal;
-//! extern crate embedded_hal_mock;
-//!
+//! # use eh1 as embedded_hal;
 //! use embedded_hal::spi::{SpiBus, SpiBusWrite};
-//! use embedded_hal_mock::spi::{Mock as SpiMock, Transaction as SpiTransaction};
+//! use embedded_hal_mock::eh1::spi::{Mock as SpiMock, Transaction as SpiTransaction};
 //! use embedded_hal_nb::spi::FullDuplex;
 //!
 //! // Configure expectations
@@ -43,6 +41,7 @@
 //! // Finalise expectations
 //! spi.done();
 //! ```
+use eh1 as embedded_hal;
 use embedded_hal::spi;
 use embedded_hal::spi::{Operation, SpiBusRead, SpiBusWrite, SpiDeviceRead, SpiDeviceWrite};
 use embedded_hal_nb::nb;

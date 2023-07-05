@@ -3,13 +3,11 @@
 //! ## Usage
 //!
 //! ```
-//! extern crate embedded_hal;
-//! extern crate embedded_hal_mock;
-//!
+//! # use eh1 as embedded_hal;
 //! use embedded_hal::i2c::ErrorKind;
 //! use embedded_hal::i2c::I2c;
 //! use embedded_hal::i2c::Operation;
-//! use embedded_hal_mock::i2c::{Mock as I2cMock, Transaction as I2cTransaction};
+//! use embedded_hal_mock::eh1::i2c::{Mock as I2cMock, Transaction as I2cTransaction};
 //!
 //! // Configure expectations
 //! let expectations = [
@@ -44,11 +42,10 @@
 //! a transaction. When the transaction is executed, an error is returned.
 //!
 //! ```
-//! # extern crate embedded_hal;
-//! # extern crate embedded_hal_mock;
+//! # use eh1 as embedded_hal;
 //! # use embedded_hal::i2c::I2c;
 //! # use embedded_hal::i2c::ErrorKind;
-//! # use embedded_hal_mock::i2c::{Mock as I2cMock, Transaction as I2cTransaction};
+//! # use embedded_hal_mock::eh1::i2c::{Mock as I2cMock, Transaction as I2cTransaction};
 //!
 //! // Configure expectations
 //! let expectations = [
@@ -69,6 +66,7 @@
 //! i2c.done();
 //! ```
 
+use eh1 as embedded_hal;
 use embedded_hal::i2c;
 use embedded_hal::i2c::ErrorKind;
 use embedded_hal::i2c::ErrorType;

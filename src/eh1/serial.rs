@@ -9,9 +9,10 @@
 //! ## Usage: Non-blocking serial traits
 //!
 //! ```
+//! # use eh1 as embedded_hal;
 //! // Note that we're using the non-blocking serial traits
 //! use embedded_hal_nb::serial::{Read, Write};
-//! use embedded_hal_mock::serial::{
+//! use embedded_hal_mock::eh1::serial::{
 //!     Mock as SerialMock,
 //!     Transaction as SerialTransaction,
 //! };
@@ -48,10 +49,11 @@
 //! ## Usage: Blocking serial trait
 //!
 //! ```
+//! # use eh1 as embedded_hal;
 //! // Note that we're using the blocking serial write trait
 //! use embedded_hal::serial::Write;
 //! use embedded_hal_nb::serial::Read;
-//! use embedded_hal_mock::serial::{
+//! use embedded_hal_mock::eh1::serial::{
 //!     Mock as SerialMock,
 //!     Transaction as SerialTransaction,
 //! };
@@ -90,7 +92,8 @@
 //! transactions. When the transaction is executed, an error is returned.
 //!
 //! ```
-//! # use embedded_hal_mock::serial::{
+//! # use eh1 as embedded_hal;
+//! # use embedded_hal_mock::eh1::serial::{
 //! #     Mock as SerialMock,
 //! #     Transaction as SerialTransaction,
 //! # };
@@ -148,6 +151,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 
+use eh1 as embedded_hal;
 use embedded_hal::serial::ErrorKind;
 use embedded_hal::serial::ErrorType;
 use embedded_hal_nb::nb;
@@ -190,8 +194,8 @@ enum Mode<Word> {
 /// # Example
 ///
 /// ```no_run
-/// use embedded_hal_mock::serial::Transaction;
-/// use embedded_hal_mock::serial::Mock;
+/// use embedded_hal_mock::eh1::serial::Transaction;
+/// use embedded_hal_mock::eh1::serial::Mock;
 ///
 /// // We expect, in order,
 /// // 1. A read that returns 0x23,
@@ -450,10 +454,11 @@ where
 
 #[cfg(test)]
 mod test {
+    use super::*;
+
+    use eh1 as embedded_hal;
     use embedded_hal::serial::ErrorKind;
     use embedded_hal_nb::serial::{Read, Write};
-
-    use super::{nb, Mock, Transaction};
 
     #[test]
     fn test_serial_mock_read() {
