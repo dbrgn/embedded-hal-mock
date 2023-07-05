@@ -12,7 +12,6 @@ on:
 name: CI
 
 jobs:
-
   build:
     name: Build and Test
     runs-on: ubuntu-latest
@@ -20,8 +19,8 @@ jobs:
     strategy:
       matrix:
         toolchain:
-          - "1.61"
-          - "nightly-2023-04-10"
+          - "1.60"
+          - "nightly"
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@master
@@ -38,14 +37,14 @@ jobs:
       - name: Build
         run: cargo build
       - name: Build (all features)
-        if: ${{ matrix.toolchain == 'nightly-2023-04-10' }}
+        if: ${{ matrix.toolchain == 'nightly' }}
         run: cargo build --all-features
 
       # Test main crate
       - name: Test
         run: cargo test
       - name: Test (all features)
-        if: ${{ matrix.toolchain == 'nightly-2023-04-10' }}
+        if: ${{ matrix.toolchain == 'nightly' }}
         run: cargo test --all-features
 
   # Check code formatting
