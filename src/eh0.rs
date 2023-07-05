@@ -1,4 +1,4 @@
-//! This is a collection of types that implement the embedded-hal version 0 traits.
+//! This is a collection of types that implement the embedded-hal version 0.x traits.
 //!
 //! ## Usage
 //!

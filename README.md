@@ -4,11 +4,6 @@
 ![Minimum Rust Version][min-rust-badge]
 [![Crates.io Version][version-badge]][crates-io]
 
-_(Note: This create currently targets the latest stable version of embedded-hal.
-If you're looking for a version that's compatible with the 1.0.0 alpha of
-embedded-hal, check out the [`1-alpha`
-branch](https://github.com/dbrgn/embedded-hal-mock/tree/1-alpha).)_
-
 This is a collection of types that implement the embedded-hal traits.
 
 The implementations never access real hardware. Instead, the hardware is mocked
@@ -19,6 +14,28 @@ to hardware.
 
 [Docs](https://docs.rs/embedded-hal-mock/)
 
+## Usage
+
+See module-level docs for more information.
+
+## embedded_hal version
+
+This crate supports both version 0.x and version 1.x of embedded-hal.  By default only support
+for version 0.x is enabled.  To enable support for version 1.x, use the `eh1` feature.
+
+## Cargo Features
+
+There are currently the following cargo features:
+
+- `eh0`: Provide module [`eh0`] that mocks embedded-hal version 0.x (enabled by default)
+- `eh1`: Provide module [`eh1`] that mocks embedded-hal version 1.x
+- `embedded-time`: Enable the [`eh0::timer`] module (enabled by default)
+- `embedded-hal-async`: Provide mocks for embedded-hal-async in [`eh1`]
+
+## no\_std
+
+Currently this crate is not `no_std`. If you think this is important, let
+me know.
 
 ## Status
 
@@ -35,23 +52,10 @@ to hardware.
 
 Pull requests for more mock implementations are welcome! :)
 
-
-## no\_std
-
-Currently this crate is not `no_std`. If you think this is important, let me
-know.
-
-
-## Usage
-
-See [docs](https://docs.rs/embedded-hal-mock/).
-
-
 ## Minimum Supported Rust Version (MSRV)
 
 This crate is guaranteed to compile on stable Rust 1.60 and up. It *might*
 compile with older versions but that may change in any new patch release.
-
 
 ## Development Version of `embedded-hal`
 
@@ -61,15 +65,8 @@ the dependency version.
 
 ```yaml
 [patch.crates-io]
-embedded-hal = { git = "https://github.com/rust-embedded/embedded-hal" }
+eh0 = { git = "https://github.com/rust-embedded/embedded-hal" }
 ```
-
-
-# Minimum Supported Rust Version (MSRV)
-
-This crate is guaranteed to compile on stable Rust 1.61.0 and up. It *might*
-compile with older versions but that may change in any new patch release.
-
 
 ## License
 
@@ -85,7 +82,6 @@ Licensed under either of
 Unless you explicitly state otherwise, any contribution intentionally submitted
 for inclusion in the work by you, as defined in the Apache-2.0 license, shall
 be dual licensed as above, without any additional terms or conditions.
-
 
 <!-- Badges -->
 [github-actions]: https://github.com/dbrgn/embedded-hal-mock/actions/workflows/ci.yml
