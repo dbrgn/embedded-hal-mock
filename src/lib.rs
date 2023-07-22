@@ -24,6 +24,7 @@
 mod error;
 pub use crate::error::MockError;
 
+pub mod can;
 pub mod common;
 pub mod delay;
 pub mod i2c;

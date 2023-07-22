@@ -15,6 +15,12 @@ impl embedded_hal::digital::Error for MockError {
     }
 }
 
+impl embedded_can::Error for MockError {
+    fn kind(&self) -> embedded_can::ErrorKind {
+        embedded_can::ErrorKind::Other
+    }
+}
+
 impl From<io::Error> for MockError {
     fn from(e: io::Error) -> Self {
         MockError::Io(e.kind())
