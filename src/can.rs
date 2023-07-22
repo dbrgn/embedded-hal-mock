@@ -23,7 +23,7 @@
 //!     CanTransaction::transmit(frame1.clone()),
 //!     CanTransaction::receive(frame2.clone()),
 //! ];
-//! 
+//!
 //! let mut can = CanMock::new(&expectations);
 //!
 //! // Transmitting
@@ -142,9 +142,6 @@ impl Frame for MockFrame {
 }
 
 /// Mock CAN implementation
-///
-/// This supports the specification and evaluation of expectations to allow automated testing of I2C based drivers.
-/// Mismatches between expectations will cause runtime assertions to assist in locating the source of the fault.
 pub type Mock = Generic<Transaction>;
 
 impl embedded_can::blocking::Can for Mock {
@@ -211,36 +208,59 @@ impl embedded_can::nb::Can for Mock {
 mod tests {
     use super::*;
 
-    use embedded_can::ExtendedId;
+    use embedded_can::{ExtendedId, StandardId};
 
     #[test]
-    fn test_can_mock_transmit() {
+    fn test_can_mock_transmit_standard_id() {
         use embedded_can::blocking::Can;
 
-        let id: ExtendedId = ExtendedId::new(0x12345678).unwrap();
-        let frame = MockFrame::new(id, &[0x00, 0x00, 0x00, 0x00, 0x10]).unwrap();
-        let mut can = Mock::new(&[
-            Transaction::transmit(frame.clone()),
-            Transaction::transmit(frame.clone()),
-        ]);
+        let id: StandardId = StandardId::new(0x123).unwrap();
+        let frame = MockFrame::new(id, &[0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07]).unwrap();
+        let mut can = Mock::new(&[Transaction::transmit(frame.clone())]);
 
-        let id: ExtendedId = ExtendedId::new(0x12345678).unwrap();
-        let frame = MockFrame::new(id, &[0x00, 0x00, 0x00, 0x00, 0x10]).unwrap();
+        let id: StandardId = StandardId::new(0x123).unwrap();
+        let frame = MockFrame::new(id, &[0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07]).unwrap();
         let _ = can.transmit(&frame);
-
-        let id: ExtendedId = ExtendedId::new(0x12345678).unwrap();
-        let frame = MockFrame::new(id, &[0x00, 0x00, 0x00, 0x00, 0x10]).unwrap();
-        let _ = can.transmit(&frame.clone());
 
         can.done();
     }
 
     #[test]
-    fn test_can_mock_receive() {
+    fn test_can_mock_transmit_extended_id() {
         use embedded_can::blocking::Can;
 
         let id: ExtendedId = ExtendedId::new(0x12345678).unwrap();
-        let frame = MockFrame::new(id, &[0x00, 0x00, 0x00, 0x00, 0x00]).unwrap();
+        let frame = MockFrame::new(id, &[0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07]).unwrap();
+        let mut can = Mock::new(&[Transaction::transmit(frame.clone())]);
+
+        let id: ExtendedId = ExtendedId::new(0x12345678).unwrap();
+        let frame = MockFrame::new(id, &[0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07]).unwrap();
+        let _ = can.transmit(&frame);
+
+        can.done();
+    }
+
+    #[test]
+    fn test_can_mock_receive_standard_id() {
+        use embedded_can::blocking::Can;
+
+        let id: StandardId = StandardId::new(0x123).unwrap();
+        let frame = MockFrame::new(id, &[0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07]).unwrap();
+        let mut can = Mock::new(&[Transaction::receive(frame.clone())]);
+
+        let result = can.receive().unwrap();
+
+        assert_eq!(result, frame.clone());
+
+        can.done();
+    }
+
+    #[test]
+    fn test_can_mock_receive_extended_id() {
+        use embedded_can::blocking::Can;
+
+        let id: ExtendedId = ExtendedId::new(0x12345678).unwrap();
+        let frame = MockFrame::new(id, &[0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07]).unwrap();
         let mut can = Mock::new(&[Transaction::receive(frame.clone())]);
 
         let result = can.receive().unwrap();
