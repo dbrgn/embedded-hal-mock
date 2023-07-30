@@ -15,8 +15,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 
-- When updating expectations on a mock by calling `.expect(...)` on it, assert
-  that previous expectations have been consumed (#63)
+- Renamed `.expect(...)` method to `.update_expectations(...)` to avoid
+  confusion with the expect method in `Option` and `Result` (#63)
+- When updating expectations on a mock by calling `.expect(...)` /
+  `.update_expectations(...)` on it, assert that previous expectations have
+  been consumed (#63)
 
 
 ## 0.10.0-rc.1 - 2023-11-01

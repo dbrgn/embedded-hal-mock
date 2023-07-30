@@ -34,7 +34,7 @@
 //! pin.done();
 //!
 //! // Update expectations
-//! pin.expect(&[]);
+//! pin.update_expectations(&[]);
 //! // ...
 //! pin.done();
 //!

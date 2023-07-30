@@ -42,7 +42,7 @@ where
             done_called: Arc::new(Mutex::new(DoneCallDetector::new())),
         };
 
-        g.expect(expected);
+        g.update_expectations(expected);
 
         g
     }
@@ -53,7 +53,7 @@ where
     /// expectations are all consumed by calling [`done()`](#method.done)
     /// internally (if not called already). Afterwards, the new expectations
     /// are set.
-    pub fn expect<E>(&mut self, expected: E)
+    pub fn update_expectations<E>(&mut self, expected: E)
     where
         E: IntoIterator<Item = &'a T>,
     {

@@ -298,10 +298,6 @@ where
 /// if desired.
 #[derive(Clone)]
 pub struct Mock<Word> {
-    /// The expected operations upon the mock
-    ///
-    /// It's in an arc to maintain shared state, and in a mutex
-    /// to make it thread safe.
     expected_modes: Arc<Mutex<VecDeque<Mode<Word>>>>,
     done_called: Arc<Mutex<DoneCallDetector>>,
 }
@@ -313,7 +309,7 @@ impl<Word: Clone> Mock<Word> {
             expected_modes: Arc::new(Mutex::new(VecDeque::new())),
             done_called: Arc::new(Mutex::new(DoneCallDetector::new())),
         };
-        ser.expect(transactions);
+        ser.update_expectations(transactions);
         ser
     }
 
@@ -323,7 +319,7 @@ impl<Word: Clone> Mock<Word> {
     /// expectations are all consumed by calling [`done()`](#method.done)
     /// internally (if not called already). Afterwards, the new expectations
     /// are set.
-    pub fn expect(&mut self, transactions: &[Transaction<Word>]) {
+    pub fn update_expectations(&mut self, transactions: &[Transaction<Word>]) {
         // Ensure that existing expectations are consumed
         self.done_impl(false);
 
@@ -572,7 +568,7 @@ mod test {
         let r = ser.read().expect("failed to read");
         assert_eq!(r, 0x54);
         ser.done();
-        ser.expect(&ts);
+        ser.update_expectations(&ts);
         ser.done();
     }
 
