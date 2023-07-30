@@ -8,11 +8,9 @@
 //! ## Usage
 //!
 //! ```
-//! extern crate embedded_hal;
-//! extern crate embedded_hal_mock;
-//!
+//! # use eh0 as embedded_hal;
 //! use embedded_hal::blocking::spi::{Transfer, Write};
-//! use embedded_hal_mock::spi::{Mock as SpiMock, Transaction as SpiTransaction};
+//! use embedded_hal_mock::eh0::spi::{Mock as SpiMock, Transaction as SpiTransaction};
 //! use embedded_hal::spi::FullDuplex;
 //!
 //! // Configure expectations
@@ -43,11 +41,12 @@
 //! // Finalise expectations
 //! spi.done();
 //! ```
+use eh0 as embedded_hal;
 use embedded_hal::blocking::spi;
 use embedded_hal::spi::FullDuplex;
 
+use super::error::MockError;
 use crate::common::Generic;
-use crate::error::MockError;
 
 /// SPI Transaction mode
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -223,6 +222,7 @@ impl spi::WriteIter<u8> for Mock {
 mod test {
     use super::*;
 
+    use eh0 as embedded_hal;
     use embedded_hal::blocking::spi::{Transfer, Write, WriteIter};
 
     #[test]

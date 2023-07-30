@@ -4,10 +4,11 @@
 //! [`OutputPin`]: https://docs.rs/embedded-hal/0.2/embedded_hal/digital/v2/trait.OutputPin.html
 //!
 //! ```
+//! # use eh0 as embedded_hal;
 //! use std::io::ErrorKind;
 //!
-//! use embedded_hal_mock::MockError;
-//! use embedded_hal_mock::pin::{Transaction as PinTransaction, Mock as PinMock, State as PinState};
+//! use embedded_hal_mock::eh0::MockError;
+//! use embedded_hal_mock::eh0::pin::{Transaction as PinTransaction, Mock as PinMock, State as PinState};
 //! use embedded_hal::digital::v2::{InputPin, OutputPin};
 //!
 //! let err = MockError::Io(ErrorKind::NotConnected);
@@ -39,9 +40,10 @@
 //!
 //! ```
 
+use super::error::MockError;
 use crate::common::Generic;
-use crate::error::MockError;
 
+use eh0 as embedded_hal;
 use embedded_hal::digital::v2::{InputPin, OutputPin};
 use embedded_hal::PwmPin;
 
@@ -298,14 +300,15 @@ impl PwmPin for Mock {
 
 #[cfg(test)]
 mod test {
+    use super::super::error::MockError;
+    use super::TransactionKind::*;
+    use super::*;
+
     use std::io::ErrorKind;
 
-    use crate::error::MockError;
+    use eh0 as embedded_hal;
     use embedded_hal::digital::v2::{InputPin, OutputPin};
     use embedded_hal::PwmPin;
-
-    use crate::pin::TransactionKind::{Disable, Enable, Get, GetDuty, GetMaxDuty, Set, SetDuty};
-    use crate::pin::{Mock, State, Transaction};
 
     #[test]
     fn test_input_pin() {

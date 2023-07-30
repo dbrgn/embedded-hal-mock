@@ -15,6 +15,7 @@
 use std::thread;
 use std::time::Duration;
 
+use eh0 as embedded_hal;
 use embedded_hal::blocking::delay;
 
 /// A `Delay` implementation that does not actually block.

@@ -10,28 +10,33 @@
 //!
 //! See module-level docs for more information.
 //!
+//! ## embedded_hal version
+//!
+//! This crate supports both version 0.x and version 1.x of embedded-hal.  By default only support
+//! for version 0.x is enabled.  To enable support for version 1.x, use the `eh1` feature.
+//!
 //! ## Cargo Features
 //!
 //! There are currently the following cargo features:
 //!
-//! - `embedded-time`: Enable the `timer` module (enabled by default)
+//! - `eh0`: Provide module [`eh0`] that mocks embedded-hal version 0.x (enabled by default)
+//! - `eh1`: Provide module [`eh1`] that mocks embedded-hal version 1.x
+//! - `embedded-time`: Enable the [`eh0::timer`] module (enabled by default)
+//! - `embedded-hal-async`: Provide mocks for embedded-hal-async in [`eh1`]
 //!
 //! ## no\_std
 //!
 //! Currently this crate is not `no_std`. If you think this is important, let
 //! me know.
-
+#![cfg_attr(
+    feature = "embedded-hal-async",
+    feature(async_fn_in_trait),
+    allow(incomplete_features)
+)]
 #![deny(missing_docs)]
 
-mod error;
-pub use crate::error::MockError;
-
-pub mod adc;
 pub mod common;
-pub mod delay;
-pub mod i2c;
-pub mod pin;
-pub mod serial;
-pub mod spi;
-#[cfg(feature = "embedded-time")]
-pub mod timer;
+#[cfg(feature = "eh0")]
+pub mod eh0;
+#[cfg(feature = "eh1")]
+pub mod eh1;

@@ -3,12 +3,11 @@
 //! ## Usage
 //!
 //! ```
-//! extern crate embedded_hal;
-//! extern crate embedded_hal_mock;
-//!
-//! use embedded_hal::prelude::*;
-//! use embedded_hal::blocking::i2c::{Read, Write, WriteRead};
-//! use embedded_hal_mock::i2c::{Mock as I2cMock, Transaction as I2cTransaction};
+//! # use eh1 as embedded_hal;
+//! use embedded_hal::i2c::ErrorKind;
+//! use embedded_hal::i2c::I2c;
+//! use embedded_hal::i2c::Operation;
+//! use embedded_hal_mock::eh1::i2c::{Mock as I2cMock, Transaction as I2cTransaction};
 //!
 //! // Configure expectations
 //! let expectations = [
@@ -35,7 +34,6 @@
 //!
 //! - `Read`: This expects an I²C `read` command and will return the wrapped bytes.
 //! - `Write`: This expects an I²C `write` command with the wrapped bytes.
-//! - `WriteRead`: This expects an I²C `write_read` command where the
 //!   `expected` bytes are written and the `response` bytes are returned.
 //!
 //! ## Testing Error Handling
@@ -44,18 +42,15 @@
 //! a transaction. When the transaction is executed, an error is returned.
 //!
 //! ```
-//! # extern crate embedded_hal;
-//! # extern crate embedded_hal_mock;
-//! # use embedded_hal::prelude::*;
-//! # use embedded_hal::blocking::i2c::{Read, Write, WriteRead};
-//! # use embedded_hal_mock::i2c::{Mock as I2cMock, Transaction as I2cTransaction};
-//! use std::io::ErrorKind;
-//! use embedded_hal_mock::MockError;
+//! # use eh1 as embedded_hal;
+//! # use embedded_hal::i2c::I2c;
+//! # use embedded_hal::i2c::ErrorKind;
+//! # use embedded_hal_mock::eh1::i2c::{Mock as I2cMock, Transaction as I2cTransaction};
 //!
 //! // Configure expectations
 //! let expectations = [
 //!     I2cTransaction::write(0xaa, vec![1, 2]),
-//!     I2cTransaction::read(0xbb, vec![3, 4]).with_error(MockError::Io(ErrorKind::Other)),
+//!     I2cTransaction::read(0xbb, vec![3, 4]).with_error(ErrorKind::Other),
 //! ];
 //! let mut i2c = I2cMock::new(&expectations);
 //!
@@ -65,16 +60,18 @@
 //! // Reading returns an error
 //! let mut buf = vec![0; 2];
 //! let err = i2c.read(0xbb, &mut buf).unwrap_err();
-//! assert_eq!(err, MockError::Io(ErrorKind::Other));
+//! assert_eq!(err, ErrorKind::Other);
 //!
 //! // Finalise expectations
 //! i2c.done();
 //! ```
 
-use embedded_hal::blocking::i2c;
+use eh1 as embedded_hal;
+use embedded_hal::i2c;
+use embedded_hal::i2c::ErrorKind;
+use embedded_hal::i2c::ErrorType;
 
 use crate::common::Generic;
-use crate::error::MockError;
 
 /// I2C Transaction modes
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -85,6 +82,10 @@ pub enum Mode {
     Read,
     /// Write and read transaction
     WriteRead,
+    /// Mark the start of a transaction
+    TransactionStart,
+    /// Mark the end of a transaction
+    TransactionEnd,
 }
 
 /// I2C Transaction type
@@ -100,7 +101,7 @@ pub struct Transaction {
     ///
     /// This is in addition to the mode to allow validation that the
     /// transaction mode is correct prior to returning the error.
-    expected_err: Option<MockError>,
+    expected_err: Option<ErrorKind>,
 }
 
 impl Transaction {
@@ -137,13 +138,35 @@ impl Transaction {
         }
     }
 
+    /// Create nested transactions
+    pub fn transaction_start(addr: u8) -> Transaction {
+        Transaction {
+            expected_mode: Mode::TransactionStart,
+            expected_addr: addr,
+            expected_data: Vec::new(),
+            response_data: Vec::new(),
+            expected_err: None,
+        }
+    }
+
+    /// Create nested transactions
+    pub fn transaction_end(addr: u8) -> Transaction {
+        Transaction {
+            expected_mode: Mode::TransactionEnd,
+            expected_addr: addr,
+            expected_data: Vec::new(),
+            response_data: Vec::new(),
+            expected_err: None,
+        }
+    }
+
     /// Add an error return to a transaction
     ///
     /// This is used to mock failure behaviours.
     ///
     /// Note: When attaching this to a read transaction, the response in the
     /// expectation will not actually be written to the buffer.
-    pub fn with_error(mut self, error: MockError) -> Self {
+    pub fn with_error(mut self, error: ErrorKind) -> Self {
         self.expected_err = Some(error);
         self
     }
@@ -155,9 +178,11 @@ impl Transaction {
 /// Mismatches between expectations will cause runtime assertions to assist in locating the source of the fault.
 pub type Mock = Generic<Transaction>;
 
-impl i2c::Read for Mock {
-    type Error = MockError;
+impl ErrorType for Mock {
+    type Error = ErrorKind;
+}
 
+impl i2c::I2c for Mock {
     fn read(&mut self, address: u8, buffer: &mut [u8]) -> Result<(), Self::Error> {
         let e = self
             .next()
@@ -180,10 +205,6 @@ impl i2c::Read for Mock {
             }
         }
     }
-}
-
-impl i2c::Write for Mock {
-    type Error = MockError;
 
     fn write(&mut self, address: u8, bytes: &[u8]) -> Result<(), Self::Error> {
         let e = self
@@ -202,10 +223,6 @@ impl i2c::Write for Mock {
             None => Ok(()),
         }
     }
-}
-
-impl i2c::WriteRead for Mock {
-    type Error = MockError;
 
     fn write_read(
         &mut self,
@@ -242,38 +259,41 @@ impl i2c::WriteRead for Mock {
             }
         }
     }
-}
 
-impl i2c::WriteIterRead for Mock {
-    type Error = MockError;
-
-    fn write_iter_read<B>(
+    fn transaction<'a>(
         &mut self,
         address: u8,
-        bytes: B,
-        buffer: &mut [u8],
-    ) -> Result<(), Self::Error>
-    where
-        B: IntoIterator<Item = u8>,
-    {
-        // Just collect the bytes and pass them on to the WriteRead::write_read implementation
-        use embedded_hal::blocking::i2c::WriteRead;
-        let bytes: Vec<_> = bytes.into_iter().collect();
-        self.write_read(address, bytes.as_slice(), buffer)
-    }
-}
+        operations: &mut [i2c::Operation<'a>],
+    ) -> Result<(), Self::Error> {
+        let w = self
+            .next()
+            .expect("no pending expectation for i2c::transaction call");
 
-impl i2c::WriteIter for Mock {
-    type Error = MockError;
+        assert_eq!(
+            w.expected_mode,
+            Mode::TransactionStart,
+            "i2c::transaction_start unexpected mode"
+        );
 
-    fn write<B>(&mut self, address: u8, bytes: B) -> Result<(), Self::Error>
-    where
-        B: IntoIterator<Item = u8>,
-    {
-        // Just collect the bytes and pass them on to the Write::write implementation
-        use embedded_hal::blocking::i2c::Write;
-        let bytes: Vec<_> = bytes.into_iter().collect();
-        Write::write(self, address, bytes.as_slice())
+        for op in operations {
+            match op {
+                i2c::Operation::Read(r) => self.read(address, r),
+                i2c::Operation::Write(w) => self.write(address, w),
+            }
+            .unwrap();
+        }
+
+        let w = self
+            .next()
+            .expect("no pending expectation for i2c::transaction call");
+
+        assert_eq!(
+            w.expected_mode,
+            Mode::TransactionEnd,
+            "i2c::transaction_end unexpected mode"
+        );
+
+        Ok(())
     }
 }
 
@@ -281,9 +301,9 @@ impl i2c::WriteIter for Mock {
 mod test {
     use super::*;
 
-    use std::{io::ErrorKind as IoErrorKind, time::SystemTime};
+    use std::time::SystemTime;
 
-    use embedded_hal::blocking::i2c::{Read, Write, WriteRead};
+    use embedded_hal::i2c::I2c;
 
     #[test]
     fn write() {
@@ -332,6 +352,32 @@ mod test {
 
         let mut v = vec![0; 2];
         i2c.read(0xbb, &mut v).unwrap();
+
+        assert_eq!(v, vec![3, 4]);
+
+        i2c.done();
+    }
+
+    #[test]
+    fn test_i2c_mock_multiple_transaction() {
+        let expectations = [
+            Transaction::transaction_start(0xaa),
+            Transaction::write(0xaa, vec![1, 2]),
+            Transaction::read(0xaa, vec![3, 4]),
+            Transaction::transaction_end(0xaa),
+        ];
+        let mut i2c = Mock::new(&expectations);
+
+        let mut v = vec![0u8; 2];
+        i2c.transaction(
+            0xaa,
+            &mut [
+                i2c::Operation::Write(&vec![1, 2]),
+                i2c::Operation::Read(&mut v),
+            ],
+        )
+        .unwrap();
+
         assert_eq!(v, vec![3, 4]);
 
         i2c.done();
@@ -343,7 +389,7 @@ mod test {
         let expectations = [Transaction::write(0xaa, vec![1, 2])];
         let mut i2c = Mock::new(&expectations);
 
-        let _ = i2c.write(0xaa, &vec![1, 3]); // Panics because unexpected data was written
+        i2c.write(0xaa, &vec![1, 3]).unwrap(); // Panics because unexpected data was written
     }
 
     #[test]
@@ -353,7 +399,7 @@ mod test {
         let mut i2c = Mock::new(&expectations);
 
         let mut buff = vec![0; 2];
-        let _ = i2c.write(0xaa, &mut buff); // Panics because it's a write, not a read
+        i2c.write(0xaa, &mut buff).unwrap(); // Panics because it's a write, not a read
     }
 
     #[test]
@@ -364,7 +410,18 @@ mod test {
 
         let v = vec![1, 2];
         let mut buff = vec![0; 2];
-        let _ = i2c.write_read(0xaa, &v, &mut buff); // Panics because an unexpected address was used
+        i2c.write_read(0xaa, &v, &mut buff).unwrap(); // Panics because an unexpected address was used
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_i2c_mock_mode_err() {
+        let expectations = [Transaction::read(0xaa, vec![10, 12])];
+        let mut i2c = Mock::new(&expectations);
+
+        i2c.write(0xaa, &vec![10, 12]).unwrap();
+
+        i2c.done();
     }
 
     #[test]
@@ -417,7 +474,7 @@ mod test {
 
         #[test]
         fn write() {
-            let expected_err = MockError::Io(IoErrorKind::Other);
+            let expected_err = ErrorKind::Other;
             let mut i2c = Mock::new(&[
                 Transaction::write(0xaa, vec![10, 12]).with_error(expected_err.clone())
             ]);
@@ -430,8 +487,8 @@ mod test {
         #[test]
         #[should_panic]
         fn write_wrong_mode() {
-            let mut i2c = Mock::new(&[Transaction::write(0xaa, vec![10, 12])
-                .with_error(MockError::Io(IoErrorKind::Other))]);
+            let mut i2c =
+                Mock::new(&[Transaction::write(0xaa, vec![10, 12]).with_error(ErrorKind::Other)]);
             let mut buf = vec![0; 2];
             let _ = i2c.read(0xaa, &mut buf); // Panics because it's a read, not a write
         }
@@ -440,14 +497,14 @@ mod test {
         #[test]
         #[should_panic]
         fn write_wrong_data() {
-            let mut i2c = Mock::new(&[Transaction::write(0xaa, vec![10, 12])
-                .with_error(MockError::Io(IoErrorKind::Other))]);
+            let mut i2c =
+                Mock::new(&[Transaction::write(0xaa, vec![10, 12]).with_error(ErrorKind::Other)]);
             let _ = i2c.write(0xaa, &vec![10, 13]); // Panics because unexpected data was written
         }
 
         #[test]
         fn read() {
-            let expected_err = MockError::Io(IoErrorKind::Other);
+            let expected_err = ErrorKind::Other;
             let mut i2c =
                 Mock::new(
                     &[Transaction::read(0xaa, vec![10, 12]).with_error(expected_err.clone())],
@@ -458,9 +515,18 @@ mod test {
             i2c.done();
         }
 
+        /// The transaction mode should still be validated.
+        #[test]
+        #[should_panic]
+        fn read_wrong_mode() {
+            let mut i2c =
+                Mock::new(&[Transaction::read(0xaa, vec![10, 12]).with_error(ErrorKind::Other)]);
+            let _ = i2c.write(0xaa, &vec![10, 12]);
+        }
+
         #[test]
         fn write_read() {
-            let expected_err = MockError::Io(IoErrorKind::Other);
+            let expected_err = ErrorKind::Other;
             let mut i2c = Mock::new(&[Transaction::write_read(0xaa, vec![10, 12], vec![13, 14])
                 .with_error(expected_err.clone())]);
             let mut buf = vec![0; 2];
@@ -469,14 +535,23 @@ mod test {
             i2c.done();
         }
 
+        /// The transaction mode should still be validated.
+        #[test]
+        #[should_panic]
+        fn write_read_wrong_mode() {
+            let mut i2c = Mock::new(&[Transaction::write_read(0xaa, vec![10, 12], vec![13, 14])
+                .with_error(ErrorKind::Other)]);
+            let _ = i2c.write(0xaa, &vec![10, 12]);
+        }
+
         /// The transaction bytes should still be validated.
         #[test]
         #[should_panic]
         fn write_read_wrong_data() {
             let mut i2c = Mock::new(&[Transaction::write_read(0xaa, vec![10, 12], vec![13, 14])
-                .with_error(MockError::Io(IoErrorKind::Other))]);
+                .with_error(ErrorKind::Other)]);
             let mut buf = vec![0; 2];
-            let _ = i2c.write_read(0xaa, &vec![10, 13], &mut buf); // Panics because unexpected data was written
+            let _ = i2c.write_read(0xaa, &vec![10, 13], &mut buf);
         }
     }
 }

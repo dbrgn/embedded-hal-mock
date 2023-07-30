@@ -3,10 +3,11 @@
 //! ## Usage
 //!
 //! ```
+//! # use eh0 as embedded_hal;
 //! use embedded_hal::adc::OneShot;
-//! use embedded_hal_mock::adc::Mock;
-//! use embedded_hal_mock::adc::Transaction;
-//! use embedded_hal_mock::adc::{MockChan0, MockChan1};
+//! use embedded_hal_mock::eh0::adc::Mock;
+//! use embedded_hal_mock::eh0::adc::Transaction;
+//! use embedded_hal_mock::eh0::adc::{MockChan0, MockChan1};
 //!
 //! // Configure expectations: expected input channel numbers and values returned by read operations
 //! let expectations = [
@@ -28,11 +29,12 @@
 //! Attach an error to test error handling. An error is returned when such a transaction is executed.
 //!
 //! ```
+//! # use eh0 as embedded_hal;
 //! use embedded_hal::adc::OneShot;
-//! use embedded_hal_mock::adc::Mock;
-//! use embedded_hal_mock::adc::Transaction;
-//! use embedded_hal_mock::adc::MockChan1;
-//! use embedded_hal_mock::MockError;
+//! use embedded_hal_mock::eh0::adc::Mock;
+//! use embedded_hal_mock::eh0::adc::Transaction;
+//! use embedded_hal_mock::eh0::adc::MockChan1;
+//! use embedded_hal_mock::eh0::MockError;
 //! use std::io::ErrorKind;
 //!
 //!
@@ -49,13 +51,14 @@
 //! adc.done();
 //! ```
 
+use eh0 as embedded_hal;
 use embedded_hal::adc::Channel;
 use embedded_hal::adc::OneShot;
 use nb;
 use std::fmt::Debug;
 
+use super::error::MockError;
 use crate::common::Generic;
-use crate::error::MockError;
 
 /// ADC transaction type
 ///
@@ -138,10 +141,12 @@ where
 
 #[cfg(test)]
 mod test {
+    use super::super::error::MockError;
+    use super::*;
+
+    use eh0 as embedded_hal;
     use embedded_hal::adc::OneShot;
 
-    use crate::adc::{Mock, MockChan0, MockChan1, MockChan2, Transaction};
-    use crate::MockError;
     use std::io::ErrorKind;
 
     #[test]
