@@ -129,8 +129,12 @@ impl Drop for DoneCallDetector {
             stderr.write_all(b"\x1b[m\n").ok();
             stderr.flush().ok();
 
-            // Panic. This probably results in an abort:
+            // Panic!
+            //
+            // (Note: Inside a `Drop` implementation, panic should only be used
+            // if not already panicking:
             // https://doc.rust-lang.org/std/ops/trait.Drop.html#panics
+            // This is ensured by checking `!thread::panicking()`.)
             panic!("{}", msg);
         }
     }
