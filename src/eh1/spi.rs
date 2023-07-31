@@ -772,7 +772,9 @@ mod test {
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic(
+        expected = "assertion failed: `(left == right)`\n  left: `[10, 12]`,\n right: `[10, 12, 12]`: spi::write data does not match expectation"
+    )]
     fn test_spi_mock_write_err() {
         use embedded_hal::spi::SpiBusWrite;
 
@@ -786,7 +788,9 @@ mod test {
 
     #[tokio::test]
     #[cfg(feature = "embedded-hal-async")]
-    #[should_panic]
+    #[should_panic(
+        expected = "assertion failed: `(left == right)`\n  left: `[10, 12]`,\n right: `[10, 12, 12]`: spi::write data does not match expectation"
+    )]
     async fn test_async_spi_mock_write_err() {
         use embedded_hal_async::spi::SpiBusWrite;
 
@@ -799,7 +803,9 @@ mod test {
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic(
+        expected = "assertion failed: `(left == right)`\n  left: `[12, 15]`,\n right: `[12, 13]`"
+    )]
     fn test_spi_mock_transfer_err() {
         use embedded_hal::spi::SpiBus;
 
@@ -816,7 +822,9 @@ mod test {
 
     #[tokio::test]
     #[cfg(feature = "embedded-hal-async")]
-    #[should_panic]
+    #[should_panic(
+        expected = "assertion failed: `(left == right)`\n  left: `[12, 15]`,\n right: `[12, 13]`"
+    )]
     async fn test_async_spi_mock_transfer_err() {
         use embedded_hal_async::spi::SpiBus;
 
@@ -832,7 +840,9 @@ mod test {
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic(
+        expected = "assertion failed: `(left == right)`\n  left: `[1, 2]`,\n right: `[10, 12]`: spi::write data does not match expectation"
+    )]
     fn test_spi_mock_transfer_response_err() {
         use embedded_hal::spi::SpiBus;
 
@@ -849,7 +859,9 @@ mod test {
 
     #[tokio::test]
     #[cfg(feature = "embedded-hal-async")]
-    #[should_panic]
+    #[should_panic(
+        expected = "assertion failed: `(left == right)`\n  left: `[1, 2]`,\n right: `[10, 12]`: spi::write data does not match expectation"
+    )]
     async fn test_async_spi_mock_transfer_response_err() {
         use embedded_hal_async::spi::SpiBus;
 
@@ -865,7 +877,9 @@ mod test {
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic(
+        expected = "(left == right)`\n  left: `TransferInplace`,\n right: `Write`: spi::write unexpected mode"
+    )]
     fn test_spi_mock_mode_err() {
         use embedded_hal::spi::SpiBusWrite;
 
@@ -879,7 +893,9 @@ mod test {
 
     #[tokio::test]
     #[cfg(feature = "embedded-hal-async")]
-    #[should_panic]
+    #[should_panic(
+        expected = "assertion failed: `(left == right)`\n  left: `TransferInplace`,\n right: `Write`: spi::write unexpected mode"
+    )]
     async fn test_async_spi_mock_mode_err() {
         use embedded_hal_async::spi::SpiBusWrite;
 
@@ -892,7 +908,9 @@ mod test {
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic(
+        expected = "assertion failed: `(left == right)`\n  left: `[10, 12]`,\n right: `[10, 12, 12]`: spi::write data does not match expectation"
+    )]
     fn test_spi_mock_multiple_transaction_err() {
         use embedded_hal::spi::SpiBusWrite;
 
@@ -909,7 +927,9 @@ mod test {
 
     #[tokio::test]
     #[cfg(feature = "embedded-hal-async")]
-    #[should_panic]
+    #[should_panic(
+        expected = "assertion failed: `(left == right)`\n  left: `[10, 12]`,\n right: `[10, 12, 12]`: spi::write data does not match expectation"
+    )]
     async fn test_async_spi_mock_multiple_transaction_err() {
         use embedded_hal_async::spi::SpiBusWrite;
 

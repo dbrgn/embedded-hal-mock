@@ -161,24 +161,25 @@ mod tests {
         }
 
         #[test]
-        #[should_panic]
+        #[should_panic(
+            expected = "WARNING: A mock (from embedded-hal-mock) was dropped without calling the `.done()` method. See https://github.com/dbrgn/embedded-hal-mock/issues/34 for more details."
+        )]
         fn panic_if_drop_not_called() {
             let expectations = [0u8, 1u8];
             let mut mock: Generic<u8> = Generic::new(&expectations);
             assert_eq!(mock.next(), Some(0u8));
             assert_eq!(mock.next(), Some(1u8));
-            // Note: done() not called
         }
 
         #[test]
-        #[should_panic]
+        #[should_panic(expected = "The `.done()` method was called twice!")]
         fn panic_if_drop_called_twice() {
             let expectations = [0u8, 1u8];
             let mut mock: Generic<u8> = Generic::new(&expectations);
             assert_eq!(mock.next(), Some(0u8));
             assert_eq!(mock.next(), Some(1u8));
             mock.done();
-            mock.done(); // This will panic
+            mock.done();
         }
     }
 }

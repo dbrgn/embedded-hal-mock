@@ -323,7 +323,9 @@ mod test {
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic(
+        expected = "assertion failed: `(left == right)`\n  left: `[10, 12]`,\n right: `[10, 12, 12]`: spi::write data does not match expectation"
+    )]
     fn test_spi_mock_write_err() {
         let expectations = [Transaction::write(vec![10, 12])];
         let mut spi = Mock::new(&expectations);
@@ -334,7 +336,9 @@ mod test {
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic(
+        expected = "assertion failed: `(left == right)`\n  left: `[10, 12]`,\n right: `[10, 12, 12]`: spi::write_iter data does not match expectation"
+    )]
     fn test_spi_mock_write_iter_err() {
         let expectations = [Transaction::write(vec![10, 12])];
         let mut spi = Mock::new(&expectations);
@@ -345,7 +349,9 @@ mod test {
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic(
+        expected = "assertion failed: `(left == right)`\n  left: `[12, 15]`,\n right: `[12, 13]`"
+    )]
     fn test_spi_mock_transfer_err() {
         let expectations = [Transaction::transfer(vec![10, 12], vec![12, 15])];
         let mut spi = Mock::new(&expectations);
@@ -359,7 +365,9 @@ mod test {
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic(
+        expected = "assertion failed: `(left == right)`\n  left: `[1, 2]`,\n right: `[10, 12]`: spi::write data does not match expectation"
+    )]
     fn test_spi_mock_transfer_response_err() {
         let expectations = [Transaction::transfer(vec![1, 2], vec![3, 4, 5])];
         let mut spi = Mock::new(&expectations);
@@ -373,7 +381,9 @@ mod test {
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic(
+        expected = "assertion failed: `(left == right)`\n  left: `Transfer`,\n right: `Write`: spi::write unexpected mode"
+    )]
     fn test_spi_mock_mode_err() {
         let expectations = [Transaction::transfer(vec![10, 12], vec![])];
         let mut spi = Mock::new(&expectations);
@@ -384,7 +394,9 @@ mod test {
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic(
+        expected = "assertion failed: `(left == right)`\n  left: `[10, 12]`,\n right: `[10, 12, 12]`: spi::write data does not match expectation"
+    )]
     fn test_spi_mock_multiple_transaction_err() {
         let expectations = [
             Transaction::write(vec![10, 12]),

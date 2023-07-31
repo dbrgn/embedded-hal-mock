@@ -338,37 +338,41 @@ mod test {
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic(
+        expected = "assertion failed: `(left == right)`\n  left: `[1, 2]`,\n right: `[1, 3]`: i2c::write data does not match expectation"
+    )]
     fn write_data_mismatch() {
         let expectations = [Transaction::write(0xaa, vec![1, 2])];
         let mut i2c = Mock::new(&expectations);
 
-        let _ = i2c.write(0xaa, &vec![1, 3]); // Panics because unexpected data was written
+        let _ = i2c.write(0xaa, &vec![1, 3]);
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic(
+        expected = "assertion failed: `(left == right)`\n  left: `Read`,\n right: `Write`: i2c::write unexpected mode"
+    )]
     fn transaction_type_mismatch() {
         let expectations = [Transaction::read(0xaa, vec![10, 12])];
         let mut i2c = Mock::new(&expectations);
 
         let mut buff = vec![0; 2];
-        let _ = i2c.write(0xaa, &mut buff); // Panics because it's a write, not a read
+        let _ = i2c.write(0xaa, &mut buff);
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic(expected = "i2c::write_read address mismatch")]
     fn address_mismatch() {
         let expectations = [Transaction::write_read(0xbb, vec![1, 2], vec![3, 4])];
         let mut i2c = Mock::new(&expectations);
 
         let v = vec![1, 2];
         let mut buff = vec![0; 2];
-        let _ = i2c.write_read(0xaa, &v, &mut buff); // Panics because an unexpected address was used
+        let _ = i2c.write_read(0xaa, &v, &mut buff);
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic(expected = "Not all expectations consumed")]
     fn unconsumed_expectations() {
         let expectations = [
             Transaction::write(0xaa, vec![10, 12]),
@@ -378,7 +382,7 @@ mod test {
 
         i2c.write(0xaa, &vec![10, 12]).unwrap();
 
-        i2c.done(); // Panics because not all transactions were consumed
+        i2c.done();
     }
 
     #[test]
@@ -428,21 +432,25 @@ mod test {
 
         /// The transaction mode should still be validated.
         #[test]
-        #[should_panic]
+        #[should_panic(
+            expected = "assertion failed: `(left == right)`\n  left: `Write`,\n right: `Read`: i2c::read unexpected mode"
+        )]
         fn write_wrong_mode() {
             let mut i2c = Mock::new(&[Transaction::write(0xaa, vec![10, 12])
                 .with_error(MockError::Io(IoErrorKind::Other))]);
             let mut buf = vec![0; 2];
-            let _ = i2c.read(0xaa, &mut buf); // Panics because it's a read, not a write
+            let _ = i2c.read(0xaa, &mut buf);
         }
 
         /// The transaction bytes should still be validated.
         #[test]
-        #[should_panic]
+        #[should_panic(
+            expected = "assertion failed: `(left == right)`\n  left: `[10, 12]`,\n right: `[10, 13]`: i2c::write data does not match expectation"
+        )]
         fn write_wrong_data() {
             let mut i2c = Mock::new(&[Transaction::write(0xaa, vec![10, 12])
                 .with_error(MockError::Io(IoErrorKind::Other))]);
-            let _ = i2c.write(0xaa, &vec![10, 13]); // Panics because unexpected data was written
+            let _ = i2c.write(0xaa, &vec![10, 13]);
         }
 
         #[test]
@@ -471,12 +479,14 @@ mod test {
 
         /// The transaction bytes should still be validated.
         #[test]
-        #[should_panic]
+        #[should_panic(
+            expected = "assertion failed: `(left == right)`\n  left: `[10, 12]`,\n right: `[10, 13]`: i2c::write_read write data does not match expectation"
+        )]
         fn write_read_wrong_data() {
             let mut i2c = Mock::new(&[Transaction::write_read(0xaa, vec![10, 12], vec![13, 14])
                 .with_error(MockError::Io(IoErrorKind::Other))]);
             let mut buf = vec![0; 2];
-            let _ = i2c.write_read(0xaa, &vec![10, 13], &mut buf); // Panics because unexpected data was written
+            let _ = i2c.write_read(0xaa, &vec![10, 13], &mut buf);
         }
     }
 }
