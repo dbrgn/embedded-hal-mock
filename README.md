@@ -27,10 +27,10 @@ for version 0.x is enabled.  To enable support for version 1.x, use the `eh1` fe
 
 There are currently the following cargo features:
 
-- `eh0`: Provide module [`eh0`] that mocks embedded-hal version 0.x (enabled by default)
-- `eh1`: Provide module [`eh1`] that mocks embedded-hal version 1.x
-- `embedded-time`: Enable the [`eh0::timer`] module (enabled by default)
-- `embedded-hal-async`: Provide mocks for embedded-hal-async in [`eh1`]
+- `eh0`: Provide module `eh0` that mocks embedded-hal version 0.x (enabled by default)
+- `eh1`: Provide module `eh1` that mocks embedded-hal version 1.x
+- `embedded-time`: Enable the `eh0::timer` module (enabled by default)
+- `embedded-hal-async`: Provide mocks for embedded-hal-async in `eh1`
 
 ## no\_std
 
