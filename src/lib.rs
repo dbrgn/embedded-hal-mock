@@ -33,6 +33,7 @@
     feature(async_fn_in_trait),
     allow(incomplete_features)
 )]
+#![cfg_attr(docsrs, feature(doc_cfg), feature(doc_auto_cfg))]
 #![deny(missing_docs)]
 
 pub mod common;
