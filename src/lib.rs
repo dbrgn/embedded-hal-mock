@@ -28,11 +28,6 @@
 //!
 //! Currently this crate is not `no_std`. If you think this is important, let
 //! me know.
-#![cfg_attr(
-    feature = "embedded-hal-async",
-    feature(async_fn_in_trait),
-    allow(incomplete_features)
-)]
 #![cfg_attr(docsrs, feature(doc_cfg), feature(doc_auto_cfg))]
 #![deny(missing_docs)]
 

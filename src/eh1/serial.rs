@@ -46,46 +46,6 @@
 //! serial.done();
 //! ```
 //!
-//! ## Usage: Blocking serial trait
-//!
-//! ```
-//! # use eh1 as embedded_hal;
-//! // Note that we're using the blocking serial write trait
-//! use embedded_hal::serial::Write;
-//! use embedded_hal_nb::serial::Read;
-//! use embedded_hal_mock::eh1::serial::{
-//!     Mock as SerialMock,
-//!     Transaction as SerialTransaction,
-//! };
-//!
-//! // Configure expectations
-//! let expectations = [
-//!     SerialTransaction::read(0x0A),
-//!     SerialTransaction::read_many(b"xy"),
-//!     SerialTransaction::write_many([1, 2]), // (2)
-//!     SerialTransaction::flush(),
-//! ];
-//!
-//! let mut serial = SerialMock::new(&expectations);
-//!
-//! // Expect three reads
-//! assert_eq!(serial.read().unwrap(), 0x0A);
-//! assert_eq!(serial.read().unwrap(), b'x');
-//! assert_eq!(serial.read().unwrap(), b'y');
-//!
-//! // We use the blocking write here, and we assert that
-//! // two words are written. See (2) above.
-//! Write::write(&mut serial, &[1, 2]).unwrap();
-//!
-//! // Finally, we expect a flush. Note that this is
-//! // a *blocking* flush from the blocking serial trait.
-//! Write::flush(&mut serial).unwrap();
-//!
-//! // When you believe there are no more calls on the mock,
-//! // call done() to assert there are no pending transactions.
-//! serial.done();
-//! ```
-//!
 //! ## Testing Error Handling
 //!
 //! If you want to test error handling of your code, you can also add error
@@ -98,8 +58,7 @@
 //! #     Transaction as SerialTransaction,
 //! # };
 //! use embedded_hal_nb::nb;
-//! use embedded_hal_nb::serial::{Read, Write};
-//! use embedded_hal::serial::ErrorKind;
+//! use embedded_hal_nb::serial::{Read, Write, ErrorKind};
 //!
 //! // Configure expectations
 //! let expectations = [
@@ -151,11 +110,10 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use eh1 as embedded_hal;
-use embedded_hal::serial::ErrorKind;
-use embedded_hal::serial::ErrorType;
 use embedded_hal_nb::nb;
 use embedded_hal_nb::serial;
+use embedded_hal_nb::serial::ErrorKind;
+use embedded_hal_nb::serial::ErrorType;
 
 use crate::common::DoneCallDetector;
 
@@ -436,29 +394,11 @@ where
     }
 }
 
-impl<Word> embedded_hal::serial::Write<Word> for Mock<Word>
-where
-    Word: PartialEq + std::fmt::Debug + Clone + Copy,
-{
-    fn write(&mut self, buffer: &[Word]) -> Result<(), Self::Error> {
-        for word in buffer {
-            nb::block!(serial::Write::write(self, word.clone()))?;
-        }
-        Ok(())
-    }
-
-    fn flush(&mut self) -> Result<(), Self::Error> {
-        nb::block!(serial::Write::flush(self))
-    }
-}
-
 #[cfg(test)]
 mod test {
     use super::*;
 
-    use eh1 as embedded_hal;
-    use embedded_hal::serial::ErrorKind;
-    use embedded_hal_nb::serial::{Read, Write};
+    use embedded_hal_nb::serial::{ErrorKind, Read, Write};
 
     #[test]
     fn test_serial_mock_read() {
@@ -498,35 +438,6 @@ mod test {
     }
 
     #[test]
-    fn test_serial_mock_blocking_write() {
-        use embedded_hal::serial::Write as BWrite;
-        let ts = [Transaction::write_many([0xAB, 0xCD, 0xEF])];
-        let mut ser = Mock::new(&ts);
-        BWrite::write(&mut ser, &[0xAB, 0xCD, 0xEF]).unwrap();
-        ser.done();
-    }
-
-    #[test]
-    #[should_panic(expected = "called serial::write with no expectation")]
-    fn test_serial_mock_blocking_write_more_than_expected() {
-        use embedded_hal::serial::Write as BWrite;
-        let ts = [Transaction::write_many([0xAB, 0xCD])];
-        let mut ser = Mock::new(&ts);
-        BWrite::write(&mut ser, &[0xAB, 0xCD, 0xEF]).unwrap();
-        ser.done();
-    }
-
-    #[test]
-    #[should_panic(expected = "serial mock has unsatisfied expectations after call to done")]
-    fn test_serial_mock_blocking_write_not_enough() {
-        use embedded_hal::serial::Write as BWrite;
-        let ts = [Transaction::write_many([0xAB, 0xCD, 0xEF, 0x00])];
-        let mut ser = Mock::new(&ts);
-        BWrite::write(&mut ser, &[0xAB, 0xCD, 0xEF]).unwrap();
-        ser.done();
-    }
-
-    #[test]
     #[should_panic(expected = "serial::write expected to write 18 but actually wrote 20")]
     fn test_serial_mock_wrong_write() {
         let ts = [Transaction::write(0x12)];
@@ -539,15 +450,6 @@ mod test {
         let ts = [Transaction::flush()];
         let mut ser: Mock<u8> = Mock::new(&ts);
         ser.flush().unwrap();
-        ser.done();
-    }
-
-    #[test]
-    fn test_serial_mock_blocking_flush() {
-        use embedded_hal::serial::Write as BWrite;
-        let ts = [Transaction::flush()];
-        let mut ser: Mock<u8> = Mock::new(&ts);
-        BWrite::flush(&mut ser).unwrap();
         ser.done();
     }
 
@@ -569,17 +471,6 @@ mod test {
         ser.done();
         ser.expect(&ts);
         ser.done();
-    }
-
-    #[test]
-    #[should_panic(
-        expected = "expected to perform a serial transaction 'Read(84)' but instead did a write of 119"
-    )]
-    fn test_serial_mock_expected_read() {
-        use embedded_hal::serial::Write as BWrite;
-        let ts = [Transaction::read(0x54)];
-        let mut ser = Mock::new(&ts);
-        BWrite::write(&mut ser, &[0x77]).unwrap();
     }
 
     #[test]
