@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `Generic` mock: Fix a bug that caused the call to `.done()` to fail if
   `.next()` was called on the mock after all expectations have already been
   consumed (#58)
+- Fix assertion error message for SPI `transfer` and ` transfer_in_place` (#90)
 
 ### Changed
 
