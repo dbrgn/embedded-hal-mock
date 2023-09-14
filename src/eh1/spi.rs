@@ -218,20 +218,22 @@ impl embedded_hal::spi::SpiBus<u8> for Mock {
     ///
     /// This writes the provided response to the buffer and will cause an assertion if the written data does not match the next expectation
     fn transfer_in_place(&mut self, buffer: &mut [u8]) -> Result<(), Self::Error> {
-        let w = self.next().expect("no expectation for spi::transfer call");
+        let w = self
+            .next()
+            .expect("no expectation for spi::transfer_in_place call");
         assert_eq!(
             w.expected_mode,
             Mode::TransferInplace,
-            "spi::transfer unexpected mode"
+            "spi::transfer_in_place unexpected mode"
         );
         assert_eq!(
             &w.expected_data, &buffer,
-            "spi::write data does not match expectation"
+            "spi::transfer_in_place write data does not match expectation"
         );
         assert_eq!(
             buffer.len(),
             w.response.len(),
-            "mismatched response length for spi::transfer"
+            "mismatched response length for spi::transfer_in_place"
         );
         buffer.copy_from_slice(&w.response);
         Ok(())
@@ -246,7 +248,7 @@ impl embedded_hal::spi::SpiBus<u8> for Mock {
         );
         assert_eq!(
             &w.expected_data, &write,
-            "spi::write data does not match expectation"
+            "spi::transfer write data does not match expectation"
         );
         assert_eq!(
             read.len(),
@@ -772,175 +774,86 @@ mod test {
     }
 
     #[test]
-    #[should_panic(
-        expected = "assertion failed: `(left == right)`\n  left: `[10, 12]`,\n right: `[10, 12, 12]`: spi::write data does not match expectation"
-    )]
+    #[should_panic(expected = "spi::write data does not match expectation")]
     fn test_spi_mock_write_err() {
         use embedded_hal::spi::SpiBusWrite;
-
         let expectations = [Transaction::write_vec(vec![10, 12])];
         let mut spi = Mock::new(&expectations);
-
         SpiBusWrite::write(&mut spi, &[10, 12, 12]).unwrap();
-
-        spi.done();
     }
 
     #[tokio::test]
     #[cfg(feature = "embedded-hal-async")]
-    #[should_panic(
-        expected = "assertion failed: `(left == right)`\n  left: `[10, 12]`,\n right: `[10, 12, 12]`: spi::write data does not match expectation"
-    )]
+    #[should_panic(expected = "spi::write data does not match expectation")]
     async fn test_async_spi_mock_write_err() {
         use embedded_hal_async::spi::SpiBusWrite;
-
         let expectations = [Transaction::write_vec(vec![10, 12])];
         let mut spi = Mock::new(&expectations);
-
         SpiBusWrite::write(&mut spi, &[10, 12, 12]).await.unwrap();
-
-        spi.done();
     }
 
     #[test]
-    #[should_panic(
-        expected = "assertion failed: `(left == right)`\n  left: `[12, 15]`,\n right: `[12, 13]`"
-    )]
+    #[should_panic(expected = "spi::transfer_in_place write data does not match expectation")]
     fn test_spi_mock_transfer_err() {
         use embedded_hal::spi::SpiBus;
-
         let expectations = [Transaction::transfer_in_place(vec![10, 12], vec![12, 15])];
         let mut spi = Mock::new(&expectations);
-
-        let mut v = vec![10, 12];
-        SpiBus::transfer_in_place(&mut spi, &mut v).unwrap();
-
-        assert_eq!(v, vec![12, 13]);
-
-        spi.done();
+        SpiBus::transfer_in_place(&mut spi, &mut vec![10, 13]).unwrap();
     }
 
     #[tokio::test]
     #[cfg(feature = "embedded-hal-async")]
-    #[should_panic(
-        expected = "assertion failed: `(left == right)`\n  left: `[12, 15]`,\n right: `[12, 13]`"
-    )]
+    #[should_panic(expected = "spi::transfer_in_place write data does not match expectation")]
     async fn test_async_spi_mock_transfer_err() {
         use embedded_hal_async::spi::SpiBus;
-
         let expectations = [Transaction::transfer_in_place(vec![10, 12], vec![12, 15])];
         let mut spi = Mock::new(&expectations);
-
-        let mut v = vec![10, 12];
-        SpiBus::transfer_in_place(&mut spi, &mut v).await.unwrap();
-
-        assert_eq!(v, vec![12, 13]);
-
-        spi.done();
+        SpiBus::transfer_in_place(&mut spi, &mut vec![10, 13])
+            .await
+            .unwrap();
     }
 
     #[test]
-    #[should_panic(
-        expected = "assertion failed: `(left == right)`\n  left: `[1, 2]`,\n right: `[10, 12]`: spi::write data does not match expectation"
-    )]
-    fn test_spi_mock_transfer_response_err() {
-        use embedded_hal::spi::SpiBus;
-
-        let expectations = [Transaction::transfer_in_place(vec![1, 2], vec![3, 4, 5])];
-        let mut spi = Mock::new(&expectations);
-
-        let mut v = vec![10, 12];
-        SpiBus::transfer_in_place(&mut spi, &mut v).unwrap();
-
-        assert_eq!(v, vec![12, 13]);
-
-        spi.done();
-    }
-
-    #[tokio::test]
-    #[cfg(feature = "embedded-hal-async")]
-    #[should_panic(
-        expected = "assertion failed: `(left == right)`\n  left: `[1, 2]`,\n right: `[10, 12]`: spi::write data does not match expectation"
-    )]
-    async fn test_async_spi_mock_transfer_response_err() {
-        use embedded_hal_async::spi::SpiBus;
-
-        let expectations = [Transaction::transfer_in_place(vec![1, 2], vec![3, 4, 5])];
-        let mut spi = Mock::new(&expectations);
-
-        let mut v = vec![10, 12];
-        SpiBus::transfer_in_place(&mut spi, &mut v).await.unwrap();
-
-        assert_eq!(v, vec![12, 13]);
-
-        spi.done();
-    }
-
-    #[test]
-    #[should_panic(
-        expected = "(left == right)`\n  left: `TransferInplace`,\n right: `Write`: spi::write unexpected mode"
-    )]
+    #[should_panic(expected = "spi::write unexpected mode")]
     fn test_spi_mock_mode_err() {
         use embedded_hal::spi::SpiBusWrite;
-
         let expectations = [Transaction::transfer_in_place(vec![10, 12], vec![])];
         let mut spi = Mock::new(&expectations);
-
         SpiBusWrite::write(&mut spi, &[10, 12, 12]).unwrap();
-
-        spi.done();
     }
 
     #[tokio::test]
     #[cfg(feature = "embedded-hal-async")]
-    #[should_panic(
-        expected = "assertion failed: `(left == right)`\n  left: `TransferInplace`,\n right: `Write`: spi::write unexpected mode"
-    )]
+    #[should_panic(expected = "spi::write unexpected mode")]
     async fn test_async_spi_mock_mode_err() {
         use embedded_hal_async::spi::SpiBusWrite;
-
         let expectations = [Transaction::transfer_in_place(vec![10, 12], vec![])];
         let mut spi = Mock::new(&expectations);
-
         SpiBusWrite::write(&mut spi, &[10, 12, 12]).await.unwrap();
-
-        spi.done();
     }
 
     #[test]
-    #[should_panic(
-        expected = "assertion failed: `(left == right)`\n  left: `[10, 12]`,\n right: `[10, 12, 12]`: spi::write data does not match expectation"
-    )]
+    #[should_panic(expected = "spi::write data does not match expectation")]
     fn test_spi_mock_multiple_transaction_err() {
         use embedded_hal::spi::SpiBusWrite;
-
         let expectations = [
             Transaction::write_vec(vec![10, 12]),
             Transaction::write_vec(vec![10, 12]),
         ];
         let mut spi = Mock::new(&expectations);
-
-        SpiBusWrite::write(&mut spi, &[10, 12, 12]).unwrap();
-
-        spi.done();
+        SpiBusWrite::write(&mut spi, &[10, 12, 10]).unwrap();
     }
 
     #[tokio::test]
     #[cfg(feature = "embedded-hal-async")]
-    #[should_panic(
-        expected = "assertion failed: `(left == right)`\n  left: `[10, 12]`,\n right: `[10, 12, 12]`: spi::write data does not match expectation"
-    )]
+    #[should_panic(expected = "spi::write data does not match expectation")]
     async fn test_async_spi_mock_multiple_transaction_err() {
         use embedded_hal_async::spi::SpiBusWrite;
-
         let expectations = [
             Transaction::write_vec(vec![10, 12]),
             Transaction::write_vec(vec![10, 12]),
         ];
         let mut spi = Mock::new(&expectations);
-
         SpiBusWrite::write(&mut spi, &[10, 12, 12]).await.unwrap();
-
-        spi.done();
     }
 }

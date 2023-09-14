@@ -524,9 +524,7 @@ mod test {
     }
 
     #[test]
-    #[should_panic(
-        expected = "assertion failed: `(left == right)`\n  left: `18`,\n right: `20`: serial::write expected to write 18 but actually wrote 20"
-    )]
+    #[should_panic(expected = "serial::write expected to write 18 but actually wrote 20")]
     fn test_serial_mock_wrong_write() {
         let ts = [Transaction::write(0x12)];
         let mut ser = Mock::new(&ts);
@@ -618,9 +616,7 @@ mod test {
     }
 
     #[test]
-    #[should_panic(
-        expected = "assertion failed: `(left == right)`\n  left: `42`,\n right: `23`: serial::write expected to write 42 but actually wrote 23"
-    )]
+    #[should_panic(expected = "serial::write expected to write 42 but actually wrote 23")]
     fn test_serial_mock_write_error_wrong_data() {
         let error = nb::Error::Other(MockError::Io(io::ErrorKind::NotConnected));
         let ts = [Transaction::write_error(42, error.clone())];

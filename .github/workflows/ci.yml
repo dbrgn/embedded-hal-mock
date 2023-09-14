@@ -19,7 +19,7 @@ jobs:
     strategy:
       matrix:
         toolchain:
-          - "1.60"
+          - "1.63"
           - "nightly"
     steps:
       - uses: actions/checkout@v3
