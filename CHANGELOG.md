@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 
+- Bump minimal supported Rust version (MSRV) to 1.63
 - The minimal supported Rust version (MSRV) is specified in the `Cargo.toml` to
   offer clearer error messages to consumers with outdated Rust versions
 - Renamed `delay::MockNoop` to `delay::NoopDelay`.
