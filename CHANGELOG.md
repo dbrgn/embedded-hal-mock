@@ -9,6 +9,26 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+### Fixed
+
+### Changed
+
+
+## 0.10.0-rc.1 - 2023-11-01
+
+This release contains a big change: `embedded-hal-mock` now supports both
+`embedded-hal` 0.x and 1.x (currently at version `1.0.0-rc.1`)! Please test it,
+and if there are any issues, leave feedback in the GitHub issue tracker.
+
+Additionally, tests now fail if you forgot to call `.done()`. This should
+reduce the chance of accidentally writing a broken test.
+
+This release contains commits by 10 different people, thanks a lot for the
+contributions!
+
+### Added
+
+- Support for both `embedded-hal` 0.x and 1.x in the same crate (#75)
 - Print a warning to stderr and fail test if a mock is dropped without having
   calling `.done()` on it, or if `.done()` is called twice (#59, #61)
 
@@ -21,10 +41,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 
+- Rename `delay::MockNoop` to `delay::NoopDelay`.
 - Bump minimal supported Rust version (MSRV) to 1.63
 - The minimal supported Rust version (MSRV) is specified in the `Cargo.toml` to
   offer clearer error messages to consumers with outdated Rust versions
-- Renamed `delay::MockNoop` to `delay::NoopDelay`.
 
 
 ## 0.9.0 - 2023-01-07
