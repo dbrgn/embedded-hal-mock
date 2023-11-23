@@ -9,7 +9,7 @@ use std::{
 
 /// Generic mock implementation.
 ///
-/// ⚠️ **Do not use this directly as end user! This is only a building block
+/// ⚠️ **Do not create this directly as end user! This is only a building block
 /// for creating mocks.**
 ///
 /// This type supports the specification and evaluation of expectations to
@@ -72,6 +72,18 @@ where
 
         // Reset done call detector
         done_called.reset();
+    }
+
+    /// Deprecated alias of `update_expectations`.
+    #[deprecated(
+        since = "0.10.0",
+        note = "The method 'expect' was renamed to 'update_expectations'"
+    )]
+    pub fn expect<E>(&mut self, expected: E)
+    where
+        E: IntoIterator<Item = &'a T>,
+    {
+        self.update_expectations(expected)
     }
 
     /// Assert that all expectations on a given mock have been consumed.

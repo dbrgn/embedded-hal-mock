@@ -299,6 +299,15 @@ impl<Word: Clone> Mock<Word> {
         done_called.reset();
     }
 
+    /// Deprecated alias of `update_expectations`.
+    #[deprecated(
+        since = "0.10.0",
+        note = "The method 'expect' was renamed to 'update_expectations'"
+    )]
+    pub fn expect<E>(&mut self, transactions: &[Transaction<Word>]) {
+        self.update_expectations(transactions)
+    }
+
     /// Asserts that all expectations up to this point were satisfied.
     /// Panics if there are unsatisfied expectations.
     pub fn done(&mut self) {
