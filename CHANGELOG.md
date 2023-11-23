@@ -8,11 +8,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## Unreleased
 
 ### Added
+
 - Implement mock for `embedded_hal::pwm::SetDutyCycle`
 
 ### Fixed
 
 ### Changed
+
+- Renamed `.expect(...)` method to `.update_expectations(...)` to avoid
+  confusion with the expect method in `Option` and `Result` (#63)
+- When updating expectations on a mock by calling `.expect(...)` /
+  `.update_expectations(...)` on it, assert that previous expectations have
+  been consumed (#63)
 
 
 ## 0.10.0-rc.1 - 2023-11-01
@@ -86,7 +93,7 @@ contributions!
 
 ### Fixed
 
--  Fix link to digital pin docs (#28)
+- Fix link to digital pin docs (#28)
 
 
 ## 0.7.0 - 2019-05-22

@@ -9,7 +9,7 @@ use std::{
 
 /// Generic mock implementation.
 ///
-/// ⚠️ **Do not use this directly as end user! This is only a building block
+/// ⚠️ **Do not create this directly as end user! This is only a building block
 /// for creating mocks.**
 ///
 /// This type supports the specification and evaluation of expectations to
@@ -42,31 +42,60 @@ where
             done_called: Arc::new(Mutex::new(DoneCallDetector::new())),
         };
 
-        g.expect(expected);
+        g.update_expectations(expected);
 
         g
     }
 
-    /// Set expectations on the interface
+    /// Update expectations on the interface
     ///
-    /// This is a list of transactions to be executed in order. Note that
-    /// setting this will overwrite any existing expectations.
+    /// When this method is called, first it is ensured that existing
+    /// expectations are all consumed by calling [`done()`](#method.done)
+    /// internally (if not called already). Afterwards, the new expectations
+    /// are set.
+    pub fn update_expectations<E>(&mut self, expected: E)
+    where
+        E: IntoIterator<Item = &'a T>,
+    {
+        // Ensure that existing expectations are consumed
+        self.done_impl(false);
+
+        // Collect new expectations into vector
+        let new_expectations: VecDeque<T> = expected.into_iter().cloned().collect();
+
+        // Lock internal state
+        let mut expected = self.expected.lock().unwrap();
+        let mut done_called = self.done_called.lock().unwrap();
+
+        // Update expectations
+        *expected = new_expectations;
+
+        // Reset done call detector
+        done_called.reset();
+    }
+
+    /// Deprecated alias of `update_expectations`.
+    #[deprecated(
+        since = "0.10.0",
+        note = "The method 'expect' was renamed to 'update_expectations'"
+    )]
     pub fn expect<E>(&mut self, expected: E)
     where
         E: IntoIterator<Item = &'a T>,
     {
-        let v: VecDeque<T> = expected.into_iter().cloned().collect();
-
-        let mut expected = self.expected.lock().unwrap();
-        let mut done_called = self.done_called.lock().unwrap();
-        *expected = v;
-        done_called.reset();
+        self.update_expectations(expected)
     }
 
     /// Assert that all expectations on a given mock have been consumed.
     pub fn done(&mut self) {
-        self.done_called.lock().unwrap().mark_as_called();
+        self.done_impl(true);
+    }
 
+    fn done_impl(&mut self, panic_if_already_done: bool) {
+        self.done_called
+            .lock()
+            .unwrap()
+            .mark_as_called(panic_if_already_done);
         let e = self.expected.lock().unwrap();
         assert!(e.is_empty(), "Not all expectations consumed");
     }
@@ -97,9 +126,11 @@ impl DoneCallDetector {
     /// Mark the `.done()` method as called.
     ///
     /// Note: When calling this method twice, an assertion failure will be
-    /// triggered.
-    pub(crate) fn mark_as_called(&mut self) {
-        assert!(!self.called, "The `.done()` method was called twice!");
+    /// triggered if `panic_if_already_done` is true.
+    pub(crate) fn mark_as_called(&mut self, panic_if_already_done: bool) {
+        if panic_if_already_done {
+            assert!(!self.called, "The `.done()` method was called twice!");
+        }
         self.called = true;
     }
 

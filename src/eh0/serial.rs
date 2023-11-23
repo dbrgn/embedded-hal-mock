@@ -298,12 +298,7 @@ where
 /// if desired.
 #[derive(Clone)]
 pub struct Mock<Word> {
-    /// The expected operations upon the mock
-    ///
-    /// It's in an arc to maintain shared state, and in a mutex
-    /// to make it thread safe. It's then wrapped in an `Option`
-    /// so that we can take it in the call to `done()`.
-    expected_modes: Arc<Mutex<Option<VecDeque<Mode<Word>>>>>,
+    expected_modes: Arc<Mutex<VecDeque<Mode<Word>>>>,
     done_called: Arc<Mutex<DoneCallDetector>>,
 }
 
@@ -311,41 +306,64 @@ impl<Word: Clone> Mock<Word> {
     /// Create a serial mock that will expect the provided transactions
     pub fn new(transactions: &[Transaction<Word>]) -> Self {
         let mut ser = Mock {
-            expected_modes: Arc::new(Mutex::new(None)),
+            expected_modes: Arc::new(Mutex::new(VecDeque::new())),
             done_called: Arc::new(Mutex::new(DoneCallDetector::new())),
         };
-        ser.expect(transactions);
+        ser.update_expectations(transactions);
         ser
     }
 
-    /// Set expectations on the interface
+    /// Update expectations on the interface
     ///
-    /// This is a list of transactions to be executed in order.
-    /// Note that setting this will overwrite any existing expectations
-    pub fn expect(&mut self, transactions: &[Transaction<Word>]) {
+    /// When this method is called, first it is ensured that existing
+    /// expectations are all consumed by calling [`done()`](#method.done)
+    /// internally (if not called already). Afterwards, the new expectations
+    /// are set.
+    pub fn update_expectations(&mut self, transactions: &[Transaction<Word>]) {
+        // Ensure that existing expectations are consumed
+        self.done_impl(false);
+
+        // Lock internal state
         let mut expected = self.expected_modes.lock().unwrap();
         let mut done_called = self.done_called.lock().unwrap();
-        *expected = Some(
-            transactions
-                .iter()
-                .fold(VecDeque::new(), |mut modes, transaction| {
-                    modes.extend(transaction.mode.clone());
-                    modes
-                }),
-        );
+
+        // Update expectations
+        *expected = transactions
+            .iter()
+            .fold(VecDeque::new(), |mut modes, transaction| {
+                modes.extend(transaction.mode.clone());
+                modes
+            });
+
+        // Reset done call detector
         done_called.reset();
+    }
+
+    /// Deprecated alias of `update_expectations`.
+    #[deprecated(
+        since = "0.10.0",
+        note = "The method 'expect' was renamed to 'update_expectations'"
+    )]
+    pub fn expect(&mut self, transactions: &[Transaction<Word>]) {
+        self.update_expectations(transactions)
     }
 
     /// Asserts that all expectations up to this point were satisfied.
     /// Panics if there are unsatisfied expectations.
     pub fn done(&mut self) {
-        self.done_called.lock().unwrap().mark_as_called();
+        self.done_impl(true);
+    }
 
-        let mut lock = self
+    fn done_impl(&mut self, panic_if_already_done: bool) {
+        self.done_called
+            .lock()
+            .unwrap()
+            .mark_as_called(panic_if_already_done);
+
+        let modes = self
             .expected_modes
             .lock()
             .expect("unable to lock serial mock in call to done");
-        let modes = lock.take().expect("attempted to take None from Optional");
         assert!(
             modes.is_empty(),
             "serial mock has unsatisfied expectations after call to done"
@@ -354,14 +372,10 @@ impl<Word: Clone> Mock<Word> {
 
     /// Pop the next transaction out of the queue
     fn pop(&mut self) -> Option<Mode<Word>> {
-        let mut lock = self
-            .expected_modes
+        self.expected_modes
             .lock()
-            .expect("unable to lock serial mock in call to pop");
-        let queue = lock
-            .as_mut()
-            .expect("attempt to get queue reference from a None");
-        queue.pop_front()
+            .expect("unable to lock serial mock in call to pop")
+            .pop_front()
     }
 }
 
@@ -563,7 +577,7 @@ mod test {
         let r = ser.read().expect("failed to read");
         assert_eq!(r, 0x54);
         ser.done();
-        ser.expect(&ts);
+        ser.update_expectations(&ts);
         ser.done();
     }
 
