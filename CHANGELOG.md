@@ -9,9 +9,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
-- Implement mock for `embedded_hal::pwm::SetDutyCycle`
-
 ### Fixed
+
+### Changed
+
+
+## 0.10.0-rc.2 - 2023-11-23
+
+### Added
+
+- Implement mock for `eh1::pwm::SetDutyCycle`
 
 ### Changed
 
