@@ -375,7 +375,7 @@ impl SpiDevice for Mock {
                 Operation::TransferInPlace(buffer) => {
                     SpiBus::transfer_in_place(self, buffer)?;
                 }
-                Operation::DelayUs(delay) => {
+                Operation::DelayNs(delay) => {
                     let w = self.next().expect("no expectation for spi::delay call");
                     assert_eq!(
                         w.expected_mode,
@@ -427,7 +427,7 @@ impl embedded_hal_async::spi::SpiDevice<u8> for Mock {
                 Operation::TransferInPlace(buffer) => {
                     SpiBus::transfer_in_place(self, buffer)?;
                 }
-                Operation::DelayUs(delay) => {
+                Operation::DelayNs(delay) => {
                     let w = self.next().expect("no expectation for spi::delay call");
                     assert_eq!(
                         w.expected_mode,
@@ -588,7 +588,7 @@ mod test {
         spi.transaction(&mut [
             Operation::Write(&[1, 2]),
             Operation::Write(&[0x09]),
-            Operation::DelayUs(100),
+            Operation::DelayNs(100),
             Operation::Read(&mut ans),
         ])
         .unwrap();
@@ -610,7 +610,7 @@ mod test {
             &mut [
                 Operation::Write(&[1, 2]),
                 Operation::Write(&[0x09]),
-                Operation::DelayUs(100),
+                Operation::DelayNs(100),
                 Operation::Read(&mut ans),
             ],
         )

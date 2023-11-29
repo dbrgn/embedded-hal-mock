@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 
+- Updated `embedded-hal` to `1.0.0-rc.2`.
 
 ## 0.10.0-rc.2 - 2023-11-23
 
