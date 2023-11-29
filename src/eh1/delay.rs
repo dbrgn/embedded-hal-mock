@@ -34,9 +34,16 @@ impl Default for NoopDelay {
     }
 }
 
-impl delay::DelayUs for NoopDelay {
-    /// A no-op delay implementation.
-    fn delay_us(&mut self, _n: u32) {
+impl delay::DelayNs for NoopDelay {
+    fn delay_ns(&mut self, _ns: u32) {
+        // no-op
+    }
+
+    fn delay_us(&mut self, _us: u32) {
+        // no-op
+    }
+
+    fn delay_ms(&mut self, _ms: u32) {
         // no-op
     }
 }
@@ -57,9 +64,16 @@ impl Default for StdSleep {
     }
 }
 
-impl delay::DelayUs for StdSleep {
-    /// A `Delay` implementation that uses `std::thread::sleep`.
-    fn delay_us(&mut self, n: u32) {
-        thread::sleep(Duration::from_micros(n as u64));
+impl delay::DelayNs for StdSleep {
+    fn delay_ns(&mut self, ns: u32) {
+        thread::sleep(Duration::from_nanos(ns as u64));
+    }
+
+    fn delay_us(&mut self, us: u32) {
+        thread::sleep(Duration::from_micros(us as u64));
+    }
+
+    fn delay_ms(&mut self, ms: u32) {
+        thread::sleep(Duration::from_millis(ms as u64));
     }
 }

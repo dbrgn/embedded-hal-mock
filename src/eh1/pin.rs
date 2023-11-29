@@ -1,7 +1,7 @@
 //! Mock digital [`InputPin`] and [`OutputPin`] implementations
 //!
-//! [`InputPin`]: https://docs.rs/embedded-hal/1.0.0-rc.1/embedded_hal/digital/trait.InputPin.html
-//! [`OutputPin`]: https://docs.rs/embedded-hal/1.0.0-rc.1/embedded_hal/digital/trait.OutputPin.html
+//! [`InputPin`]: https://docs.rs/embedded-hal/1.0.0-rc.2/embedded_hal/digital/trait.InputPin.html
+//! [`OutputPin`]: https://docs.rs/embedded-hal/1.0.0-rc.2/embedded_hal/digital/trait.OutputPin.html
 //!
 //! ```
 //! # use eh1 as embedded_hal;

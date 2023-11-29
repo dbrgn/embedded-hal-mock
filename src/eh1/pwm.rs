@@ -1,5 +1,5 @@
 //! Mock implementations for
-//! [`embedded_hal::pwm`](https://docs.rs/embedded-hal/1.0.0-rc.1/embedded_hal/pwm/index.html).
+//! [`embedded_hal::pwm`](https://docs.rs/embedded-hal/1.0.0-rc.2/embedded_hal/pwm/index.html).
 //!
 //! Usage example:
 //! ```
@@ -14,7 +14,7 @@
 //!
 //! // Configure expectations
 //! let expectations = [
-//!     PwmTransaction::get_max_duty_cycle(100),
+//!     PwmTransaction::max_duty_cycle(100),
 //!     PwmTransaction::set_duty_cycle(50),
 //!     PwmTransaction::set_duty_cycle(101).with_error(MockError::Io(ErrorKind::NotConnected)),
 //! ];
@@ -51,8 +51,8 @@ impl Transaction {
         Transaction { kind, err: None }
     }
 
-    /// Create a new [`TransactionKind::GetMaxDutyCycle`] transaction for [`SetDutyCycle::get_max_duty_cycle`].
-    pub fn get_max_duty_cycle(duty: u16) -> Transaction {
+    /// Create a new [`TransactionKind::GetMaxDutyCycle`] transaction for [`SetDutyCycle::max_duty_cycle`].
+    pub fn max_duty_cycle(duty: u16) -> Transaction {
         Transaction::new(TransactionKind::GetMaxDutyCycle(duty))
     }
 
@@ -73,7 +73,7 @@ impl Transaction {
 /// MockPwm transaction kind
 #[derive(PartialEq, Clone, Debug)]
 pub enum TransactionKind {
-    /// [`SetDutyCycle::get_max_duty_cycle`] which will return the defined duty.
+    /// [`SetDutyCycle::max_duty_cycle`] which will return the defined duty.
     GetMaxDutyCycle(u16),
     /// [`SetDutyCycle::set_duty_cycle`] with the expected duty.
     SetDutyCycle(u16),
@@ -93,18 +93,16 @@ impl ErrorType for Mock {
 }
 
 impl SetDutyCycle for Mock {
-    fn get_max_duty_cycle(&self) -> u16 {
+    fn max_duty_cycle(&self) -> u16 {
         let mut s = self.clone();
 
-        let Transaction { kind, err } = s
-            .next()
-            .expect("no expectation for get_max_duty_cycle call");
+        let Transaction { kind, err } = s.next().expect("no expectation for max_duty_cycle call");
 
-        assert_eq!(err, None, "error not supported by get_max_duty_cycle!");
+        assert_eq!(err, None, "error not supported by max_duty_cycle!");
 
         match kind {
             TransactionKind::GetMaxDutyCycle(duty) => duty,
-            other => panic!("expected get_max_duty_cycle, got {:?}", other),
+            other => panic!("expected max_duty_cycle, got {:?}", other),
         }
     }
 
