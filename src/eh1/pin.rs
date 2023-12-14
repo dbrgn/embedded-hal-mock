@@ -1,7 +1,7 @@
 //! Mock digital [`InputPin`] and [`OutputPin`] implementations
 //!
-//! [`InputPin`]: https://docs.rs/embedded-hal/1.0.0-rc.2/embedded_hal/digital/trait.InputPin.html
-//! [`OutputPin`]: https://docs.rs/embedded-hal/1.0.0-rc.2/embedded_hal/digital/trait.OutputPin.html
+//! [`InputPin`]: https://docs.rs/embedded-hal/1.0.0-rc.3/embedded_hal/digital/trait.InputPin.html
+//! [`OutputPin`]: https://docs.rs/embedded-hal/1.0.0-rc.3/embedded_hal/digital/trait.OutputPin.html
 //!
 //! ```
 //! # use eh1 as embedded_hal;
@@ -165,7 +165,7 @@ impl OutputPin for Mock {
 
 impl InputPin for Mock {
     /// Is the input pin high?
-    fn is_high(&self) -> Result<bool, Self::Error> {
+    fn is_high(&mut self) -> Result<bool, Self::Error> {
         let mut s = self.clone();
 
         let Transaction { kind, err } = s.next().expect("no expectation for pin::is_high call");
@@ -182,7 +182,7 @@ impl InputPin for Mock {
     }
 
     /// Is the input pin low?
-    fn is_low(&self) -> Result<bool, Self::Error> {
+    fn is_low(&mut self) -> Result<bool, Self::Error> {
         let mut s = self.clone();
 
         let Transaction { kind, err } = s.next().expect("no expectation for pin::is_low call");
