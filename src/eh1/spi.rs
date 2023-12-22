@@ -44,6 +44,8 @@
 use eh1::spi::{self, Operation, SpiBus, SpiDevice};
 use embedded_hal_nb::{nb, spi::FullDuplex};
 
+use core::fmt::Debug;
+
 use crate::common::Generic;
 
 /// SPI Transaction mode
@@ -71,15 +73,18 @@ pub enum Mode {
 ///
 /// Models an SPI write or transfer (with response)
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Transaction {
+pub struct Transaction<W> {
     expected_mode: Mode,
-    expected_data: Vec<u8>,
-    response: Vec<u8>,
+    expected_data: Vec<W>,
+    response: Vec<W>,
 }
 
-impl Transaction {
+impl<W> Transaction<W>
+where
+    W: Copy + Debug + PartialEq,
+{
     /// Create a write transaction
-    pub fn write_vec(expected: Vec<u8>) -> Transaction {
+    pub fn write_vec(expected: Vec<W>) -> Transaction<W> {
         Transaction {
             expected_mode: Mode::Write,
             expected_data: expected,
@@ -88,7 +93,7 @@ impl Transaction {
     }
 
     /// Create a transfer transaction
-    pub fn transfer(expected: Vec<u8>, response: Vec<u8>) -> Transaction {
+    pub fn transfer(expected: Vec<W>, response: Vec<W>) -> Transaction<W> {
         Transaction {
             expected_mode: Mode::Transfer,
             expected_data: expected,
@@ -97,7 +102,7 @@ impl Transaction {
     }
 
     /// Create a transfer in-place transaction
-    pub fn transfer_in_place(expected: Vec<u8>, response: Vec<u8>) -> Transaction {
+    pub fn transfer_in_place(expected: Vec<W>, response: Vec<W>) -> Transaction<W> {
         Transaction {
             expected_mode: Mode::TransferInplace,
             expected_data: expected,
@@ -106,7 +111,7 @@ impl Transaction {
     }
 
     /// Create a write transaction
-    pub fn write(expected: u8) -> Transaction {
+    pub fn write(expected: W) -> Transaction<W> {
         Transaction {
             expected_mode: Mode::Write,
             expected_data: [expected].to_vec(),
@@ -115,7 +120,7 @@ impl Transaction {
     }
 
     /// Create a read transaction
-    pub fn read(response: u8) -> Transaction {
+    pub fn read(response: W) -> Transaction<W> {
         Transaction {
             expected_mode: Mode::Read,
             expected_data: Vec::new(),
@@ -124,7 +129,7 @@ impl Transaction {
     }
 
     /// Create a read transaction
-    pub fn read_vec(response: Vec<u8>) -> Transaction {
+    pub fn read_vec(response: Vec<W>) -> Transaction<W> {
         Transaction {
             expected_mode: Mode::Read,
             expected_data: Vec::new(),
@@ -133,7 +138,7 @@ impl Transaction {
     }
 
     /// Create flush transaction
-    pub fn flush() -> Transaction {
+    pub fn flush() -> Transaction<W> {
         Transaction {
             expected_mode: Mode::Flush,
             expected_data: Vec::new(),
@@ -142,7 +147,7 @@ impl Transaction {
     }
 
     /// Create nested transactions
-    pub fn transaction_start() -> Transaction {
+    pub fn transaction_start() -> Transaction<W> {
         Transaction {
             expected_mode: Mode::TransactionStart,
             expected_data: Vec::new(),
@@ -151,7 +156,7 @@ impl Transaction {
     }
 
     /// Create nested transactions
-    pub fn transaction_end() -> Transaction {
+    pub fn transaction_end() -> Transaction<W> {
         Transaction {
             expected_mode: Mode::TransactionEnd,
             expected_data: Vec::new(),
@@ -160,7 +165,7 @@ impl Transaction {
     }
 
     /// Create a delay transaction
-    pub fn delay(delay: u32) -> Transaction {
+    pub fn delay(delay: u32) -> Transaction<W> {
         Transaction {
             expected_mode: Mode::Delay(delay),
             expected_data: Vec::new(),
@@ -177,9 +182,12 @@ impl Transaction {
 /// faults.
 ///
 /// See the usage section in the module level docs for an example.
-pub type Mock = Generic<Transaction>;
+pub type Mock<W> = Generic<Transaction<W>>;
 
-impl spi::ErrorType for Mock {
+impl<W> spi::ErrorType for Mock<W>
+where
+    W: Copy + Debug + PartialEq,
+{
     type Error = spi::ErrorKind;
 }
 
@@ -206,11 +214,14 @@ impl Drop for SpiBusFuture {
     }
 }
 
-impl SpiBus<u8> for Mock {
+impl<W> SpiBus<W> for Mock<W>
+where
+    W: Copy + 'static + Debug + PartialEq,
+{
     /// spi::Read implementation for Mock
     ///
     /// This will cause an assertion if the read call does not match the next expectation
-    fn read(&mut self, buffer: &mut [u8]) -> Result<(), Self::Error> {
+    fn read(&mut self, buffer: &mut [W]) -> Result<(), Self::Error> {
         let w = self.next().expect("no expectation for spi::read call");
         assert_eq!(w.expected_mode, Mode::Read, "spi::read unexpected mode");
         assert_eq!(
@@ -225,7 +236,7 @@ impl SpiBus<u8> for Mock {
     /// spi::Write implementation for Mock
     ///
     /// This will cause an assertion if the write call does not match the next expectation
-    fn write(&mut self, buffer: &[u8]) -> Result<(), Self::Error> {
+    fn write(&mut self, buffer: &[W]) -> Result<(), Self::Error> {
         let w = self.next().expect("no expectation for spi::write call");
         assert_eq!(w.expected_mode, Mode::Write, "spi::write unexpected mode");
         assert_eq!(
@@ -235,7 +246,7 @@ impl SpiBus<u8> for Mock {
         Ok(())
     }
 
-    fn transfer(&mut self, read: &mut [u8], write: &[u8]) -> Result<(), Self::Error> {
+    fn transfer(&mut self, read: &mut [W], write: &[W]) -> Result<(), Self::Error> {
         let w = self.next().expect("no expectation for spi::transfer call");
         assert_eq!(
             w.expected_mode,
@@ -258,7 +269,7 @@ impl SpiBus<u8> for Mock {
     /// spi::TransferInplace implementation for Mock
     ///
     /// This writes the provided response to the buffer and will cause an assertion if the written data does not match the next expectation
-    fn transfer_in_place(&mut self, buffer: &mut [u8]) -> Result<(), Self::Error> {
+    fn transfer_in_place(&mut self, buffer: &mut [W]) -> Result<(), Self::Error> {
         let w = self
             .next()
             .expect("no expectation for spi::transfer_in_place call");
@@ -288,24 +299,27 @@ impl SpiBus<u8> for Mock {
 }
 
 #[cfg(feature = "embedded-hal-async")]
-impl embedded_hal_async::spi::SpiBus<u8> for Mock {
-    async fn read(&mut self, words: &mut [u8]) -> Result<(), Self::Error> {
-        eh1::spi::SpiBus::<u8>::read(self, words)
+impl<W> embedded_hal_async::spi::SpiBus<W> for Mock<W>
+where
+    W: Copy + 'static + Debug + PartialEq,
+{
+    async fn read(&mut self, words: &mut [W]) -> Result<(), Self::Error> {
+        eh1::spi::SpiBus::<W>::read(self, words)
     }
 
-    async fn write(&mut self, words: &[u8]) -> Result<(), Self::Error> {
-        eh1::spi::SpiBus::<u8>::write(self, words)
+    async fn write(&mut self, words: &[W]) -> Result<(), Self::Error> {
+        eh1::spi::SpiBus::<W>::write(self, words)
     }
 
-    async fn transfer(&mut self, read: &mut [u8], write: &[u8]) -> Result<(), Self::Error> {
-        eh1::spi::SpiBus::<u8>::transfer(self, read, write)
+    async fn transfer(&mut self, read: &mut [W], write: &[W]) -> Result<(), Self::Error> {
+        eh1::spi::SpiBus::<W>::transfer(self, read, write)
     }
 
     /// spi::TransferInplace implementation for Mock
     ///
     /// This writes the provided response to the buffer and will cause an assertion if the written data does not match the next expectation
-    async fn transfer_in_place(&mut self, words: &mut [u8]) -> Result<(), Self::Error> {
-        eh1::spi::SpiBus::<u8>::transfer_in_place(self, words)
+    async fn transfer_in_place(&mut self, words: &mut [W]) -> Result<(), Self::Error> {
+        eh1::spi::SpiBus::<W>::transfer_in_place(self, words)
     }
 
     async fn flush(&mut self) -> Result<(), Self::Error> {
@@ -313,11 +327,14 @@ impl embedded_hal_async::spi::SpiBus<u8> for Mock {
     }
 }
 
-impl FullDuplex<u8> for Mock {
+impl<W> FullDuplex<W> for Mock<W>
+where
+    W: Copy + Debug + PartialEq,
+{
     /// spi::FullDuplex implementation for Mock
     ///
     /// This will call the nonblocking read/write primitives.
-    fn write(&mut self, buffer: u8) -> nb::Result<(), Self::Error> {
+    fn write(&mut self, buffer: W) -> nb::Result<(), Self::Error> {
         let data = self.next().expect("no expectation for spi::write call");
         assert_eq!(
             data.expected_mode,
@@ -334,7 +351,7 @@ impl FullDuplex<u8> for Mock {
     /// spi::FullDuplex implementation for Mock
     ///
     /// This will call the nonblocking read/write primitives.
-    fn read(&mut self) -> nb::Result<u8, Self::Error> {
+    fn read(&mut self) -> nb::Result<W, Self::Error> {
         let w = self.next().expect("no expectation for spi::read call");
         assert_eq!(w.expected_mode, Mode::Read, "spi::Read unexpected mode");
         assert_eq!(
@@ -342,16 +359,19 @@ impl FullDuplex<u8> for Mock {
             w.response.len(),
             "mismatched response length for spi::read"
         );
-        let buffer: u8 = w.response[0];
+        let buffer: W = w.response[0];
         Ok(buffer)
     }
 }
 
-impl SpiDevice for Mock {
+impl<W> SpiDevice<W> for Mock<W>
+where
+    W: Copy + 'static + Debug + PartialEq,
+{
     /// spi::SpiDevice implementation for Mock
     ///
     /// This writes the provided response to the buffer and will cause an assertion if the written data does not match the next expectation
-    fn transaction(&mut self, operations: &mut [Operation<'_, u8>]) -> Result<(), Self::Error> {
+    fn transaction(&mut self, operations: &mut [Operation<'_, W>]) -> Result<(), Self::Error> {
         let w = self
             .next()
             .expect("no expectation for spi::transaction call");
@@ -400,10 +420,13 @@ impl SpiDevice for Mock {
 }
 
 #[cfg(feature = "embedded-hal-async")]
-impl embedded_hal_async::spi::SpiDevice<u8> for Mock {
+impl<W> embedded_hal_async::spi::SpiDevice<W> for Mock<W>
+where
+    W: Copy + 'static + Debug + PartialEq,
+{
     async fn transaction(
         &mut self,
-        operations: &mut [Operation<'_, u8>],
+        operations: &mut [Operation<'_, W>],
     ) -> Result<(), Self::Error> {
         let w = self
             .next()
@@ -466,6 +489,15 @@ mod test {
         spi.done();
     }
 
+    #[test]
+    fn test_spi_mock_write_u16() {
+        let mut spi = Mock::new(&[Transaction::write(0xFFFF_u16)]);
+
+        let _ = SpiBus::write(&mut spi, &[0xFFFF_u16]).unwrap();
+
+        spi.done();
+    }
+
     #[tokio::test]
     #[cfg(feature = "embedded-hal-async")]
     async fn test_async_spi_mock_write() {
@@ -492,6 +524,19 @@ mod test {
     }
 
     #[test]
+    fn test_spi_mock_read_duplex_u16() {
+        use embedded_hal_nb::spi::FullDuplex;
+
+        let mut spi = Mock::new(&[Transaction::read(0xFFFF_u16)]);
+
+        let ans = FullDuplex::read(&mut spi).unwrap();
+
+        assert_eq!(ans, 0xFFFF_u16);
+
+        spi.done();
+    }
+
+    #[test]
     fn test_spi_mock_read_bus() {
         use eh1::spi::SpiBus;
 
@@ -501,6 +546,20 @@ mod test {
         SpiBus::read(&mut spi, &mut buff).unwrap();
 
         assert_eq!(buff, [10]);
+
+        spi.done();
+    }
+
+    #[test]
+    fn test_spi_mock_read_bus_u16() {
+        use eh1::spi::SpiBus;
+
+        let mut spi = Mock::new(&[Transaction::read(0xFFFF_u16)]);
+
+        let mut buff = vec![0u16; 1];
+        SpiBus::read(&mut spi, &mut buff).unwrap();
+
+        assert_eq!(buff, [0xFFFF_u16]);
 
         spi.done();
     }
@@ -524,7 +583,7 @@ mod test {
     fn test_spi_mock_flush() {
         use eh1::spi::SpiBus;
 
-        let mut spi = Mock::new(&[Transaction::flush()]);
+        let mut spi = Mock::new(&[Transaction::<u8>::flush()]);
         spi.flush().unwrap();
         spi.done();
     }
@@ -534,7 +593,7 @@ mod test {
     async fn test_async_spi_mock_flush() {
         use embedded_hal_async::spi::SpiBus;
 
-        let mut spi = Mock::new(&[Transaction::flush()]);
+        let mut spi = Mock::new(&[Transaction::<u8>::flush()]);
         SpiBus::flush(&mut spi).await.unwrap();
         spi.done();
     }
@@ -567,7 +626,7 @@ mod test {
         spi.done();
     }
 
-    fn test_spi_mock_multiple_transaction_expectations() -> Mock {
+    fn test_spi_mock_multiple_transaction_expectations() -> Mock<u8> {
         let expectations = [
             Transaction::transaction_start(),
             Transaction::write_vec(vec![1, 2]),
@@ -634,6 +693,18 @@ mod test {
         spi.done();
     }
 
+    #[test]
+    fn test_spi_mock_write_vec_u32() {
+        use eh1::spi::SpiBus;
+
+        let expectations = [Transaction::write_vec(vec![0xFFAABBCC_u32, 12])];
+        let mut spi = Mock::new(&expectations);
+
+        SpiBus::write(&mut spi, &[0xFFAABBCC_u32, 12]).unwrap();
+
+        spi.done();
+    }
+
     #[tokio::test]
     #[cfg(feature = "embedded-hal-async")]
     async fn test_async_spi_mock_write_vec() {
@@ -689,6 +760,24 @@ mod test {
         SpiBus::transfer(&mut spi, &mut v, &[10, 12]).unwrap();
 
         assert_eq!(v, vec![12, 13]);
+
+        spi.done();
+    }
+
+    #[test]
+    fn test_spi_mock_transfer_u32() {
+        use eh1::spi::SpiBus;
+
+        let expectations = [Transaction::transfer(
+            vec![0xFFAABBCC_u32, 12],
+            vec![0xAABBCCDD_u32, 13],
+        )];
+        let mut spi = Mock::new(&expectations);
+
+        let mut v = vec![0xFFAABBCC_u32, 12];
+        SpiBus::transfer(&mut spi, &mut v, &[0xFFAABBCC_u32, 12]).unwrap();
+
+        assert_eq!(v, vec![0xAABBCCDD_u32, 13]);
 
         spi.done();
     }
