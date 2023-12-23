@@ -1,0 +1,617 @@
+//! IO mock implementations.
+//!
+//! This mock supports the specification and checking of expectations to allow
+//! automated testing of IO based drivers. Mismatches between expected and
+//! real IO transactions will cause runtime assertions to assist with locating
+//! faults.
+//!
+//! ## Usage
+//!
+//! ```
+//! use embedded_io::{self, Read, Write};
+//! // optional async
+//! use embedded_io_async;
+//! use embedded_hal_mock::eh1::io::{Mock as IoMock, Transaction as IoTransaction};
+//!
+//!
+//!
+//! // Configure expectations
+//! let expectations = [
+//!     IoTransaction::write(vec![10, 20]),
+//!     IoTransaction::read(vec![20, 30]),
+//!     IoTransaction::flush(),
+//! ];
+//!
+//! let mut io = IoMock::new(&expectations);
+//!
+//! // Writing
+//! let ret = io.write(&[10, 20]).unwrap();
+//! assert_eq!(ret, 2);
+//!
+//! // Reading
+//! let mut buffer = [0; 2];
+//! let ret = io.read(&mut buffer).unwrap();
+//! assert_eq!(buffer, [20, 30]);
+//! assert_eq!(ret, 2);
+//!
+//! // Flushing
+//! io.flush().unwrap();
+//!
+//! // Also async
+//! async {
+//!     let ret = embedded_io_async::Write::write(&mut io, &[10, 20]).await.unwrap();
+//! };
+//!
+//! // Finalizing expectations
+//! io.done();
+//! ```
+
+use embedded_io::{
+    self, BufRead, ErrorKind, ErrorType, Read, ReadReady, Seek, SeekFrom, Write, WriteReady,
+};
+
+use crate::common::Generic;
+
+/// IO Transaction mode
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Mode {
+    /// Write transaction
+    Write,
+    /// Read transaction
+    Read,
+    /// Flush transaction
+    Flush,
+    /// Seek transaction
+    Seek(SeekFrom),
+    /// WriteReady transaction
+    WriteReady(bool),
+    /// ReadReady transaction
+    ReadReady(bool),
+    /// FillBuff transaction
+    FillBuff,
+    /// Consume transaction
+    Consume(usize),
+}
+
+/// IO transaction type
+///
+/// Models an IO write or transfer (with response)
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Transaction {
+    expected_mode: Mode,
+    expected_data: Vec<u8>,
+    response: Vec<u8>,
+    /// An optional error return for a transaction.
+    ///
+    /// This is in addition to the mode to allow validation that the
+    /// transaction mode is correct prior to returning the error.
+    expected_err: Option<ErrorKind>,
+}
+
+impl Transaction {
+    /// Create a write transaction
+    pub fn write(expected: Vec<u8>) -> Transaction {
+        Transaction {
+            expected_mode: Mode::Write,
+            expected_data: expected,
+            response: Vec::new(),
+            expected_err: None,
+        }
+    }
+
+    /// Create a read transaction
+    pub fn read(response: Vec<u8>) -> Transaction {
+        Transaction {
+            expected_mode: Mode::Read,
+            expected_data: Vec::new(),
+            response,
+            expected_err: None,
+        }
+    }
+
+    /// Create a flush transaction
+    pub fn flush() -> Transaction {
+        Transaction {
+            expected_mode: Mode::Flush,
+            expected_data: Vec::new(),
+            response: Vec::new(),
+            expected_err: None,
+        }
+    }
+
+    /// Create a seek transaction
+    pub fn seek(pos: SeekFrom, ret_offset: u64) -> Transaction {
+        Transaction {
+            expected_mode: Mode::Seek(pos),
+            expected_data: Vec::new(),
+            response: ret_offset.to_be_bytes().to_vec(),
+            expected_err: None,
+        }
+    }
+
+    /// Create a write ready transaction
+    pub fn write_ready(ready: bool) -> Transaction {
+        Transaction {
+            expected_mode: Mode::WriteReady(ready),
+            expected_data: Vec::new(),
+            response: Vec::new(),
+            expected_err: None,
+        }
+    }
+
+    /// Create a read ready transaction
+    pub fn read_ready(ready: bool) -> Transaction {
+        Transaction {
+            expected_mode: Mode::ReadReady(ready),
+            expected_data: Vec::new(),
+            response: Vec::new(),
+            expected_err: None,
+        }
+    }
+
+    /// Create a fill buffer transaction
+    pub fn fill_buf(response: Vec<u8>) -> Transaction {
+        Transaction {
+            expected_mode: Mode::FillBuff,
+            expected_data: Vec::new(),
+            response,
+            expected_err: None,
+        }
+    }
+
+    /// Create a consume transaction
+    pub fn consume(consumed: usize) -> Transaction {
+        Transaction {
+            expected_mode: Mode::Consume(consumed),
+            expected_data: Vec::new(),
+            response: Vec::new(),
+            expected_err: None,
+        }
+    }
+
+    /// Add an error return to a transaction
+    ///
+    /// This is used to mock failure behaviors.
+    ///
+    /// Note: When attaching this to a read transaction, the response in the
+    /// expectation will not actually be written to the buffer.
+    pub fn with_error(mut self, error: ErrorKind) -> Self {
+        self.expected_err = Some(error);
+        self
+    }
+}
+
+/// Mock IO implementation
+pub type Mock = Generic<Transaction>;
+
+impl ErrorType for Mock {
+    type Error = ErrorKind;
+}
+
+impl Write for Mock {
+    fn write(&mut self, buffer: &[u8]) -> Result<usize, Self::Error> {
+        let w = self.next().expect("no expectation for io::write call");
+        assert_eq!(w.expected_mode, Mode::Write, "io::write unexpected mode");
+        assert_eq!(
+            &w.expected_data, &buffer,
+            "io::write data does not match expectation"
+        );
+
+        match w.expected_err {
+            Some(err) => Err(err),
+            None => Ok(buffer.len()),
+        }
+    }
+
+    fn flush(&mut self) -> Result<(), Self::Error> {
+        let w = self.next().expect("no expectation for io::flush call");
+        assert_eq!(w.expected_mode, Mode::Flush, "io::flush unexpected mode");
+
+        match w.expected_err {
+            Some(err) => Err(err),
+            None => Ok(()),
+        }
+    }
+}
+
+impl Read for Mock {
+    fn read(&mut self, buffer: &mut [u8]) -> Result<usize, Self::Error> {
+        let w = self.next().expect("no expectation for io::read call");
+        assert_eq!(w.expected_mode, Mode::Read, "io::read unexpected mode");
+        buffer.copy_from_slice(&w.response);
+
+        match w.expected_err {
+            Some(err) => Err(err),
+            None => Ok(buffer.len()),
+        }
+    }
+}
+
+impl Seek for Mock {
+    fn seek(&mut self, pos: SeekFrom) -> Result<u64, Self::Error> {
+        let w = self.next().expect("no expectation for io::seek call");
+
+        if let Mode::Seek(expected_pos) = w.expected_mode {
+            assert_eq!(expected_pos, pos, "io::seek unexpected mode");
+
+            let ret_offset: u64 = u64::from_be_bytes(w.response.try_into().unwrap());
+            match w.expected_err {
+                Some(err) => Err(err),
+                None => Ok(ret_offset),
+            }
+        } else {
+            panic!("unexpected seek mode");
+        }
+    }
+}
+
+impl WriteReady for Mock {
+    fn write_ready(&mut self) -> Result<bool, Self::Error> {
+        let w = self
+            .next()
+            .expect("no expectation for io::write_ready call");
+
+        match w.expected_mode {
+            Mode::WriteReady(ready) if w.expected_err.is_none() => Ok(ready),
+            Mode::WriteReady(_) if w.expected_err.is_some() => Err(w.expected_err.unwrap()),
+            _ => panic!("unexpected write_ready mode"),
+        }
+    }
+}
+
+impl ReadReady for Mock {
+    fn read_ready(&mut self) -> Result<bool, Self::Error> {
+        let w = self.next().expect("no expectation for io::read_ready call");
+
+        match w.expected_mode {
+            Mode::ReadReady(ready) if w.expected_err.is_none() => Ok(ready),
+            Mode::ReadReady(_) if w.expected_err.is_some() => Err(w.expected_err.unwrap()),
+            _ => panic!("unexpected read_ready mode"),
+        }
+    }
+}
+
+impl BufRead for Mock {
+    fn fill_buf(&mut self) -> Result<&[u8], Self::Error> {
+        let w = self.next().expect("no expectation for io::fill_buf call");
+        assert_eq!(
+            w.expected_mode,
+            Mode::FillBuff,
+            "io::fill_buf unexpected mode"
+        );
+
+        let response_vec = w.response;
+
+        match w.expected_err {
+            Some(err) => Err(err),
+
+            // SAFETY : This is a memory leak. This is done on purpose to allow for a return
+            // of a slice (pointer) to the internal buffer, which doesn't exist in mock implementation.
+            // This way, after each call, response is going to be put on the heap and ref is going to be returned, without freeing this memory.
+            // For mocking purposes this should be an acceptable solution.
+            None => Ok(Box::leak(response_vec.into_boxed_slice())),
+        }
+    }
+
+    fn consume(&mut self, amt: usize) {
+        let w = self.next().expect("no expectation for io::consume call");
+
+        match w.expected_mode {
+            Mode::Consume(expected_amt) if w.expected_err.is_none() => {
+                assert_eq!(expected_amt, amt, "io::consume unexpected amount");
+            }
+            _ => panic!("unexpected consume mode"),
+        }
+    }
+}
+
+#[cfg(feature = "embedded-hal-async")]
+impl embedded_io_async::Write for Mock {
+    async fn write(&mut self, buf: &[u8]) -> Result<usize, Self::Error> {
+        embedded_io::Write::write(self, buf)
+    }
+
+    async fn flush(&mut self) -> Result<(), Self::Error> {
+        embedded_io::Write::flush(self)
+    }
+}
+
+#[cfg(feature = "embedded-hal-async")]
+impl embedded_io_async::Read for Mock {
+    async fn read(&mut self, buf: &mut [u8]) -> Result<usize, Self::Error> {
+        embedded_io::Read::read(self, buf)
+    }
+}
+
+#[cfg(feature = "embedded-hal-async")]
+impl embedded_io_async::Seek for Mock {
+    async fn seek(&mut self, pos: SeekFrom) -> Result<u64, Self::Error> {
+        embedded_io::Seek::seek(self, pos)
+    }
+}
+
+#[cfg(feature = "embedded-hal-async")]
+impl embedded_io_async::BufRead for Mock {
+    async fn fill_buf(&mut self) -> Result<&[u8], Self::Error> {
+        embedded_io::BufRead::fill_buf(self)
+    }
+
+    fn consume(&mut self, amt: usize) {
+        embedded_io::BufRead::consume(self, amt)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_io_mock_write() {
+        let mut io = Mock::new(&[Transaction::write(vec![10])]);
+
+        let ret = io.write(&[10]).unwrap();
+        assert_eq!(ret, 1);
+
+        io.done();
+    }
+
+    #[tokio::test]
+    #[cfg(feature = "embedded-hal-async")]
+    async fn test_async_spi_mock_write() {
+        use embedded_io_async::Write;
+        let mut io = Mock::new(&[Transaction::write(vec![10])]);
+
+        let ret = Write::write(&mut io, &[10]).await.unwrap();
+        assert_eq!(ret, 1);
+
+        io.done();
+    }
+
+    #[test]
+    fn test_io_mock_flush() {
+        let mut io = Mock::new(&[Transaction::flush()]);
+
+        io.flush().unwrap();
+
+        io.done();
+    }
+
+    #[tokio::test]
+    #[cfg(feature = "embedded-hal-async")]
+    async fn test_async_io_mock_flush() {
+        use embedded_io_async::Write;
+
+        let mut io = Mock::new(&[Transaction::flush()]);
+
+        Write::flush(&mut io).await.unwrap();
+
+        io.done();
+    }
+
+    #[test]
+    fn test_io_mock_read() {
+        let mut io = Mock::new(&[Transaction::read(vec![10])]);
+
+        let mut buffer = [0; 1];
+        let ret = io.read(&mut buffer).unwrap();
+
+        assert_eq!(buffer, [10]);
+        assert_eq!(ret, 1);
+
+        io.done();
+    }
+
+    #[tokio::test]
+    #[cfg(feature = "embedded-hal-async")]
+    async fn test_async_io_mock_read() {
+        use embedded_io_async::Read;
+
+        let mut io = Mock::new(&[Transaction::read(vec![10])]);
+
+        let mut buffer = [0; 1];
+        let ret = Read::read(&mut io, &mut buffer).await.unwrap();
+
+        assert_eq!(buffer, [10]);
+        assert_eq!(ret, 1);
+
+        io.done();
+    }
+
+    #[test]
+    fn test_io_mock_seek() {
+        let mut io = Mock::new(&[Transaction::seek(SeekFrom::End(10), 90)]);
+
+        let ret = io.seek(SeekFrom::End(10)).unwrap();
+
+        assert_eq!(ret, 90);
+
+        io.done();
+    }
+
+    #[tokio::test]
+    #[cfg(feature = "embedded-hal-async")]
+    async fn test_async_io_mock_seek() {
+        use embedded_io_async::Seek;
+
+        let mut io = Mock::new(&[Transaction::seek(SeekFrom::End(10), 90)]);
+
+        let ret = Seek::seek(&mut io, SeekFrom::End(10)).await.unwrap();
+
+        assert_eq!(ret, 90);
+
+        io.done();
+    }
+
+    #[test]
+    fn test_io_mock_write_ready() {
+        let mut io = Mock::new(&[Transaction::write_ready(false)]);
+
+        let ret = io.write_ready().unwrap();
+
+        assert!(!ret);
+
+        io.done();
+    }
+
+    #[test]
+    fn test_io_mock_read_ready() {
+        let mut io = Mock::new(&[Transaction::read_ready(true)]);
+
+        let ret = io.read_ready().unwrap();
+
+        assert!(ret);
+
+        io.done();
+    }
+
+    #[test]
+    fn test_io_mock_fill_buf() {
+        let mut io = Mock::new(&[Transaction::fill_buf(vec![10])]);
+
+        let ret = io.fill_buf().unwrap();
+
+        assert_eq!(ret, &[10]);
+
+        io.done();
+    }
+
+    #[tokio::test]
+    #[cfg(feature = "embedded-hal-async")]
+    async fn test_async_io_mock_fill_buf() {
+        use embedded_io_async::BufRead;
+
+        let mut io = Mock::new(&[Transaction::fill_buf(vec![10])]);
+
+        let ret = BufRead::fill_buf(&mut io).await.unwrap();
+
+        assert_eq!(ret, &[10]);
+
+        io.done();
+    }
+
+    #[test]
+    fn test_io_mock_consume() {
+        let mut io = Mock::new(&[Transaction::consume(10)]);
+
+        io.consume(10);
+
+        io.done();
+    }
+
+    #[test]
+    fn test_io_mock_multiple() {
+        let mut io = Mock::new(&[
+            Transaction::write(vec![10, 20]),
+            Transaction::read(vec![20, 30]),
+            Transaction::flush(),
+            Transaction::seek(SeekFrom::End(30), 40),
+            Transaction::write_ready(false),
+            Transaction::read_ready(true),
+            Transaction::fill_buf(vec![50, 100, 150]),
+            Transaction::consume(60),
+        ]);
+
+        let ret = io.write(&[10, 20]).unwrap();
+        assert_eq!(ret, 2);
+
+        let mut buffer = [0; 2];
+        let ret = io.read(&mut buffer).unwrap();
+        assert_eq!(buffer, [20, 30]);
+        assert_eq!(ret, 2);
+
+        io.flush().unwrap();
+
+        let ret = io.seek(SeekFrom::End(30)).unwrap();
+        assert_eq!(ret, 40);
+
+        let ret = io.write_ready().unwrap();
+        assert!(!ret);
+
+        let ret = io.read_ready().unwrap();
+        assert!(ret);
+
+        let ret = io.fill_buf().unwrap();
+        assert_eq!(ret, &[50, 100, 150]);
+
+        io.consume(60);
+
+        io.done();
+    }
+
+    #[test]
+    #[should_panic(expected = "io::write data does not match expectation")]
+    fn test_io_mock_write_err() {
+        let mut io = Mock::new(&[Transaction::write(vec![10, 12])]);
+
+        io.write(&[10, 12, 12]).unwrap();
+
+        io.done();
+    }
+
+    #[test]
+    #[should_panic(expected = "io::seek unexpected mode")]
+    fn test_io_mock_seek_err() {
+        let mut io = Mock::new(&[Transaction::seek(SeekFrom::End(2), 0)]);
+
+        io.seek(SeekFrom::Start(1)).unwrap();
+
+        io.done();
+    }
+
+    #[test]
+    #[should_panic(expected = "io::consume unexpected amount")]
+    fn test_io_mock_consume_err() {
+        let mut io = Mock::new(&[Transaction::consume(10)]);
+
+        io.consume(20);
+
+        io.done();
+    }
+
+    #[test]
+    #[should_panic(expected = "io::write unexpected mode")]
+    fn test_io_mock_mode_err() {
+        let mut io = Mock::new(&[Transaction::fill_buf(vec![10])]);
+
+        io.write(&[10]).unwrap();
+
+        io.done();
+    }
+
+    #[test]
+    #[should_panic(expected = "Not all expectations consumed")]
+    fn test_io_mock_not_all_expectations() {
+        let mut io = Mock::new(&[Transaction::write(vec![10]), Transaction::write(vec![10])]);
+
+        io.write(&[10]).unwrap();
+
+        io.done();
+    }
+
+    #[test]
+    fn test_io_mock_write_with_error() {
+        let mut io =
+            Mock::new(&[Transaction::write(vec![10, 12]).with_error(ErrorKind::PermissionDenied)]);
+
+        let err = io.write(&[10, 12]).unwrap_err();
+        assert_eq!(err, ErrorKind::PermissionDenied);
+
+        io.done();
+    }
+
+    #[test]
+    fn test_io_mock_read_write_with_error() {
+        let mut io = Mock::new(&[
+            Transaction::read(vec![10, 12]).with_error(ErrorKind::ConnectionReset),
+            Transaction::write(vec![10, 12]).with_error(ErrorKind::NotConnected),
+        ]);
+
+        let err = io.read(&mut [10, 12]).unwrap_err();
+        assert_eq!(err, ErrorKind::ConnectionReset);
+
+        let err = io.write(&[10, 12]).unwrap_err();
+        assert_eq!(err, ErrorKind::NotConnected);
+
+        io.done();
+    }
+}
