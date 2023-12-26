@@ -1,5 +1,5 @@
 //! Mock implementations for
-//! [`embedded_hal::pwm`](https://docs.rs/embedded-hal/1.0.0-rc.3/embedded_hal/pwm/index.html).
+//! [`embedded_hal::pwm`](https://docs.rs/embedded-hal/1.0.0/embedded_hal/pwm/index.html).
 //!
 //! Usage example:
 //! ```
