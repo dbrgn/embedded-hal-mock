@@ -182,7 +182,7 @@ impl Transaction {
 }
 
 /// Mock IO implementation
-pub type Mock = Generic<Transaction>;
+pub type Mock = Generic<Transaction, Vec<u8>>;
 
 impl ErrorType for Mock {
     type Error = ErrorKind;
@@ -190,24 +190,32 @@ impl ErrorType for Mock {
 
 impl Write for Mock {
     fn write(&mut self, buffer: &[u8]) -> Result<usize, Self::Error> {
-        let w = self.next().expect("no expectation for io::write call");
-        assert_eq!(w.expected_mode, Mode::Write, "io::write unexpected mode");
+        let transaction = self.next().expect("no expectation for io::write call");
         assert_eq!(
-            &w.expected_data, &buffer,
+            transaction.expected_mode,
+            Mode::Write,
+            "io::write unexpected mode"
+        );
+        assert_eq!(
+            &transaction.expected_data, &buffer,
             "io::write data does not match expectation"
         );
 
-        match w.expected_err {
+        match transaction.expected_err {
             Some(err) => Err(err),
             None => Ok(buffer.len()),
         }
     }
 
     fn flush(&mut self) -> Result<(), Self::Error> {
-        let w = self.next().expect("no expectation for io::flush call");
-        assert_eq!(w.expected_mode, Mode::Flush, "io::flush unexpected mode");
+        let transaction = self.next().expect("no expectation for io::flush call");
+        assert_eq!(
+            transaction.expected_mode,
+            Mode::Flush,
+            "io::flush unexpected mode"
+        );
 
-        match w.expected_err {
+        match transaction.expected_err {
             Some(err) => Err(err),
             None => Ok(()),
         }
@@ -216,91 +224,116 @@ impl Write for Mock {
 
 impl Read for Mock {
     fn read(&mut self, buffer: &mut [u8]) -> Result<usize, Self::Error> {
-        let w = self.next().expect("no expectation for io::read call");
-        assert_eq!(w.expected_mode, Mode::Read, "io::read unexpected mode");
-        buffer.copy_from_slice(&w.response);
+        let transaction = self.next().expect("no expectation for io::read call");
+        assert_eq!(
+            transaction.expected_mode,
+            Mode::Read,
+            "io::read unexpected mode"
+        );
 
-        match w.expected_err {
+        if transaction.response.len() > buffer.len() {
+            panic!("response longer than read buffer for io::read");
+        }
+
+        let len = std::cmp::min(buffer.len(), transaction.response.len());
+        buffer[..len].copy_from_slice(&transaction.response[..len]);
+
+        match transaction.expected_err {
             Some(err) => Err(err),
-            None => Ok(buffer.len()),
+            None => Ok(len),
         }
     }
 }
 
 impl Seek for Mock {
     fn seek(&mut self, pos: SeekFrom) -> Result<u64, Self::Error> {
-        let w = self.next().expect("no expectation for io::seek call");
+        let transaction = self.next().expect("no expectation for io::seek call");
 
-        if let Mode::Seek(expected_pos) = w.expected_mode {
+        if let Mode::Seek(expected_pos) = transaction.expected_mode {
             assert_eq!(expected_pos, pos, "io::seek unexpected mode");
 
-            let ret_offset: u64 = u64::from_be_bytes(w.response.try_into().unwrap());
-            match w.expected_err {
+            let ret_offset: u64 = u64::from_be_bytes(transaction.response.try_into().unwrap());
+            match transaction.expected_err {
                 Some(err) => Err(err),
                 None => Ok(ret_offset),
             }
         } else {
-            panic!("unexpected seek mode");
+            panic!(
+                "expected seek transaction, but instead encountered {:?}. io::seek unexpected mode",
+                transaction.expected_mode
+            );
         }
     }
 }
 
 impl WriteReady for Mock {
     fn write_ready(&mut self) -> Result<bool, Self::Error> {
-        let w = self
+        let transaction = self
             .next()
             .expect("no expectation for io::write_ready call");
 
-        match w.expected_mode {
-            Mode::WriteReady(ready) if w.expected_err.is_none() => Ok(ready),
-            Mode::WriteReady(_) if w.expected_err.is_some() => Err(w.expected_err.unwrap()),
-            _ => panic!("unexpected write_ready mode"),
+        match transaction.expected_mode {
+            Mode::WriteReady(ready) if transaction.expected_err.is_none() => Ok(ready),
+            Mode::WriteReady(_) if transaction.expected_err.is_some() => {
+                Err(transaction.expected_err.unwrap())
+            }
+            _ => panic!(
+                "expected write_ready transaction, but instead encountered {:?}. io::write_ready unexpected mode",
+                transaction.expected_mode
+            ),
         }
     }
 }
 
 impl ReadReady for Mock {
     fn read_ready(&mut self) -> Result<bool, Self::Error> {
-        let w = self.next().expect("no expectation for io::read_ready call");
+        let transaction = self.next().expect("no expectation for io::read_ready call");
 
-        match w.expected_mode {
-            Mode::ReadReady(ready) if w.expected_err.is_none() => Ok(ready),
-            Mode::ReadReady(_) if w.expected_err.is_some() => Err(w.expected_err.unwrap()),
-            _ => panic!("unexpected read_ready mode"),
+        match transaction.expected_mode {
+            Mode::ReadReady(ready) if transaction.expected_err.is_none() => Ok(ready),
+            Mode::ReadReady(_) if transaction.expected_err.is_some() => {
+                Err(transaction.expected_err.unwrap())
+            }
+            _ => panic!(
+                "expected read_ready transaction, but instead encountered {:?}. io::read_ready unexpected mode",
+                transaction.expected_mode
+            )
         }
     }
 }
 
 impl BufRead for Mock {
     fn fill_buf(&mut self) -> Result<&[u8], Self::Error> {
-        let w = self.next().expect("no expectation for io::fill_buf call");
+        let transaction = self.next().expect("no expectation for io::fill_buf call");
         assert_eq!(
-            w.expected_mode,
+            transaction.expected_mode,
             Mode::FillBuff,
             "io::fill_buf unexpected mode"
         );
 
-        let response_vec = w.response;
+        let response_vec = transaction.response;
+        self.set_mock_data(Some(response_vec));
 
-        match w.expected_err {
+        match transaction.expected_err {
             Some(err) => Err(err),
-
-            // SAFETY : This is a memory leak. This is done on purpose to allow for a return
-            // of a slice (pointer) to the internal buffer, which doesn't exist in mock implementation.
-            // This way, after each call, response is going to be put on the heap and ref is going to be returned, without freeing this memory.
-            // For mocking purposes this should be an acceptable solution.
-            None => Ok(Box::leak(response_vec.into_boxed_slice())),
+            None => Ok(self.mock_data().as_ref().unwrap()),
         }
     }
 
     fn consume(&mut self, amt: usize) {
-        let w = self.next().expect("no expectation for io::consume call");
+        let transaction = self.next().expect("no expectation for io::consume call");
 
-        match w.expected_mode {
-            Mode::Consume(expected_amt) if w.expected_err.is_none() => {
+        match transaction.expected_mode {
+            Mode::Consume(expected_amt) if transaction.expected_err.is_none() => {
                 assert_eq!(expected_amt, amt, "io::consume unexpected amount");
             }
-            _ => panic!("unexpected consume mode"),
+            Mode::Consume(_) if transaction.expected_err.is_some() => {
+                panic!("io::consume can't expect an error. io::consume unexpected error");
+            }
+            _ => panic!(
+                "expected consume transaction, but instead encountered {:?}. io::consume unexpected mode",
+                transaction.expected_mode
+            )
         }
     }
 }
@@ -401,6 +434,19 @@ mod test {
         io.done();
     }
 
+    #[test]
+    fn test_io_mock_read_buffer_to_long() {
+        let mut io = Mock::new(&[Transaction::read(vec![10])]);
+
+        let mut buffer = [0; 3];
+        let ret = io.read(&mut buffer).unwrap();
+
+        assert_eq!(buffer, [10, 0, 0]);
+        assert_eq!(ret, 1);
+
+        io.done();
+    }
+
     #[tokio::test]
     #[cfg(feature = "embedded-hal-async")]
     async fn test_async_io_mock_read() {
@@ -466,11 +512,16 @@ mod test {
 
     #[test]
     fn test_io_mock_fill_buf() {
-        let mut io = Mock::new(&[Transaction::fill_buf(vec![10])]);
+        let mut io = Mock::new(&[
+            Transaction::fill_buf(vec![10]),
+            Transaction::fill_buf(vec![10, 20, 30]),
+        ]);
 
         let ret = io.fill_buf().unwrap();
-
         assert_eq!(ret, &[10]);
+
+        let ret = io.fill_buf().unwrap();
+        assert_eq!(ret, &[10, 20, 30]);
 
         io.done();
     }
@@ -544,6 +595,20 @@ mod test {
         let mut io = Mock::new(&[Transaction::write(vec![10, 12])]);
 
         io.write(&[10, 12, 12]).unwrap();
+
+        io.done();
+    }
+
+    #[test]
+    #[should_panic(expected = "response longer than read buffer for io::read")]
+    fn test_io_mock_read_buffer_to_short() {
+        let mut io = Mock::new(&[Transaction::read(vec![10, 20, 30])]);
+
+        let mut buffer = [0; 1];
+        let ret = io.read(&mut buffer).unwrap();
+
+        assert_eq!(buffer, [10]);
+        assert_eq!(ret, 1);
 
         io.done();
     }
