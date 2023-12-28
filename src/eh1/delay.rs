@@ -2,8 +2,8 @@
 //!
 //! ## Usage
 //!
-//! For the mock implementation of the [`Delay`](trait.Delay.html) trait,
-//! use the [`CheckedDelay`](struct.CheckedDelay.html) instance. By default it
+//! For the mock implementation of the [`Delay`](https://docs.rs/embedded-hal/1.0.0-rc.3/embedded_hal/delay/trait.DelayNs.html)
+//! trait, use the [`CheckedDelay`](type.CheckedDelay.html) instance. By default it
 //! doesn't perform an actual delay, but allows the user to enable them individually for each expected call.
 //!
 //! If the actual sleep duration is not important, simply create a
@@ -21,7 +21,7 @@
 //! use std::time::Duration;
 //! use eh1 as embedded_hal;
 //! use embedded_hal::delay::DelayNs;
-//! use embedded_hal_mock::eh1::delay::{Transaction, CheckedDelay};
+//! use embedded_hal_mock::eh1::delay::{Transaction, CheckedDelay, NoopDelay};
 //!
 //! let transactions = vec![
 //!     Transaction::delay_ns(50_000_000),
@@ -35,6 +35,10 @@
 //! delay.delay_ms(60); // Conversion to microseconds
 //! delay.delay_ms(70); // This will actually delay
 //! delay.done();
+//!
+//! let mut delay = NoopDelay::new();
+//! delay.delay_ms(50); // No checks are performed
+//!
 //! ```
 
 use std::thread;
@@ -61,7 +65,7 @@ const NANOS_PER_MILLI: u32 = 1_000_000;
 const MICROS_PER_MILLI: u32 = 1_000;
 
 impl Transaction {
-    /// Create a new pin transaction
+    /// Create a new delay transaction
     pub fn new(kind: TransactionKind) -> Transaction {
         Transaction {
             kind,
