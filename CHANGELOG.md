@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Changed the `embedded-hal` version 1 SPI implementation to be generic over
   word size.
 - Updated `embedded-hal` to `1.0.0` (no more RC!).
+- `embedded-hal` 1.0 mocks are enabled by default (in parallel to `embedded-hal` 0.2 mocks)
 
 ## 0.10.0-rc.4 - 2023-12-14
 
