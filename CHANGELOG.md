@@ -14,56 +14,37 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 
-- Updated `embedded-hal` to `1.0.0`.
-- Changed the `embedded-hal` version 1 SPI implementation to be generic over
-  word size.
 
-## 0.10.0-rc.4 - 2023-12-14
-
-### Changed
-
-- Updated `embedded-hal` to `1.0.0-rc.3`.
-
-
-## 0.10.0-rc.3 - 2023-11-29
-
-### Changed
-
-- Updated `embedded-hal` to `1.0.0-rc.2`.
-
-
-## 0.10.0-rc.2 - 2023-11-23
-
-### Added
-
-- Implement mock for `eh1::pwm::SetDutyCycle`
-
-### Changed
-
-- Renamed `.expect(...)` method to `.update_expectations(...)` to avoid
-  confusion with the expect method in `Option` and `Result` (#63)
-- When updating expectations on a mock by calling `.expect(...)` /
-  `.update_expectations(...)` on it, assert that previous expectations have
-  been consumed (#63)
-
-
-## 0.10.0-rc.1 - 2023-11-01
+## 0.10.0 - 2024-01-10
 
 This release contains a big change: `embedded-hal-mock` now supports both
-`embedded-hal` 0.x and 1.x (currently at version `1.0.0-rc.1`)! Please test it,
-and if there are any issues, leave feedback in the GitHub issue tracker.
+`embedded-hal` 0.x and 1.x! The two variants are accessible through
+`embedded_hal_mock::eh0::*` and `embedded_hal_mock::eh1::*`. If there are any
+issues, leave feedback in the GitHub issue tracker.
 
 Additionally, tests now fail if you forgot to call `.done()`. This should
 reduce the chance of accidentally writing a broken test.
 
-This release contains commits by 10 different people, thanks a lot for the
+This release contains commits by 12 different people, thanks a lot for the
 contributions!
+
+### Migrating to 0.10.0
+
+- Update your imports: Change `use embedded_hal_mock::*` to
+  `use embedded_hal_mock::eh0::*`
+- Rename all `.expect(...)` calls on mocks to `.update_expectations(...)`
+- Rename all `eh0::delay::MockNoop` usages to `eh0::delay::NoopDelay`
+- Run your tests to ensure that you don't have any missing `.done()` calls in
+  your code
+- Look through the rest of the changes below and check if they might affect
+  your code
 
 ### Added
 
 - Support for both `embedded-hal` 0.x and 1.x in the same crate (#75)
 - Print a warning to stderr and fail test if a mock is dropped without having
   calling `.done()` on it, or if `.done()` is called twice (#59, #61)
+- Implement mock for `eh1::pwm::SetDutyCycle`
 
 ### Fixed
 
@@ -74,8 +55,16 @@ contributions!
 
 ### Changed
 
+- Renamed `.expect(...)` method to `.update_expectations(...)` to avoid
+  confusion with the expect method in `Option` and `Result` (#63)
+- When updating expectations on a mock by calling `.expect(...)` /
+  `.update_expectations(...)` on it, assert that previous expectations have
+  been consumed (#63)
 - Rename `delay::MockNoop` to `delay::NoopDelay`.
-- Bump minimal supported Rust version (MSRV) to 1.63
+- Changed the eh1 SPI implementation to be generic over word size
+- Updated `nb` dependency from 0.1 to 1.1 (#107)
+- Bump minimal supported Rust version (MSRV) to 1.63 (or 1.75 if you use
+  embedded-hal 1.0)
 - The minimal supported Rust version (MSRV) is specified in the `Cargo.toml` to
   offer clearer error messages to consumers with outdated Rust versions
 
