@@ -11,11 +11,8 @@
 //! ```
 //! # use eh1 as embedded_hal;
 //! // Note that we're using the non-blocking serial traits
+//! use embedded_hal_mock::eh1::serial::{Mock as SerialMock, Transaction as SerialTransaction};
 //! use embedded_hal_nb::serial::{Read, Write};
-//! use embedded_hal_mock::eh1::serial::{
-//!     Mock as SerialMock,
-//!     Transaction as SerialTransaction,
-//! };
 //!
 //! // Configure expectations
 //! let expectations = [
@@ -57,8 +54,10 @@
 //! #     Mock as SerialMock,
 //! #     Transaction as SerialTransaction,
 //! # };
-//! use embedded_hal_nb::nb;
-//! use embedded_hal_nb::serial::{Read, Write, ErrorKind};
+//! use embedded_hal_nb::{
+//!     nb,
+//!     serial::{ErrorKind, Read, Write},
+//! };
 //!
 //! // Configure expectations
 //! let expectations = [
@@ -110,10 +109,10 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use embedded_hal_nb::nb;
-use embedded_hal_nb::serial;
-use embedded_hal_nb::serial::ErrorKind;
-use embedded_hal_nb::serial::ErrorType;
+use embedded_hal_nb::{
+    nb, serial,
+    serial::{ErrorKind, ErrorType},
+};
 
 use crate::common::DoneCallDetector;
 
@@ -152,8 +151,7 @@ enum Mode<Word> {
 /// # Example
 ///
 /// ```no_run
-/// use embedded_hal_mock::eh1::serial::Transaction;
-/// use embedded_hal_mock::eh1::serial::Mock;
+/// use embedded_hal_mock::eh1::serial::{Mock, Transaction};
 ///
 /// // We expect, in order,
 /// // 1. A read that returns 0x23,
@@ -162,7 +160,7 @@ enum Mode<Word> {
 /// let transactions = [
 ///     Transaction::read(0x23),
 ///     Transaction::write_many([0x55, 0xAA]),
-///     Transaction::flush()
+///     Transaction::flush(),
 /// ];
 ///
 /// let mut serial = Mock::new(&transactions);
@@ -410,9 +408,9 @@ where
 
 #[cfg(test)]
 mod test {
-    use super::*;
-
     use embedded_hal_nb::serial::{ErrorKind, Read, Write};
+
+    use super::*;
 
     #[test]
     fn test_serial_mock_read() {

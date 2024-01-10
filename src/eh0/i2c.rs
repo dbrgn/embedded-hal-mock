@@ -4,8 +4,10 @@
 //!
 //! ```
 //! # use eh0 as embedded_hal;
-//! use embedded_hal::prelude::*;
-//! use embedded_hal::blocking::i2c::{Read, Write, WriteRead};
+//! use embedded_hal::{
+//!     blocking::i2c::{Read, Write, WriteRead},
+//!     prelude::*,
+//! };
 //! use embedded_hal_mock::eh0::i2c::{Mock as I2cMock, Transaction as I2cTransaction};
 //!
 //! // Configure expectations
@@ -47,6 +49,7 @@
 //! # use embedded_hal::blocking::i2c::{Read, Write, WriteRead};
 //! # use embedded_hal_mock::eh0::i2c::{Mock as I2cMock, Transaction as I2cTransaction};
 //! use std::io::ErrorKind;
+//!
 //! use embedded_hal_mock::eh0::MockError;
 //!
 //! // Configure expectations
@@ -277,13 +280,12 @@ impl i2c::WriteIter for Mock {
 
 #[cfg(test)]
 mod test {
-    use super::super::error::MockError;
-    use super::*;
-
     use std::{io::ErrorKind as IoErrorKind, time::SystemTime};
 
     use eh0 as embedded_hal;
     use embedded_hal::blocking::i2c::{Read, Write, WriteRead};
+
+    use super::{super::error::MockError, *};
 
     #[test]
     fn write() {

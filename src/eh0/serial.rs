@@ -12,10 +12,7 @@
 //! # use eh0 as embedded_hal;
 //! // Note that we're using the non-blocking serial traits
 //! use embedded_hal::serial::{Read, Write};
-//! use embedded_hal_mock::eh0::serial::{
-//!     Mock as SerialMock,
-//!     Transaction as SerialTransaction,
-//! };
+//! use embedded_hal_mock::eh0::serial::{Mock as SerialMock, Transaction as SerialTransaction};
 //!
 //! // Configure expectations
 //! let expectations = [
@@ -51,12 +48,8 @@
 //! ```
 //! # use eh0 as embedded_hal;
 //! // Note that we're using the blocking serial write trait
-//! use embedded_hal::blocking::serial::Write;
-//! use embedded_hal::serial::Read;
-//! use embedded_hal_mock::eh0::serial::{
-//!     Mock as SerialMock,
-//!     Transaction as SerialTransaction,
-//! };
+//! use embedded_hal::{blocking::serial::Write, serial::Read};
+//! use embedded_hal_mock::eh0::serial::{Mock as SerialMock, Transaction as SerialTransaction};
 //!
 //! // Configure expectations
 //! let expectations = [
@@ -99,6 +92,7 @@
 //! #     Transaction as SerialTransaction,
 //! # };
 //! use std::io::ErrorKind;
+//!
 //! use embedded_hal_mock::eh0::MockError;
 //!
 //! // Configure expectations
@@ -192,8 +186,7 @@ enum Mode<Word> {
 /// # Example
 ///
 /// ```no_run
-/// use embedded_hal_mock::eh0::serial::Transaction;
-/// use embedded_hal_mock::eh0::serial::Mock;
+/// use embedded_hal_mock::eh0::serial::{Mock, Transaction};
 ///
 /// // We expect, in order,
 /// // 1. A read that returns 0x23,
@@ -202,7 +195,7 @@ enum Mode<Word> {
 /// let transactions = [
 ///     Transaction::read(0x23),
 ///     Transaction::write_many([0x55, 0xAA]),
-///     Transaction::flush()
+///     Transaction::flush(),
 /// ];
 ///
 /// let mut serial = Mock::new(&transactions);
@@ -463,9 +456,6 @@ impl<Word> write::Default<Word> for Mock<Word> where Word: PartialEq + std::fmt:
 
 #[cfg(test)]
 mod test {
-    use super::super::error::MockError;
-    use super::*;
-
     use std::io;
 
     use eh0 as embedded_hal;
@@ -473,6 +463,8 @@ mod test {
         blocking::serial::Write as BWrite,
         serial::{Read, Write},
     };
+
+    use super::{super::error::MockError, *};
 
     #[test]
     fn test_serial_mock_read() {

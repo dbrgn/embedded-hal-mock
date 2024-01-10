@@ -4,9 +4,7 @@
 //!
 //! ```
 //! # use eh1 as embedded_hal;
-//! use embedded_hal::i2c::ErrorKind;
-//! use embedded_hal::i2c::I2c;
-//! use embedded_hal::i2c::Operation;
+//! use embedded_hal::i2c::{ErrorKind, I2c, Operation};
 //! use embedded_hal_mock::eh1::i2c::{Mock as I2cMock, Transaction as I2cTransaction};
 //!
 //! // Configure expectations
@@ -67,9 +65,10 @@
 //! ```
 
 use eh1 as embedded_hal;
-use embedded_hal::i2c;
-use embedded_hal::i2c::ErrorKind;
-use embedded_hal::i2c::ErrorType;
+use embedded_hal::{
+    i2c,
+    i2c::{ErrorKind, ErrorType},
+};
 
 use crate::common::Generic;
 
@@ -299,11 +298,11 @@ impl i2c::I2c for Mock {
 
 #[cfg(test)]
 mod test {
-    use super::*;
-
     use std::time::SystemTime;
 
     use embedded_hal::i2c::I2c;
+
+    use super::*;
 
     #[test]
     fn write() {

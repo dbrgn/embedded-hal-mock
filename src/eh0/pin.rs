@@ -7,9 +7,11 @@
 //! # use eh0 as embedded_hal;
 //! use std::io::ErrorKind;
 //!
-//! use embedded_hal_mock::eh0::MockError;
-//! use embedded_hal_mock::eh0::pin::{Transaction as PinTransaction, Mock as PinMock, State as PinState};
 //! use embedded_hal::digital::v2::{InputPin, OutputPin};
+//! use embedded_hal_mock::eh0::{
+//!     pin::{Mock as PinMock, State as PinState, Transaction as PinTransaction},
+//!     MockError,
+//! };
 //!
 //! let err = MockError::Io(ErrorKind::NotConnected);
 //!
@@ -37,15 +39,16 @@
 //! pin.update_expectations(&[]);
 //! // ...
 //! pin.done();
-//!
 //! ```
+
+use eh0 as embedded_hal;
+use embedded_hal::{
+    digital::v2::{InputPin, OutputPin},
+    PwmPin,
+};
 
 use super::error::MockError;
 use crate::common::Generic;
-
-use eh0 as embedded_hal;
-use embedded_hal::digital::v2::{InputPin, OutputPin};
-use embedded_hal::PwmPin;
 
 /// The type used for the duty of the [`PwmPin`] mock.
 pub type PwmDuty = u16;
@@ -300,15 +303,15 @@ impl PwmPin for Mock {
 
 #[cfg(test)]
 mod test {
-    use super::super::error::MockError;
-    use super::TransactionKind::*;
-    use super::*;
-
     use std::io::ErrorKind;
 
     use eh0 as embedded_hal;
-    use embedded_hal::digital::v2::{InputPin, OutputPin};
-    use embedded_hal::PwmPin;
+    use embedded_hal::{
+        digital::v2::{InputPin, OutputPin},
+        PwmPin,
+    };
+
+    use super::{super::error::MockError, TransactionKind::*, *};
 
     #[test]
     fn test_input_pin() {

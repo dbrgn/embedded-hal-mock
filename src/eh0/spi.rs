@@ -9,9 +9,11 @@
 //!
 //! ```
 //! # use eh0 as embedded_hal;
-//! use embedded_hal::blocking::spi::{Transfer, Write};
+//! use embedded_hal::{
+//!     blocking::spi::{Transfer, Write},
+//!     spi::FullDuplex,
+//! };
 //! use embedded_hal_mock::eh0::spi::{Mock as SpiMock, Transaction as SpiTransaction};
-//! use embedded_hal::spi::FullDuplex;
 //!
 //! // Configure expectations
 //! let expectations = [
@@ -42,8 +44,7 @@
 //! spi.done();
 //! ```
 use eh0 as embedded_hal;
-use embedded_hal::blocking::spi;
-use embedded_hal::spi::FullDuplex;
+use embedded_hal::{blocking::spi, spi::FullDuplex};
 
 use super::error::MockError;
 use crate::common::Generic;
@@ -220,10 +221,10 @@ impl spi::WriteIter<u8> for Mock {
 
 #[cfg(test)]
 mod test {
-    use super::*;
-
     use eh0 as embedded_hal;
     use embedded_hal::blocking::spi::{Transfer, Write, WriteIter};
+
+    use super::*;
 
     #[test]
     fn test_spi_mock_send() {

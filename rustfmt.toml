@@ -1,1 +1,2 @@
-# Empty file, use defaults and disregard global settings
+imports_granularity = "Crate"
+group_imports = "StdExternalCrate"
