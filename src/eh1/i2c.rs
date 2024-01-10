@@ -4,9 +4,7 @@
 //!
 //! ```
 //! # use eh1 as embedded_hal;
-//! use embedded_hal::i2c::ErrorKind;
-//! use embedded_hal::i2c::I2c;
-//! use embedded_hal::i2c::Operation;
+//! use embedded_hal::i2c::{ErrorKind, I2c, Operation};
 //! use embedded_hal_mock::eh1::i2c::{Mock as I2cMock, Transaction as I2cTransaction};
 //!
 //! // Configure expectations

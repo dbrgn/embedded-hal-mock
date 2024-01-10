@@ -7,9 +7,11 @@
 //! # use eh0 as embedded_hal;
 //! use std::io::ErrorKind;
 //!
-//! use embedded_hal_mock::eh0::MockError;
-//! use embedded_hal_mock::eh0::pin::{Transaction as PinTransaction, Mock as PinMock, State as PinState};
 //! use embedded_hal::digital::v2::{InputPin, OutputPin};
+//! use embedded_hal_mock::eh0::{
+//!     pin::{Mock as PinMock, State as PinState, Transaction as PinTransaction},
+//!     MockError,
+//! };
 //!
 //! let err = MockError::Io(ErrorKind::NotConnected);
 //!
@@ -37,7 +39,6 @@
 //! pin.update_expectations(&[]);
 //! // ...
 //! pin.done();
-//!
 //! ```
 
 use eh0 as embedded_hal;

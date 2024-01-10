@@ -9,8 +9,8 @@
 //! ```rust
 //! # use eh0 as embedded_hal;
 //! use embedded_hal::timer::CountDown;
-//! use embedded_time::duration::*;
 //! use embedded_hal_mock::eh0::timer::MockClock;
+//! use embedded_time::duration::*;
 //!
 //! let mut clock = MockClock::new();
 //! let mut timer = clock.get_timer();

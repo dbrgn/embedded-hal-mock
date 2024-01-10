@@ -9,9 +9,11 @@
 //!
 //! ```
 //! # use eh0 as embedded_hal;
-//! use embedded_hal::blocking::spi::{Transfer, Write};
+//! use embedded_hal::{
+//!     blocking::spi::{Transfer, Write},
+//!     spi::FullDuplex,
+//! };
 //! use embedded_hal_mock::eh0::spi::{Mock as SpiMock, Transaction as SpiTransaction};
-//! use embedded_hal::spi::FullDuplex;
 //!
 //! // Configure expectations
 //! let expectations = [

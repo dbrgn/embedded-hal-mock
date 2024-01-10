@@ -5,9 +5,7 @@
 //! ```
 //! # use eh0 as embedded_hal;
 //! use embedded_hal::adc::OneShot;
-//! use embedded_hal_mock::eh0::adc::Mock;
-//! use embedded_hal_mock::eh0::adc::Transaction;
-//! use embedded_hal_mock::eh0::adc::{MockChan0, MockChan1};
+//! use embedded_hal_mock::eh0::adc::{Mock, MockChan0, MockChan1, Transaction};
 //!
 //! // Configure expectations: expected input channel numbers and values returned by read operations
 //! let expectations = [
@@ -30,13 +28,13 @@
 //!
 //! ```
 //! # use eh0 as embedded_hal;
-//! use embedded_hal::adc::OneShot;
-//! use embedded_hal_mock::eh0::adc::Mock;
-//! use embedded_hal_mock::eh0::adc::Transaction;
-//! use embedded_hal_mock::eh0::adc::MockChan1;
-//! use embedded_hal_mock::eh0::MockError;
 //! use std::io::ErrorKind;
 //!
+//! use embedded_hal::adc::OneShot;
+//! use embedded_hal_mock::eh0::{
+//!     adc::{Mock, MockChan1, Transaction},
+//!     MockError,
+//! };
 //!
 //! // Configure expectations
 //! let expectations = [
@@ -45,7 +43,8 @@
 //! let mut adc = Mock::new(&expectations);
 //!
 //! // Reading returns an error
-//! adc.read(&mut MockChan1 {}).expect_err("expected error return");
+//! adc.read(&mut MockChan1 {})
+//!     .expect_err("expected error return");
 //!
 //! // Finalise expectations
 //! adc.done();
