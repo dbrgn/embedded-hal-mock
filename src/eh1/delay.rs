@@ -1,27 +1,44 @@
-//! Delay mock implementations.
+//! Delay mock implementations, implementing both sync and async
+//! [`DelayNs`](https://docs.rs/embedded-hal/latest/embedded_hal/delay/trait.DelayNs.html)
+//! traits.
+//!
+//! ## Choosing a Delay Implementation
+//!
+//! There are three implementations available depending on your use case:
+//!
+//! - If you want **no actual delay**, create a
+//!   [`NoopDelay`](struct.NoopDelay.html) stub. It will always return
+//!   immediately, without a delay. This is useful for fast tests, where you
+//!   don't actually need to wait for the hardware.
+//! - If you do want the **real delay behavior** when running your tests, use
+//!   [`StdSleep`](struct.StdSleep.html) stub implementation, which uses
+//!   [`std::thread::sleep`](https://doc.rust-lang.org/std/thread/fn.sleep.html)
+//!   to implement the delay.
+//! - For a **configurable delay** implementation that supports expectations,
+//!   use the [`CheckedDelay`](type.CheckedDelay.html) mock. By default it
+//!   doesn't perform an actual delay, but allows the user to enable them
+//!   individually for each expected call.
 //!
 //! ## Usage
 //!
-//! For the mock implementation of the [`Delay`](https://docs.rs/embedded-hal/1.0.0-rc.3/embedded_hal/delay/trait.DelayNs.html)
-//! trait, use the [`CheckedDelay`](type.CheckedDelay.html) instance. By default it
-//! doesn't perform an actual delay, but allows the user to enable them individually for each expected call.
-//!
-//! If the actual sleep duration is not important, simply create a
-//! [`NoopDelay`](struct.NoopDelay.html) stub. There will be no actual
-//! delay. This is useful for fast tests, where you don't actually need to wait
-//! for the hardware.
-//!
-//! If you do want the real delay behavior, use
-//! [`StdSleep`](struct.StdSleep.html) stub implementation which uses
-//! [`std::thread::sleep`](https://doc.rust-lang.org/std/thread/fn.sleep.html)
-//! to implement the delay.
-//!
-//! Example:
 //! ```
+//! # use eh1 as embedded_hal;
 //! use std::time::Duration;
-//! use eh1 as embedded_hal;
+//!
 //! use embedded_hal::delay::DelayNs;
-//! use embedded_hal_mock::eh1::delay::{Transaction, CheckedDelay, NoopDelay};
+//! use embedded_hal_mock::eh1::delay::{CheckedDelay, NoopDelay, StdSleep, Transaction};
+//!
+//! // No actual delay
+//!
+//! let mut delay = NoopDelay::new();
+//! delay.delay_ms(50); // Returns immediately
+//!
+//! // Real delay
+//!
+//! let mut delay = StdSleep::new();
+//! delay.delay_ms(50); // Will sleep for 50 ms
+//!
+//! // Configurable mock
 //!
 //! let transactions = vec![
 //!     Transaction::delay_ns(50_000_000),
@@ -38,7 +55,6 @@
 //!
 //! let mut delay = NoopDelay::new();
 //! delay.delay_ms(50); // No checks are performed
-//!
 //! ```
 
 use std::thread;
