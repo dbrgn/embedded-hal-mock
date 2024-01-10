@@ -42,8 +42,7 @@
 //! spi.done();
 //! ```
 use eh0 as embedded_hal;
-use embedded_hal::blocking::spi;
-use embedded_hal::spi::FullDuplex;
+use embedded_hal::{blocking::spi, spi::FullDuplex};
 
 use super::error::MockError;
 use crate::common::Generic;

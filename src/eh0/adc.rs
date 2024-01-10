@@ -52,8 +52,7 @@
 //! ```
 
 use eh0 as embedded_hal;
-use embedded_hal::adc::Channel;
-use embedded_hal::adc::OneShot;
+use embedded_hal::adc::{Channel, OneShot};
 use nb;
 use std::fmt::Debug;
 
@@ -141,8 +140,7 @@ where
 
 #[cfg(test)]
 mod test {
-    use super::super::error::MockError;
-    use super::*;
+    use super::{super::error::MockError, *};
 
     use eh0 as embedded_hal;
     use embedded_hal::adc::OneShot;

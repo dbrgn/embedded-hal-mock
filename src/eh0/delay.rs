@@ -12,8 +12,7 @@
 //! [`std::thread::sleep`](https://doc.rust-lang.org/std/thread/fn.sleep.html)
 //! to implement the delay.
 
-use std::thread;
-use std::time::Duration;
+use std::{thread, time::Duration};
 
 use eh0 as embedded_hal;
 use embedded_hal::blocking::delay;

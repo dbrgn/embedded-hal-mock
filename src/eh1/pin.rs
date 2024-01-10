@@ -40,8 +40,7 @@
 //!
 //! ```
 
-use crate::common::Generic;
-use crate::eh1::error::MockError;
+use crate::{common::Generic, eh1::error::MockError};
 use eh1 as embedded_hal;
 
 use embedded_hal::digital::{ErrorType, InputPin, OutputPin};
@@ -201,9 +200,11 @@ impl InputPin for Mock {
 
 #[cfg(test)]
 mod test {
-    use super::super::error::MockError;
-    use super::TransactionKind::{Get, Set};
-    use super::*;
+    use super::{
+        super::error::MockError,
+        TransactionKind::{Get, Set},
+        *,
+    };
 
     use std::io::ErrorKind;
 

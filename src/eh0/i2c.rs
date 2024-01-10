@@ -277,8 +277,7 @@ impl i2c::WriteIter for Mock {
 
 #[cfg(test)]
 mod test {
-    use super::super::error::MockError;
-    use super::*;
+    use super::{super::error::MockError, *};
 
     use std::{io::ErrorKind as IoErrorKind, time::SystemTime};
 

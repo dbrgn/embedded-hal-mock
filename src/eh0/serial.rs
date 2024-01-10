@@ -463,8 +463,7 @@ impl<Word> write::Default<Word> for Mock<Word> where Word: PartialEq + std::fmt:
 
 #[cfg(test)]
 mod test {
-    use super::super::error::MockError;
-    use super::*;
+    use super::{super::error::MockError, *};
 
     use std::io;
 
