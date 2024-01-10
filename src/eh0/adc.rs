@@ -51,10 +51,11 @@
 //! adc.done();
 //! ```
 
+use std::fmt::Debug;
+
 use eh0 as embedded_hal;
 use embedded_hal::adc::{Channel, OneShot};
 use nb;
-use std::fmt::Debug;
 
 use super::error::MockError;
 use crate::common::Generic;
@@ -140,12 +141,12 @@ where
 
 #[cfg(test)]
 mod test {
-    use super::{super::error::MockError, *};
+    use std::io::ErrorKind;
 
     use eh0 as embedded_hal;
     use embedded_hal::adc::OneShot;
 
-    use std::io::ErrorKind;
+    use super::{super::error::MockError, *};
 
     #[test]
     fn test_adc_single_read16() {

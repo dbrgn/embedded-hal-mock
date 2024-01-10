@@ -41,10 +41,10 @@
 //! // Finalise expectations
 //! spi.done();
 //! ```
+use core::fmt::Debug;
+
 use eh1::spi::{self, Operation, SpiBus, SpiDevice};
 use embedded_hal_nb::{nb, spi::FullDuplex};
-
-use core::fmt::Debug;
 
 use crate::common::Generic;
 

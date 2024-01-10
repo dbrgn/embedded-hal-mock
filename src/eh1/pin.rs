@@ -40,10 +40,10 @@
 //!
 //! ```
 
-use crate::{common::Generic, eh1::error::MockError};
 use eh1 as embedded_hal;
-
 use embedded_hal::digital::{ErrorType, InputPin, OutputPin};
+
+use crate::{common::Generic, eh1::error::MockError};
 
 /// MockPin transaction
 #[derive(PartialEq, Eq, Clone, Debug)]
@@ -200,16 +200,16 @@ impl InputPin for Mock {
 
 #[cfg(test)]
 mod test {
+    use std::io::ErrorKind;
+
+    use eh1 as embedded_hal;
+    use embedded_hal::digital::{InputPin, OutputPin};
+
     use super::{
         super::error::MockError,
         TransactionKind::{Get, Set},
         *,
     };
-
-    use std::io::ErrorKind;
-
-    use eh1 as embedded_hal;
-    use embedded_hal::digital::{InputPin, OutputPin};
 
     #[test]
     fn test_input_pin() {

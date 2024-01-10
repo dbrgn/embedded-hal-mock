@@ -463,8 +463,6 @@ impl<Word> write::Default<Word> for Mock<Word> where Word: PartialEq + std::fmt:
 
 #[cfg(test)]
 mod test {
-    use super::{super::error::MockError, *};
-
     use std::io;
 
     use eh0 as embedded_hal;
@@ -472,6 +470,8 @@ mod test {
         blocking::serial::Write as BWrite,
         serial::{Read, Write},
     };
+
+    use super::{super::error::MockError, *};
 
     #[test]
     fn test_serial_mock_read() {

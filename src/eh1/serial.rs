@@ -410,9 +410,9 @@ where
 
 #[cfg(test)]
 mod test {
-    use super::*;
-
     use embedded_hal_nb::serial::{ErrorKind, Read, Write};
+
+    use super::*;
 
     #[test]
     fn test_serial_mock_read() {

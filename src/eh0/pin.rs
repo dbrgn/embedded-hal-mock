@@ -40,14 +40,14 @@
 //!
 //! ```
 
-use super::error::MockError;
-use crate::common::Generic;
-
 use eh0 as embedded_hal;
 use embedded_hal::{
     digital::v2::{InputPin, OutputPin},
     PwmPin,
 };
+
+use super::error::MockError;
+use crate::common::Generic;
 
 /// The type used for the duty of the [`PwmPin`] mock.
 pub type PwmDuty = u16;
@@ -302,8 +302,6 @@ impl PwmPin for Mock {
 
 #[cfg(test)]
 mod test {
-    use super::{super::error::MockError, TransactionKind::*, *};
-
     use std::io::ErrorKind;
 
     use eh0 as embedded_hal;
@@ -311,6 +309,8 @@ mod test {
         digital::v2::{InputPin, OutputPin},
         PwmPin,
     };
+
+    use super::{super::error::MockError, TransactionKind::*, *};
 
     #[test]
     fn test_input_pin() {

@@ -300,11 +300,11 @@ impl i2c::I2c for Mock {
 
 #[cfg(test)]
 mod test {
-    use super::*;
-
     use std::time::SystemTime;
 
     use embedded_hal::i2c::I2c;
+
+    use super::*;
 
     #[test]
     fn write() {

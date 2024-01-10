@@ -219,10 +219,10 @@ impl spi::WriteIter<u8> for Mock {
 
 #[cfg(test)]
 mod test {
-    use super::*;
-
     use eh0 as embedded_hal;
     use embedded_hal::blocking::spi::{Transfer, Write, WriteIter};
+
+    use super::*;
 
     #[test]
     fn test_spi_mock_send() {

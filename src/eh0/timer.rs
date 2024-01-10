@@ -34,12 +34,12 @@ use std::{
         Arc,
     },
 };
-use void::Void;
 
 use eh0 as embedded_hal;
 use embedded_hal::timer::{Cancel, CountDown, Periodic};
 pub use embedded_time::Clock;
 use embedded_time::{clock, duration::*, fraction::Fraction, Instant};
+use void::Void;
 
 /// A simulated clock that can be used in tests.
 #[derive(Clone, Debug)]
