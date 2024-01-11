@@ -38,12 +38,11 @@ impl delay::DelayNs for NoopDelay {
     fn delay_ns(&mut self, _ns: u32) {
         // no-op
     }
+}
 
-    fn delay_us(&mut self, _us: u32) {
-        // no-op
-    }
-
-    fn delay_ms(&mut self, _ms: u32) {
+#[cfg(feature = "embedded-hal-async")]
+impl embedded_hal_async::delay::DelayNs for NoopDelay {
+    async fn delay_ns(&mut self, _ns: u32) {
         // no-op
     }
 }
@@ -68,12 +67,50 @@ impl delay::DelayNs for StdSleep {
     fn delay_ns(&mut self, ns: u32) {
         thread::sleep(Duration::from_nanos(ns as u64));
     }
+}
 
-    fn delay_us(&mut self, us: u32) {
-        thread::sleep(Duration::from_micros(us as u64));
+#[cfg(feature = "embedded-hal-async")]
+impl embedded_hal_async::delay::DelayNs for StdSleep {
+    async fn delay_ns(&mut self, _ns: u32) {
+        // no-op
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_noop_sleep() {
+        use embedded_hal::delay::DelayNs;
+
+        let mut delay = NoopDelay::new();
+        delay.delay_ms(10);
     }
 
-    fn delay_ms(&mut self, ms: u32) {
-        thread::sleep(Duration::from_millis(ms as u64));
+    #[tokio::test]
+    #[cfg(feature = "embedded-hal-async")]
+    async fn test_noop_sleep_async() {
+        use embedded_hal_async::delay::DelayNs;
+
+        let mut delay = NoopDelay::new();
+        delay.delay_ms(10).await;
+    }
+
+    #[test]
+    fn test_std_sleep() {
+        use embedded_hal::delay::DelayNs;
+
+        let mut delay = StdSleep::new();
+        delay.delay_ms(10);
+    }
+
+    #[tokio::test]
+    #[cfg(feature = "embedded-hal-async")]
+    async fn test_std_sleep_async() {
+        use embedded_hal_async::delay::DelayNs;
+
+        let mut delay = StdSleep::new();
+        delay.delay_ms(10).await;
     }
 }
