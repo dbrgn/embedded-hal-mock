@@ -1,5 +1,5 @@
 //! Delay mock implementations, implementing both sync and async
-//! [`DelayNs`](https://docs.rs/embedded-hal/latest/embedded_hal/delay/trait.DelayNs.html)
+//! [`BlockingDelay`](https://docs.rs/embedded-hal/latest/embedded_hal/delay/trait.BlockingDelay.html)
 //! traits.
 //!
 //! ## Choosing a Delay Implementation
@@ -60,10 +60,10 @@
 use std::thread;
 use std::time::Duration;
 
-use crate::common::Generic;
-
 use eh1 as embedded_hal;
 use embedded_hal::delay;
+
+use crate::common::Generic;
 
 /// Delay transaction
 #[derive(PartialEq, Eq, Clone, Debug)]
@@ -74,11 +74,9 @@ pub struct Transaction {
 }
 
 /// Nanoseconds per microsecond
-const NANOS_PER_MICRO: u32 = 1_000;
+const NANOS_PER_MICRO: u64 = 1_000;
 /// Nanoseconds per millisecond
-const NANOS_PER_MILLI: u32 = 1_000_000;
-/// Microseconds per millisecond
-const MICROS_PER_MILLI: u32 = 1_000;
+const NANOS_PER_MILLI: u64 = 1_000_000;
 
 impl Transaction {
     /// Create a new delay transaction
@@ -89,55 +87,52 @@ impl Transaction {
         }
     }
 
-    /// Create a new delay_ns transaction
+    /// Crete a new delay_ns transaction
     pub fn delay_ns(ns: u32) -> Transaction {
-        Transaction::new(TransactionKind::DelayNs(ns))
+        Transaction::new(TransactionKind::Delay(ns.into()))
     }
 
     /// Crete a new delay_us transaction
     pub fn delay_us(us: u32) -> Transaction {
-        Transaction::new(TransactionKind::DelayUs(us))
+        Transaction::new(TransactionKind::Delay(us as u64 * NANOS_PER_MICRO))
     }
 
-    /// Create new delay_ms transaction
+    /// Crete a new delay_ms transaction
     pub fn delay_ms(ms: u32) -> Transaction {
-        Transaction::new(TransactionKind::DelayMs(ms))
+        Transaction::new(TransactionKind::Delay(ms as u64 * NANOS_PER_MILLI))
+    }
+
+    /// Create a new blocking delay_ns transaction
+    pub fn blocking_delay_ns(ns: u32) -> Transaction {
+        Transaction::new(TransactionKind::BlockingDelay(ns.into()))
+    }
+
+    /// Crete a new blocking delay_us transaction
+    pub fn blocking_delay_us(us: u32) -> Transaction {
+        Transaction::new(TransactionKind::BlockingDelay(us as u64 * NANOS_PER_MICRO))
+    }
+
+    /// Create new blocking delay_ms transaction
+    pub fn blocking_delay_ms(ms: u32) -> Transaction {
+        Transaction::new(TransactionKind::BlockingDelay(ms as u64 * NANOS_PER_MILLI))
     }
 
     /// Crete a new async delay_ns transaction
     #[cfg(feature = "embedded-hal-async")]
     pub fn async_delay_ns(ns: u32) -> Transaction {
-        Transaction::new(TransactionKind::AsyncDelayNs(ns))
+        Transaction::new(TransactionKind::AsyncDelay(ns.into()))
     }
 
     /// Crete a new async delay_us transaction
     #[cfg(feature = "embedded-hal-async")]
     pub fn async_delay_us(us: u32) -> Transaction {
-        Transaction::new(TransactionKind::AsyncDelayNs(us * 1_000))
+        Transaction::new(TransactionKind::AsyncDelay(us as u64 * NANOS_PER_MICRO))
     }
 
     /// Crete a new async delay_ms transaction
     #[cfg(feature = "embedded-hal-async")]
     pub fn async_delay_ms(ms: u32) -> Transaction {
-        Transaction::new(TransactionKind::AsyncDelayNs(ms * 1_000_000))
-    }
-
-    /// Crete a new async delay_ns transaction
-    #[cfg(feature = "embedded-hal-async")]
-    pub fn any_delay_ns(ns: u32) -> Transaction {
-        Transaction::new(TransactionKind::AnyDelayNs(ns))
-    }
-
-    /// Crete a new async delay_us transaction
-    #[cfg(feature = "embedded-hal-async")]
-    pub fn any_delay_us(us: u32) -> Transaction {
-        Transaction::new(TransactionKind::AnyDelayNs(us * 1_000))
-    }
-
-    /// Crete a new async delay_ms transaction
-    #[cfg(feature = "embedded-hal-async")]
-    pub fn any_delay_ms(ms: u32) -> Transaction {
-        Transaction::new(TransactionKind::AnyDelayNs(ms * 1_000_000))
+        Transaction::new(TransactionKind::AsyncDelay(ms as u64 * NANOS_PER_MILLI))
     }
 
     /// Perform an actual delay for this transaction
@@ -150,24 +145,12 @@ impl Transaction {
 /// MockDelay transaction kind.
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub enum TransactionKind {
-    /// Delay in nanoseconds
-    DelayNs(u32),
-    /// Asynchronous delay in nanoseconds
-    AsyncDelayNs(u32),
     /// Any delay in nanoseconds, blocking or async
-    AnyDelayNs(u32),
-    /// Delay in microseconds
-    DelayUs(u32),
-    /// Asynchronous delay in microseconds
-    AsyncDelayUs(u32),
-    /// Any delay in microseconds, blocking or async
-    AnyDelayUs(u32),
-    /// Delay in milliseconds
-    DelayMs(u32),
-    /// Asynchronous delay in milliseconds
-    AsyncDelayMs(u32),
-    /// Any delay in milliseconds, blocking or async
-    AnyDelayMs(u32),
+    Delay(u64),
+    /// Delay in nanoseconds, must be blocking
+    BlockingDelay(u64),
+    /// Delay in nanoseconds, must be async
+    AsyncDelay(u64),
 }
 
 /// Mock Delay implementation with checked calls
@@ -180,36 +163,17 @@ pub enum TransactionKind {
 /// See the usage section in the module level docs for an example.
 pub type CheckedDelay = Generic<Transaction>;
 
-fn divide_for_dividable(n: u32, d: u32) -> Result<u32, ()> {
-    if d == 0 {
-        return Err(());
-    }
-    if n % d != 0 {
-        return Err(());
-    }
-    Ok(n / d)
-}
-
 impl delay::DelayNs for CheckedDelay {
     fn delay_ns(&mut self, ns: u32) {
         let transaction = self.next().expect("no expectation for delay call");
 
         match transaction.kind {
-            TransactionKind::DelayNs(n) => assert_eq!(n, ns),
-            TransactionKind::AnyDelayNs(n) => assert_eq!(n, ns),
-            TransactionKind::DelayUs(u) => {
-                assert_eq!(u * NANOS_PER_MICRO, ns)
-            }
-            TransactionKind::AnyDelayUs(u) => {
-                assert_eq!(u * NANOS_PER_MICRO, ns)
-            }
-            TransactionKind::DelayMs(m) => {
-                assert_eq!(m * NANOS_PER_MILLI, ns)
-            }
-            TransactionKind::AnyDelayMs(m) => {
-                assert_eq!(m * NANOS_PER_MILLI, ns)
-            }
-            _ => panic!("delay unexpected kind"),
+            TransactionKind::BlockingDelay(n) => assert_eq!(n, ns.into(), "wrong delay value"),
+            TransactionKind::Delay(n) => assert_eq!(n, ns.into(), "wrong delay value"),
+            _ => panic!(
+                "Wrong kind of delay. Expected Delay or BlockingDelay got {:?}",
+                transaction.kind
+            ),
         }
 
         if transaction.real_delay {
@@ -220,31 +184,16 @@ impl delay::DelayNs for CheckedDelay {
     fn delay_us(&mut self, us: u32) {
         let transaction = self.next().expect("no expectation for delay call");
         match transaction.kind {
-            TransactionKind::DelayNs(n) => {
-                assert_eq!(
-                    divide_for_dividable(n, NANOS_PER_MICRO).expect("incompatible delay"),
-                    us
-                )
+            TransactionKind::BlockingDelay(n) => {
+                assert_eq!(n, us as u64 * NANOS_PER_MICRO, "wrong delay value")
             }
-            TransactionKind::AnyDelayNs(n) => {
-                assert_eq!(
-                    divide_for_dividable(n, NANOS_PER_MICRO).expect("incompatible delay"),
-                    us
-                )
+            TransactionKind::Delay(n) => {
+                assert_eq!(n, us as u64 * NANOS_PER_MICRO, "wrong delay value")
             }
-            TransactionKind::DelayUs(u) => {
-                assert_eq!(u, us)
-            }
-            TransactionKind::AnyDelayUs(u) => {
-                assert_eq!(u, us)
-            }
-            TransactionKind::DelayMs(m) => {
-                assert_eq!(m * MICROS_PER_MILLI, us)
-            }
-            TransactionKind::AnyDelayMs(m) => {
-                assert_eq!(m * MICROS_PER_MILLI, us)
-            }
-            _ => panic!("delay unexpected kind"),
+            _ => panic!(
+                "Wrong kind of delay. Expected Delay or BlockingDelay got {:?}",
+                transaction.kind
+            ),
         }
         if transaction.real_delay {
             thread::sleep(Duration::from_micros(us as u64));
@@ -254,37 +203,16 @@ impl delay::DelayNs for CheckedDelay {
     fn delay_ms(&mut self, ms: u32) {
         let transaction = self.next().expect("no expectation for delay call");
         match transaction.kind {
-            TransactionKind::DelayNs(n) => {
-                assert_eq!(
-                    divide_for_dividable(n, NANOS_PER_MILLI).expect("incompatible delay"),
-                    ms
-                )
+            TransactionKind::BlockingDelay(n) => {
+                assert_eq!(n, ms as u64 * NANOS_PER_MILLI, "wrong delay value")
             }
-            TransactionKind::AnyDelayNs(n) => {
-                assert_eq!(
-                    divide_for_dividable(n, NANOS_PER_MILLI).expect("incompatible delay"),
-                    ms
-                )
+            TransactionKind::Delay(n) => {
+                assert_eq!(n, ms as u64 * NANOS_PER_MILLI, "wrong delay value")
             }
-            TransactionKind::DelayUs(u) => {
-                assert_eq!(
-                    divide_for_dividable(u, MICROS_PER_MILLI).expect("incompatible delay"),
-                    ms
-                )
-            }
-            TransactionKind::AnyDelayUs(u) => {
-                assert_eq!(
-                    divide_for_dividable(u, MICROS_PER_MILLI).expect("incompatible delay"),
-                    ms
-                )
-            }
-            TransactionKind::DelayMs(m) => {
-                assert_eq!(m, ms)
-            }
-            TransactionKind::AnyDelayMs(m) => {
-                assert_eq!(m, ms)
-            }
-            _ => panic!("delay unexpected kind"),
+            _ => panic!(
+                "Wrong kind of delay. Expected Delay or BlockingDelay got {:?}",
+                transaction.kind
+            ),
         }
 
         if transaction.real_delay {
@@ -299,21 +227,12 @@ impl embedded_hal_async::delay::DelayNs for CheckedDelay {
         let transaction = self.next().expect("no expectation for delay call");
 
         match transaction.kind {
-            TransactionKind::AsyncDelayNs(n) => assert_eq!(n, ns, "delay unexpected value"),
-            TransactionKind::AnyDelayNs(n) => assert_eq!(n, ns, "delay unexpected value"),
-            TransactionKind::AsyncDelayUs(u) => {
-                assert_eq!(u * NANOS_PER_MICRO, ns, "delay unexpected value")
-            }
-            TransactionKind::AnyDelayUs(u) => {
-                assert_eq!(u * NANOS_PER_MICRO, ns, "delay unexpected value")
-            }
-            TransactionKind::AsyncDelayMs(m) => {
-                assert_eq!(m * NANOS_PER_MILLI, ns, "delay unexpected value")
-            }
-            TransactionKind::AnyDelayMs(m) => {
-                assert_eq!(m * NANOS_PER_MILLI, ns, "delay unexpected value")
-            }
-            _ => panic!("delay unexpected kind"),
+            TransactionKind::AsyncDelay(n) => assert_eq!(n, ns.into(), "delay unexpected value"),
+            TransactionKind::Delay(n) => assert_eq!(n, ns.into(), "delay unexpected value"),
+            _ => panic!(
+                "Wrong kind of delay. Expected Delay or AsyncDelay got {:?}",
+                transaction.kind
+            ),
         }
 
         if transaction.real_delay {
@@ -324,31 +243,16 @@ impl embedded_hal_async::delay::DelayNs for CheckedDelay {
     async fn delay_us(&mut self, us: u32) {
         let transaction = self.next().expect("no expectation for delay call");
         match transaction.kind {
-            TransactionKind::AsyncDelayNs(n) => {
-                assert_eq!(
-                    divide_for_dividable(n, NANOS_PER_MICRO).expect("incompatible delay"),
-                    us
-                )
+            TransactionKind::AsyncDelay(n) => {
+                assert_eq!(n, us as u64 * NANOS_PER_MICRO, "wrong delay value")
             }
-            TransactionKind::AnyDelayNs(n) => {
-                assert_eq!(
-                    divide_for_dividable(n, NANOS_PER_MICRO).expect("incompatible delay"),
-                    us
-                )
+            TransactionKind::Delay(n) => {
+                assert_eq!(n, us as u64 * NANOS_PER_MICRO, "wrong delay value")
             }
-            TransactionKind::AsyncDelayUs(u) => {
-                assert_eq!(u, us)
-            }
-            TransactionKind::AnyDelayUs(u) => {
-                assert_eq!(u, us)
-            }
-            TransactionKind::AsyncDelayMs(m) => {
-                assert_eq!(m * MICROS_PER_MILLI, us)
-            }
-            TransactionKind::AnyDelayMs(m) => {
-                assert_eq!(m * MICROS_PER_MILLI, us)
-            }
-            _ => panic!("delay unexpected kind"),
+            _ => panic!(
+                "Wrong kind of delay. Expected Delay or AsyncDelay got {:?}",
+                transaction.kind
+            ),
         }
 
         if transaction.real_delay {
@@ -359,37 +263,16 @@ impl embedded_hal_async::delay::DelayNs for CheckedDelay {
     async fn delay_ms(&mut self, ms: u32) {
         let transaction = self.next().expect("no expectation for delay call");
         match transaction.kind {
-            TransactionKind::AsyncDelayNs(n) => {
-                assert_eq!(
-                    divide_for_dividable(n, NANOS_PER_MILLI).expect("incompatible delay"),
-                    ms
-                )
+            TransactionKind::AsyncDelay(n) => {
+                assert_eq!(n, ms as u64 * NANOS_PER_MILLI, "wrong delay value")
             }
-            TransactionKind::AnyDelayNs(n) => {
-                assert_eq!(
-                    divide_for_dividable(n, NANOS_PER_MILLI).expect("incompatible delay"),
-                    ms
-                )
+            TransactionKind::Delay(n) => {
+                assert_eq!(n, ms as u64 * NANOS_PER_MILLI, "wrong delay value")
             }
-            TransactionKind::AsyncDelayUs(u) => {
-                assert_eq!(
-                    divide_for_dividable(u, MICROS_PER_MILLI).expect("incompatible delay"),
-                    ms
-                )
-            }
-            TransactionKind::AnyDelayUs(u) => {
-                assert_eq!(
-                    divide_for_dividable(u, MICROS_PER_MILLI).expect("incompatible delay"),
-                    ms
-                )
-            }
-            TransactionKind::AsyncDelayMs(m) => {
-                assert_eq!(m, ms)
-            }
-            TransactionKind::AnyDelayMs(m) => {
-                assert_eq!(m, ms)
-            }
-            _ => panic!("delay unexpected kind"),
+            _ => panic!(
+                "Wrong kind of delay. Expected Delay or AsyncDelay got {:?}",
+                transaction.kind
+            ),
         }
 
         if transaction.real_delay {
@@ -532,9 +415,9 @@ mod test {
             Transaction::async_delay_ns(1000),
             Transaction::async_delay_ns(2000),
             Transaction::async_delay_ns(3000),
-            Transaction::delay_ns(4000),
-            Transaction::any_delay_ns(5000),
-            Transaction::any_delay_ns(6000),
+            Transaction::blocking_delay_ns(4000),
+            Transaction::delay_ns(5000),
+            Transaction::delay_ns(6000),
         ];
 
         let mut delay = CheckedDelay::new(&transactions);
@@ -654,7 +537,7 @@ mod test {
     }
 
     #[test]
-    #[should_panic(expected = "incompatible delay")]
+    #[should_panic(expected = "wrong delay value")]
     fn test_checked_sleep_overflow_err() {
         use embedded_hal::delay::DelayNs;
 
@@ -669,7 +552,7 @@ mod test {
 
     #[tokio::test]
     #[cfg(feature = "embedded-hal-async")]
-    #[should_panic(expected = "incompatible delay")]
+    #[should_panic(expected = "wrong delay value")]
     async fn test_checked_sleep_overflow_async_err() {
         use embedded_hal_async::delay::DelayNs;
 
