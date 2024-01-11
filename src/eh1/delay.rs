@@ -611,6 +611,7 @@ mod test {
     }
 
     #[tokio::test]
+    #[cfg(feature = "embedded-hal-async")]
     async fn test_checked_sleep_real_delay_async() {
         use embedded_hal_async::delay::DelayNs;
 
@@ -667,6 +668,7 @@ mod test {
     }
 
     #[tokio::test]
+    #[cfg(feature = "embedded-hal-async")]
     #[should_panic(expected = "incompatible delay")]
     async fn test_checked_sleep_overflow_async_err() {
         use embedded_hal_async::delay::DelayNs;
