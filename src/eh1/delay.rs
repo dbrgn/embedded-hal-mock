@@ -145,11 +145,11 @@ impl Transaction {
 /// MockDelay transaction kind.
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub enum TransactionKind {
-    /// Any delay in nanoseconds, blocking or async
+    /// Any delay in nanoseconds, blocking or async. Should be a default kind for most use cases.
     Delay(u64),
-    /// Delay in nanoseconds, must be blocking
+    /// Delay in nanoseconds, must be a blocking delay. Expectation will fail for async delays.
     BlockingDelay(u64),
-    /// Delay in nanoseconds, must be async
+    /// Delay in nanoseconds, must be an async delay. Expectation will fail for blocking delays.
     AsyncDelay(u64),
 }
 
