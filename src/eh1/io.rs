@@ -8,12 +8,8 @@
 //! ## Usage
 //!
 //! ```
-//! use embedded_io::{self, Read, Write};
-//! // optional async
-//! use embedded_io_async;
+//! use embedded_io::{Read, Write};
 //! use embedded_hal_mock::eh1::io::{Mock as IoMock, Transaction as IoTransaction};
-//!
-//!
 //!
 //! // Configure expectations
 //! let expectations = [
@@ -37,13 +33,19 @@
 //! // Flushing
 //! io.flush().unwrap();
 //!
-//! // Also async
-//! async {
-//!     let ret = embedded_io_async::Write::write(&mut io, &[10, 20]).await.unwrap();
-//! };
-//!
 //! // Finalizing expectations
 //! io.done();
+//!
+//! // optional async
+//! #[cfg(feature = "embedded-hal-async")]
+//! async {
+//!     use embedded_io_async;
+//!     let mut io = IoMock::new(&[IoTransaction::write(vec![10, 20])]);
+//!     let ret = embedded_io_async::Write::write(&mut io, &[10, 20]).await.unwrap();
+//!     assert_eq!(ret, 2);
+//!     io.done();
+//! };
+//!
 //! ```
 
 use embedded_io::{
