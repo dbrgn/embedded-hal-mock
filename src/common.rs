@@ -20,6 +20,10 @@ use std::{
 /// Note that the implementation uses an `Arc<Mutex<...>>` internally, so a
 /// cloned instance of the mock can be used to check the expectations of the
 /// original instance that has been moved into a driver.
+///
+/// Optional Data type allows for storage of arbitrary state data in mocks.
+/// Mock data can be accessed via appropriate getter/setter methods, i.e. `mock_data()` and `set_mock_data()`.
+///
 #[derive(Debug, Clone)]
 pub struct Generic<T: Clone + Debug + PartialEq, Data = ()> {
     expected: Arc<Mutex<VecDeque<T>>>,
