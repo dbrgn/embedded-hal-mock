@@ -241,9 +241,8 @@ impl StatefulOutputPin for Mock {
 
         let Transaction { kind, err } = s.next().expect("no expectation for pin::is_set_high call");
 
-        assert_eq!(
-            kind,
-            TransactionKind::GetSetState(State::High),
+        assert!(
+            matches!(kind, TransactionKind::GetSetState(_)),
             "expected pin::is_set_high"
         );
 
@@ -262,9 +261,8 @@ impl StatefulOutputPin for Mock {
 
         let Transaction { kind, err } = s.next().expect("no expectation for pin::is_set_low call");
 
-        assert_eq!(
-            kind,
-            TransactionKind::GetSetState(State::Low),
+        assert!(
+            matches!(kind, TransactionKind::GetSetState(_)),
             "expected pin::is_set_low"
         );
 
@@ -333,7 +331,9 @@ mod test {
     fn test_stateful_output_pin() {
         let expectations = [
             Transaction::new(GetSetState(State::Low)),
+            Transaction::new(GetSetState(State::Low)),
             Transaction::new(Toggle),
+            Transaction::get_set_state(State::High),
             Transaction::get_set_state(State::High),
             Transaction::toggle(),
             Transaction::new(GetSetState(State::Low))
@@ -342,9 +342,11 @@ mod test {
         ];
         let mut pin = Mock::new(&expectations);
 
-        pin.is_set_low().unwrap();
+        assert!(pin.is_set_low().unwrap());
+        assert!(!pin.is_set_high().unwrap());
         pin.toggle().unwrap();
-        pin.is_set_high().unwrap();
+        assert!(pin.is_set_high().unwrap());
+        assert!(!pin.is_set_low().unwrap());
         pin.toggle().unwrap();
 
         pin.is_set_low()
