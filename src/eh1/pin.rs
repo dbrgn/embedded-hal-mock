@@ -331,14 +331,13 @@ mod test {
     fn test_stateful_output_pin() {
         let expectations = [
             Transaction::new(GetState(State::Low)),
-            Transaction::new(GetState(State::Low)),
+            Transaction::get_state(State::Low),
             Transaction::new(Toggle),
             Transaction::get_state(State::High),
             Transaction::get_state(State::High),
             Transaction::toggle(),
-            Transaction::new(GetState(State::Low))
-                .with_error(MockError::Io(ErrorKind::NotConnected)),
-            Transaction::new(Toggle).with_error(MockError::Io(ErrorKind::NotConnected)),
+            Transaction::get_state(State::Low).with_error(MockError::Io(ErrorKind::NotConnected)),
+            Transaction::toggle().with_error(MockError::Io(ErrorKind::NotConnected)),
         ];
         let mut pin = Mock::new(&expectations);
 
