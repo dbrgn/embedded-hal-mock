@@ -22,9 +22,9 @@
 //!     PinTransaction::get(PinState::High),
 //!     PinTransaction::set(PinState::Low),
 //!     PinTransaction::set(PinState::High).with_error(err.clone()),
-//!     PinTransaction::get_set_state(PinState::High),
+//!     PinTransaction::get_state(PinState::High),
 //!     PinTransaction::toggle(),
-//!     PinTransaction::get_set_state(PinState::Low),
+//!     PinTransaction::get_state(PinState::Low),
 //! ];
 //!
 //! // Create pin
@@ -96,8 +96,8 @@ impl Transaction {
     }
 
     /// Create a new get stateful pin state transaction
-    pub fn get_set_state(state: State) -> Transaction {
-        Transaction::new(TransactionKind::GetSetState(state))
+    pub fn get_state(state: State) -> Transaction {
+        Transaction::new(TransactionKind::GetState(state))
     }
 
     /// Add an error return to a transaction
@@ -126,7 +126,7 @@ pub enum TransactionKind {
     /// Toggle for an expected toggle of the pin
     Toggle,
     /// Get the set state of the stateful pin
-    GetSetState(State),
+    GetState(State),
 }
 
 impl TransactionKind {
@@ -242,13 +242,13 @@ impl StatefulOutputPin for Mock {
         let Transaction { kind, err } = s.next().expect("no expectation for pin::is_set_high call");
 
         assert!(
-            matches!(kind, TransactionKind::GetSetState(_)),
+            matches!(kind, TransactionKind::GetState(_)),
             "expected pin::is_set_high"
         );
 
         if let Some(e) = err {
             Err(e)
-        } else if let TransactionKind::GetSetState(v) = kind {
+        } else if let TransactionKind::GetState(v) = kind {
             Ok(v == State::High)
         } else {
             unreachable!();
@@ -262,13 +262,13 @@ impl StatefulOutputPin for Mock {
         let Transaction { kind, err } = s.next().expect("no expectation for pin::is_set_low call");
 
         assert!(
-            matches!(kind, TransactionKind::GetSetState(_)),
+            matches!(kind, TransactionKind::GetState(_)),
             "expected pin::is_set_low"
         );
 
         if let Some(e) = err {
             Err(e)
-        } else if let TransactionKind::GetSetState(v) = kind {
+        } else if let TransactionKind::GetState(v) = kind {
             Ok(v == State::Low)
         } else {
             unreachable!();
@@ -285,7 +285,7 @@ mod test {
 
     use super::{
         super::error::MockError,
-        TransactionKind::{Get, GetSetState, Set, Toggle},
+        TransactionKind::{Get, GetState, Set, Toggle},
         *,
     };
 
@@ -330,13 +330,13 @@ mod test {
     #[test]
     fn test_stateful_output_pin() {
         let expectations = [
-            Transaction::new(GetSetState(State::Low)),
-            Transaction::new(GetSetState(State::Low)),
+            Transaction::new(GetState(State::Low)),
+            Transaction::new(GetState(State::Low)),
             Transaction::new(Toggle),
-            Transaction::get_set_state(State::High),
-            Transaction::get_set_state(State::High),
+            Transaction::get_state(State::High),
+            Transaction::get_state(State::High),
             Transaction::toggle(),
-            Transaction::new(GetSetState(State::Low))
+            Transaction::new(GetState(State::Low))
                 .with_error(MockError::Io(ErrorKind::NotConnected)),
             Transaction::new(Toggle).with_error(MockError::Io(ErrorKind::NotConnected)),
         ];
