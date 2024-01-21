@@ -97,7 +97,10 @@ where
             .unwrap()
             .mark_as_called(panic_if_already_done);
         let e = self.expected.lock().unwrap();
-        assert!(e.is_empty(), "Not all expectations consumed");
+        if !e.is_empty() {
+            eprintln!("{:?}", e);
+            assert!(e.is_empty(), "Not all expectations consumed")
+        }
     }
 }
 
