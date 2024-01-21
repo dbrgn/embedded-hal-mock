@@ -22,7 +22,7 @@ use std::{
 /// original instance that has been moved into a driver.
 #[derive(Debug, Clone)]
 pub struct Generic<T: Clone + Debug + PartialEq> {
-    expected: Arc<Mutex<VecDeque<T>>>,
+    pub expected: Arc<Mutex<VecDeque<T>>>,
     done_called: Arc<Mutex<DoneCallDetector>>,
 }
 

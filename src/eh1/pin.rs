@@ -50,11 +50,11 @@ use crate::{common::Generic, eh1::error::MockError};
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub struct Transaction {
     /// Kind is the transaction kind (and data) expected
-    kind: TransactionKind,
+    pub kind: TransactionKind,
     /// Err is an optional error return for a transaction.
     /// This is in addition to kind to allow validation that the transaction kind
     /// is correct prior to returning the error.
-    err: Option<MockError>,
+    pub err: Option<MockError>,
 }
 
 #[derive(PartialEq, Eq, Copy, Clone, Debug)]
@@ -108,7 +108,7 @@ pub enum TransactionKind {
 }
 
 impl TransactionKind {
-    fn is_get(&self) -> bool {
+    pub fn is_get(&self) -> bool {
         match self {
             TransactionKind::Get(_) => true,
             _ => false,

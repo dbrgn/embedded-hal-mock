@@ -74,9 +74,9 @@ pub enum Mode {
 /// Models an SPI write or transfer (with response)
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Transaction<W> {
-    expected_mode: Mode,
-    expected_data: Vec<W>,
-    response: Vec<W>,
+    pub expected_mode: Mode,
+    pub expected_data: Vec<W>,
+    pub response: Vec<W>,
 }
 
 impl<W> Transaction<W>
