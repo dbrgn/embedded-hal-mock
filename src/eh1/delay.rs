@@ -16,6 +16,10 @@ use std::{thread, time::Duration};
 
 use eh1 as embedded_hal;
 use embedded_hal::delay;
+use crate::{
+    eh1::top_level::Expectation,
+    common::{Generic, next_transaction}
+};
 
 /// A `Delay` implementation that does not actually block.
 pub struct NoopDelay;
@@ -61,8 +65,6 @@ impl delay::DelayNs for StdSleep {
     }
 }
 
-use crate::common::Generic;
-
 /// Delay transaction type
 ///
 /// Records a delay
@@ -70,7 +72,6 @@ pub type Transaction = u32;
 
 /// A `Delay` implementation that does not actually block.
 pub type Mock = Generic<Transaction>;
-use crate::eh1::top_level::Expectation;
 
 impl TryFrom<Expectation> for Transaction {
     type Error = ();
@@ -80,14 +81,6 @@ impl TryFrom<Expectation> for Transaction {
             Expectation::Delay(transaction) => Ok(transaction),
             _ => Err(())
         }
-    }
-}
-
-fn next_transaction(mock: &mut Generic<Transaction>) -> Transaction {
-    if let Some(hal) = &mock.hal {
-        hal.lock().unwrap().next().unwrap().try_into().expect("wrong expectation type")
-    } else {
-        mock.next().unwrap()
     }
 }
 

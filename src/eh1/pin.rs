@@ -43,8 +43,7 @@
 
 use eh1 as embedded_hal;
 use embedded_hal::digital::{ErrorType, InputPin, OutputPin};
-
-use crate::{common::Generic, eh1::error::MockError};
+use crate::{common::{Generic, next_transaction}, eh1::{error::MockError, top_level::Expectation}};
 
 /// MockPin transaction
 #[derive(PartialEq, Eq, Clone, Debug)]
@@ -138,8 +137,6 @@ impl ErrorType for Mock {
     type Error = MockError;
 }
 
-use crate::eh1::top_level::Expectation;
-
 impl TryFrom<Expectation> for Transaction {
     type Error = ();
 
@@ -148,14 +145,6 @@ impl TryFrom<Expectation> for Transaction {
             Expectation::Digital(transaction) => Ok(transaction),
             _ => Err(())
         }
-    }
-}
-
-fn next_transaction(mock: &mut Generic<Transaction>) -> Transaction {
-    if let Some(hal) = &mock.hal {
-        hal.lock().unwrap().next().unwrap().try_into().expect("wrong expectation type")
-    } else {
-        mock.next().unwrap()
     }
 }
 

@@ -46,7 +46,8 @@ use core::fmt::Debug;
 use eh1::spi::{self, Operation, SpiBus, SpiDevice};
 use embedded_hal_nb::{nb, spi::FullDuplex};
 
-use crate::common::Generic;
+use crate::eh1::top_level::Expectation;
+use crate::common::{Generic, next_transaction};
 
 /// SPI Transaction mode
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -170,6 +171,17 @@ where
             expected_mode: Mode::Delay(delay),
             expected_data: Vec::new(),
             response: Vec::new(),
+        }
+    }
+}
+
+impl TryFrom<Expectation> for Transaction<u8> {
+    type Error = ();
+
+    fn try_from(expectation: Expectation) -> Result<Self, <Self as TryFrom<Expectation>>::Error> {
+        match expectation {
+            Expectation::Spi(transaction) => Ok(transaction),
+            _ => Err(())
         }
     }
 }
@@ -374,27 +386,6 @@ where
         );
         let buffer: W = w.response[0];
         Ok(buffer)
-    }
-}
-
-use crate::eh1::top_level::Expectation;
-
-impl TryFrom<Expectation> for Transaction<u8> {
-    type Error = ();
-
-    fn try_from(expectation: Expectation) -> Result<Self, <Self as TryFrom<Expectation>>::Error> {
-        match expectation {
-            Expectation::Spi(transaction) => Ok(transaction),
-            _ => Err(())
-        }
-    }
-}
-
-fn next_transaction(mock: &mut Generic<Transaction<u8>>) -> Transaction<u8> {
-    if let Some(hal) = &mock.hal {
-        hal.lock().unwrap().next().unwrap().try_into().expect("wrong expectation type")
-    } else {
-        mock.next().unwrap()
     }
 }
 

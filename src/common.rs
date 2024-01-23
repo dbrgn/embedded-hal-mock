@@ -27,6 +27,15 @@ pub struct Generic<T: Clone + Debug + PartialEq> {
     done_called: Arc<Mutex<DoneCallDetector>>,
 }
 
+use crate::eh1::top_level::Expectation;
+pub fn next_transaction<T>(mock: &mut Generic<T>) -> T where T: PartialEq + std::fmt::Debug + Clone + std::convert::TryFrom<crate::eh1::top_level::Expectation>, <T as TryFrom<Expectation>>::Error: Debug {
+    if let Some(hal) = &mock.hal {
+        hal.lock().unwrap().next().unwrap().try_into().expect("wrong expectation type")
+    } else {
+        mock.next().unwrap()
+    }
+}
+
 impl<'a, T: 'a> Generic<T>
 where
     T: Clone + Debug + PartialEq,
