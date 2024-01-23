@@ -72,23 +72,30 @@ pub type Transaction = u32;
 pub type Mock = Generic<Transaction>;
 use crate::eh1::top_level::Expectation;
 
+impl TryFrom<Expectation> for Transaction {
+    type Error = ();
+
+    fn try_from(expectation: Expectation) -> Result<Self, <Self as TryFrom<Expectation>>::Error> {
+        match expectation {
+            Expectation::Delay(transaction) => Ok(transaction),
+            _ => Err(())
+        }
+    }
+}
+
+fn next_transaction(mock: &mut Generic<Transaction>) -> Transaction {
+    if let Some(hal) = &mock.hal {
+        hal.lock().unwrap().next().unwrap().try_into().expect("wrong expectation type")
+    } else {
+        mock.next().unwrap()
+    }
+}
+
 impl delay::DelayNs for Mock {
     fn delay_ns(&mut self, ns: u32) {
-        match &self.hal {
-            Some(hal) => {
-                if let Expectation::Delay(expected_ns) = hal.lock().unwrap().next().expect("no expectation for delay call") {
-                    assert_eq!(ns, expected_ns, "delaying by the wrong number of nanoseconds");
-                } else {
-                    panic!("wrong peripheral type")
-                }
-            },
-            None => {
-                let w = self.next().expect("no expectation for delay call");
+        let w = next_transaction(self);
 
-                assert_eq!(ns, w, "delaying by the wrong number of nanoseconds");
-            }
-        }
-
+        assert_eq!(ns, w, "delaying by the wrong number of nanoseconds");
     }
 }
 

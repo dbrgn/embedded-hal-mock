@@ -140,89 +140,56 @@ impl ErrorType for Mock {
 
 use crate::eh1::top_level::Expectation;
 
+impl TryFrom<Expectation> for Transaction {
+    type Error = ();
+
+    fn try_from(expectation: Expectation) -> Result<Self, <Self as TryFrom<Expectation>>::Error> {
+        match expectation {
+            Expectation::Digital(transaction) => Ok(transaction),
+            _ => Err(())
+        }
+    }
+}
+
+fn next_transaction(mock: &mut Generic<Transaction>) -> Transaction {
+    if let Some(hal) = &mock.hal {
+        hal.lock().unwrap().next().unwrap().try_into().expect("wrong expectation type")
+    } else {
+        mock.next().unwrap()
+    }
+}
+
 /// Single digital push-pull output pin
 impl OutputPin for Mock {
     /// Drives the pin low
     fn set_low(&mut self) -> Result<(), Self::Error> {
-        match &self.hal {
-            Some(hal) => {
-                if let Expectation::Digital(Transaction { kind, err }) = hal.lock().unwrap().next().expect("no expectation for pin::set_low call") {
-                    // assert_eq!(
-                    //     id,
-                    //     self.1,
-                    //     "wrong pin"
-                    // );
+        let Transaction { kind, err } = next_transaction(self);
 
-                    assert_eq!(
-                        kind,
-                        TransactionKind::Set(State::Low),
-                        "expected pin::set_low"
-                    );
+        assert_eq!(
+            kind,
+            TransactionKind::Set(State::Low),
+            "expected pin::set_low"
+        );
 
-                    match err {
-                        Some(e) => Err(e),
-                        None => Ok(()),
-                    }
-                } else {
-                    panic!("wrong peripheral type")
-                }
-            },
-            None => {
-                let Transaction { kind, err } = self.next().expect("no expectation for pin::set_low call");
-
-                assert_eq!(
-                    kind,
-                    TransactionKind::Set(State::Low),
-                    "expected pin::set_low"
-                );
-
-                match err {
-                    Some(e) => Err(e),
-                    None => Ok(()),
-                }
-            }
+        match err {
+            Some(e) => Err(e),
+            None => Ok(()),
         }
     }
 
     /// Drives the pin high
     fn set_high(&mut self) -> Result<(), Self::Error> {
-        match &self.hal {
-            Some(hal) => {
-                if let Expectation::Digital(Transaction { kind, err }) = hal.lock().unwrap().next().expect("no expectation for pin::set_high call") {
-                    // assert_eq!(
-                    //     id,
-                    //     self.1,
-                    //     "wrong pin"
-                    // );
+        let Transaction { kind, err } = next_transaction(self);
 
-                    assert_eq!(
-                        kind,
-                        TransactionKind::Set(State::High),
-                        "expected pin::set_high"
-                    );
+        assert_eq!(
+            kind,
+            TransactionKind::Set(State::High),
+            "expected pin::set_high"
+        );
 
-                    match err {
-                        Some(e) => Err(e),
-                        None => Ok(()),
-                    }
-                } else {
-                    panic!("wrong peripheral type")
-                }
-            },
-            None => {
-                let Transaction { kind, err } = self.next().expect("no expectation for pin::set_low call");
-
-                assert_eq!(
-                    kind,
-                    TransactionKind::Set(State::High),
-                    "expected pin::set_high"
-                );
-
-                match err {
-                    Some(e) => Err(e),
-                    None => Ok(()),
-                }
-            }
+        match err {
+            Some(e) => Err(e),
+            None => Ok(()),
         }
     }
 }
@@ -232,41 +199,16 @@ impl InputPin for Mock {
     fn is_high(&mut self) -> Result<bool, Self::Error> {
         let mut s = self.clone();
 
-        match &s.hal {
-            Some(hal) => {
-                if let Expectation::Digital(Transaction { kind, err }) = hal.lock().unwrap().next().expect("no expectation for pin::is_high call") {
-                    // assert_eq!(
-                    //     id,
-                    //     self.1,
-                    //     "wrong pin"
-                    // );
+        let Transaction { kind, err } = next_transaction(&mut s);
 
-                    assert!(kind.is_get(), "expected pin::get");
+        assert!(kind.is_get(), "expected pin::get");
 
-                    if let Some(e) = err {
-                        Err(e)
-                    } else if let TransactionKind::Get(v) = kind {
-                        Ok(v == State::High)
-                    } else {
-                        unreachable!();
-                    }
-                } else {
-                    panic!("wrong peripheral type")
-                }
-            },
-            None => {
-                let Transaction { kind, err } = s.next().expect("");
-
-                assert!(kind.is_get(), "expected pin::get");
-
-                if let Some(e) = err {
-                    Err(e)
-                } else if let TransactionKind::Get(v) = kind {
-                    Ok(v == State::High)
-                } else {
-                    unreachable!();
-                }
-            }
+        if let Some(e) = err {
+            Err(e)
+        } else if let TransactionKind::Get(v) = kind {
+            Ok(v == State::High)
+        } else {
+            unreachable!();
         }
     }
 
@@ -274,41 +216,16 @@ impl InputPin for Mock {
     fn is_low(&mut self) -> Result<bool, Self::Error> {
         let mut s = self.clone();
 
-        match &s.hal {
-            Some(hal) => {
-                if let Expectation::Digital(Transaction { kind, err }) = hal.lock().unwrap().next().expect("no expectation for pin::is_low call") {
-                    // assert_eq!(
-                    //     id,
-                    //     self.1,
-                    //     "wrong pin"
-                    // );
+        let Transaction { kind, err } = next_transaction(&mut s);
 
-                    assert!(kind.is_get(), "expected pin::get");
+        assert!(kind.is_get(), "expected pin::get");
 
-                    if let Some(e) = err {
-                        Err(e)
-                    } else if let TransactionKind::Get(v) = kind {
-                        Ok(v == State::Low)
-                    } else {
-                        unreachable!();
-                    }
-                } else {
-                    panic!("wrong peripheral type")
-                }
-            },
-            None => {
-                let Transaction { kind, err } = s.next().expect("");
-
-                assert!(kind.is_get(), "expected pin::get");
-
-                if let Some(e) = err {
-                    Err(e)
-                } else if let TransactionKind::Get(v) = kind {
-                    Ok(v == State::Low)
-                } else {
-                    unreachable!();
-                }
-            }
+        if let Some(e) = err {
+            Err(e)
+        } else if let TransactionKind::Get(v) = kind {
+            Ok(v == State::Low)
+        } else {
+            unreachable!();
         }
     }
 }
