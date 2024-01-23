@@ -42,7 +42,8 @@ impl delay::DelayNs for HalDelay {
                     "wrong timing"
                 );
             },
-            _ => panic!("wrong peripheral type")
+            Expectation::Spi(_) => panic!("wrong peripheral type: spi instead of delay"),
+            Expectation::Digital(_, _) => panic!("wrong peripheral type: digital instead of delay")
         }
     }
 }
@@ -61,6 +62,13 @@ impl Hal {
     }
 }
 
+
+//base implementation holds an option to an overall hal, which iterator it takes from depends on
+//the option?
+
+// Generic iterator is peekable.  peek to do top-level stuff, but then next() to do rest?
+
+// how do either of these supporting existing API 
 impl OutputPin for HalDigital {
     fn set_low(&mut self) -> Result<(), Self::Error> {
         match self.0.lock().unwrap().next().expect("no expectation for pin::set_low call") {
