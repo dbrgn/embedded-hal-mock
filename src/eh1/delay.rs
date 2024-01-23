@@ -60,3 +60,20 @@ impl delay::DelayNs for StdSleep {
         thread::sleep(Duration::from_nanos(ns as u64));
     }
 }
+
+use crate::common::Generic;
+
+/// Delay transaction type
+///
+/// Records a delay
+pub type Transaction = u32;
+
+/// A `Delay` implementation that does not actually block.
+pub type Mock = Generic<Transaction>;
+
+impl delay::DelayNs for Mock {
+    fn delay_ns(&mut self, ns: u32) {
+        let w = self.next().expect("no expectation for delay call");
+        assert_eq!(ns, w.0, "delaying by the wrong number of nanoseconds");
+    }
+}
