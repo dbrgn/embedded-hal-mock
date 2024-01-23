@@ -22,6 +22,7 @@ use std::{
 /// original instance that has been moved into a driver.
 #[derive(Debug, Clone)]
 pub struct Generic<T: Clone + Debug + PartialEq> {
+    pub hal: Option<Arc<Mutex<crate::eh1::top_level::Hal>>>,
     pub expected: Arc<Mutex<VecDeque<T>>>,
     done_called: Arc<Mutex<DoneCallDetector>>,
 }
@@ -38,11 +39,28 @@ where
         E: IntoIterator<Item = &'a T>,
     {
         let mut g = Generic {
+            hal: None,
             expected: Arc::new(Mutex::new(VecDeque::new())),
             done_called: Arc::new(Mutex::new(DoneCallDetector::new())),
         };
 
         g.update_expectations(expected);
+
+        g
+    }
+
+    pub(crate) fn with_hal<E>(expected: E, hal: Arc<Mutex<crate::eh1::top_level::Hal>>) -> Generic<T>
+    where
+        E: IntoIterator<Item = &'a T>,
+    {
+        let mut g = Generic {
+            hal: Some(hal),
+            expected: Arc::new(Mutex::new(VecDeque::new())),
+            done_called: Arc::new(Mutex::new(DoneCallDetector::new())),
+        };
+
+        g.update_expectations(expected);
+        g.done();
 
         g
     }

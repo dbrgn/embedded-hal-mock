@@ -70,10 +70,24 @@ pub type Transaction = u32;
 
 /// A `Delay` implementation that does not actually block.
 pub type Mock = Generic<Transaction>;
+use crate::eh1::top_level::Expectation;
 
 impl delay::DelayNs for Mock {
     fn delay_ns(&mut self, ns: u32) {
-        let w = self.next().expect("no expectation for delay call");
-        assert_eq!(ns, w.0, "delaying by the wrong number of nanoseconds");
+        match &self.hal {
+            Some(hal) => {
+                if let Expectation::Delay(expected_ns) = hal.lock().unwrap().next().expect("no expectation for delay call") {
+                    assert_eq!(ns, expected_ns, "delaying by the wrong number of nanoseconds");
+                } else {
+                    panic!("wrong peripheral type")
+                }
+            },
+            None => {
+                let w = self.next().expect("no expectation for delay call");
+
+                assert_eq!(ns, w, "delaying by the wrong number of nanoseconds");
+            }
+        }
+
     }
 }
