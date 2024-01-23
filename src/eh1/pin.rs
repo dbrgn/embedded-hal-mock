@@ -124,6 +124,16 @@ impl TransactionKind {
 /// Mock Pin implementation
 pub type Mock = Generic<Transaction>;
 
+impl Mock {
+    pub fn expect_set(&self, state: State) -> Expectation {
+        Expectation::Digital(Transaction::set(state))
+    }
+
+    pub fn expect_get(&self, state: State) -> Expectation {
+        Expectation::Digital(Transaction::get(state))
+    }
+}
+
 impl ErrorType for Mock {
     type Error = MockError;
 }

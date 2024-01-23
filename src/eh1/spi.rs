@@ -184,6 +184,24 @@ where
 /// See the usage section in the module level docs for an example.
 pub type Mock<W> = Generic<Transaction<W>>;
 
+impl Mock<u8> {
+    pub fn expect_transaction_start(&self) -> Expectation {
+        Expectation::Spi(Transaction::transaction_start())
+    }
+
+    pub fn expect_transaction_end(&self) -> Expectation {
+        Expectation::Spi(Transaction::transaction_end())
+    }
+
+    pub fn expect_write(&self, value: u8) -> Expectation {
+        Expectation::Spi(Transaction::write(value))
+    }
+
+    pub fn expect_write_vec(&self, values: Vec<u8>) -> Expectation {
+        Expectation::Spi(Transaction::write_vec(values))
+    }
+}
+
 impl<W> spi::ErrorType for Mock<W>
 where
     W: Copy + Debug + PartialEq,

@@ -64,14 +64,14 @@ mod test {
         let mut spi = hal.clone().spi();
 
         hal.update_expectations(&vec![
-            Expectation::Digital(PinTransaction::set(State::High)),
-            Expectation::Digital(PinTransaction::set(State::High)),
-            Expectation::Delay(10),
-            Expectation::Digital(PinTransaction::set(State::Low)),
-            Expectation::Digital(PinTransaction::set(State::High)),
-            Expectation::Spi(SpiTransaction::transaction_start()),
-            Expectation::Spi(SpiTransaction::write(0x05)),
-            Expectation::Spi(SpiTransaction::transaction_end()),
+            zero.expect_set(State::High),
+            one.expect_set(State::High),
+            delay.expect_delay_ns(10),
+            two.expect_set(State::Low),
+            three.expect_set(State::High),
+            spi.expect_transaction_start(),
+            spi.expect_write(0x05),
+            spi.expect_transaction_end(),
         ]);
 
         zero.set_high().unwrap();

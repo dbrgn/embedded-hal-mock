@@ -91,3 +91,9 @@ impl delay::DelayNs for Mock {
 
     }
 }
+
+impl Mock {
+    pub fn expect_delay_ns(&self, ns: u32) -> Expectation {
+        Expectation::Delay(ns)
+    }
+}
