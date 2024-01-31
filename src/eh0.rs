@@ -9,8 +9,10 @@ pub use error::MockError;
 
 pub mod adc;
 pub mod delay;
+pub mod digital;
 pub mod i2c;
-pub mod pin;
+#[deprecated]
+pub use digital as pin;
 pub mod serial;
 pub mod spi;
 #[cfg(feature = "embedded-time")]
