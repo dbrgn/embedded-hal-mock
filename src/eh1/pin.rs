@@ -43,18 +43,17 @@
 
 use eh1 as embedded_hal;
 use embedded_hal::digital::{ErrorType, InputPin, OutputPin};
-
-use crate::{common::Generic, eh1::error::MockError};
+use crate::{common::{Generic, next_transaction}, eh1::{error::MockError, top_level::Expectation}};
 
 /// MockPin transaction
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub struct Transaction {
     /// Kind is the transaction kind (and data) expected
-    kind: TransactionKind,
+    pub kind: TransactionKind,
     /// Err is an optional error return for a transaction.
     /// This is in addition to kind to allow validation that the transaction kind
     /// is correct prior to returning the error.
-    err: Option<MockError>,
+    pub err: Option<MockError>,
 }
 
 #[derive(PartialEq, Eq, Copy, Clone, Debug)]
@@ -108,7 +107,7 @@ pub enum TransactionKind {
 }
 
 impl TransactionKind {
-    fn is_get(&self) -> bool {
+    pub fn is_get(&self) -> bool {
         match self {
             TransactionKind::Get(_) => true,
             _ => false,
@@ -124,15 +123,36 @@ impl TransactionKind {
 /// Mock Pin implementation
 pub type Mock = Generic<Transaction>;
 
+impl Mock {
+    pub fn expect_set(&self, state: State) -> Expectation {
+        Expectation::Digital(Transaction::set(state))
+    }
+
+    pub fn expect_get(&self, state: State) -> Expectation {
+        Expectation::Digital(Transaction::get(state))
+    }
+}
+
 impl ErrorType for Mock {
     type Error = MockError;
+}
+
+impl TryFrom<Expectation> for Transaction {
+    type Error = ();
+
+    fn try_from(expectation: Expectation) -> Result<Self, <Self as TryFrom<Expectation>>::Error> {
+        match expectation {
+            Expectation::Digital(transaction) => Ok(transaction),
+            _ => Err(())
+        }
+    }
 }
 
 /// Single digital push-pull output pin
 impl OutputPin for Mock {
     /// Drives the pin low
     fn set_low(&mut self) -> Result<(), Self::Error> {
-        let Transaction { kind, err } = self.next().expect("no expectation for pin::set_low call");
+        let Transaction { kind, err } = next_transaction(self);
 
         assert_eq!(
             kind,
@@ -148,7 +168,7 @@ impl OutputPin for Mock {
 
     /// Drives the pin high
     fn set_high(&mut self) -> Result<(), Self::Error> {
-        let Transaction { kind, err } = self.next().expect("no expectation for pin::set_high call");
+        let Transaction { kind, err } = next_transaction(self);
 
         assert_eq!(
             kind,
@@ -168,7 +188,7 @@ impl InputPin for Mock {
     fn is_high(&mut self) -> Result<bool, Self::Error> {
         let mut s = self.clone();
 
-        let Transaction { kind, err } = s.next().expect("no expectation for pin::is_high call");
+        let Transaction { kind, err } = next_transaction(&mut s);
 
         assert!(kind.is_get(), "expected pin::get");
 
@@ -185,7 +205,7 @@ impl InputPin for Mock {
     fn is_low(&mut self) -> Result<bool, Self::Error> {
         let mut s = self.clone();
 
-        let Transaction { kind, err } = s.next().expect("no expectation for pin::is_low call");
+        let Transaction { kind, err } = next_transaction(&mut s);
 
         assert!(kind.is_get(), "expected pin::get");
 

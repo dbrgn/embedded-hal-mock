@@ -16,6 +16,10 @@ use std::{thread, time::Duration};
 
 use eh1 as embedded_hal;
 use embedded_hal::delay;
+use crate::{
+    eh1::top_level::Expectation,
+    common::{Generic, next_transaction}
+};
 
 /// A `Delay` implementation that does not actually block.
 pub struct NoopDelay;
@@ -35,14 +39,6 @@ impl Default for NoopDelay {
 
 impl delay::DelayNs for NoopDelay {
     fn delay_ns(&mut self, _ns: u32) {
-        // no-op
-    }
-
-    fn delay_us(&mut self, _us: u32) {
-        // no-op
-    }
-
-    fn delay_ms(&mut self, _ms: u32) {
         // no-op
     }
 }
@@ -67,12 +63,37 @@ impl delay::DelayNs for StdSleep {
     fn delay_ns(&mut self, ns: u32) {
         thread::sleep(Duration::from_nanos(ns as u64));
     }
+}
 
-    fn delay_us(&mut self, us: u32) {
-        thread::sleep(Duration::from_micros(us as u64));
+/// Delay transaction type
+///
+/// Records a delay
+pub type Transaction = u32;
+
+/// A `Delay` implementation that does not actually block.
+pub type Mock = Generic<Transaction>;
+
+impl TryFrom<Expectation> for Transaction {
+    type Error = ();
+
+    fn try_from(expectation: Expectation) -> Result<Self, <Self as TryFrom<Expectation>>::Error> {
+        match expectation {
+            Expectation::Delay(transaction) => Ok(transaction),
+            _ => Err(())
+        }
     }
+}
 
-    fn delay_ms(&mut self, ms: u32) {
-        thread::sleep(Duration::from_millis(ms as u64));
+impl delay::DelayNs for Mock {
+    fn delay_ns(&mut self, ns: u32) {
+        let w = next_transaction(self);
+
+        assert_eq!(ns, w, "delaying by the wrong number of nanoseconds");
+    }
+}
+
+impl Mock {
+    pub fn expect_delay_ns(&self, ns: u32) -> Expectation {
+        Expectation::Delay(ns)
     }
 }

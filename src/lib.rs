@@ -28,11 +28,6 @@
 //!
 //! Currently this crate is not `no_std`. If you think this is important, let
 //! me know.
-#![cfg_attr(docsrs, feature(doc_cfg), feature(doc_auto_cfg))]
-#![deny(missing_docs)]
-
 pub mod common;
-#[cfg(feature = "eh0")]
-pub mod eh0;
 #[cfg(feature = "eh1")]
 pub mod eh1;

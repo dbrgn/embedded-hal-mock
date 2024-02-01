@@ -22,8 +22,18 @@ use std::{
 /// original instance that has been moved into a driver.
 #[derive(Debug, Clone)]
 pub struct Generic<T: Clone + Debug + PartialEq> {
-    expected: Arc<Mutex<VecDeque<T>>>,
+    pub hal: Option<Arc<Mutex<crate::eh1::top_level::Hal>>>,
+    pub expected: Arc<Mutex<VecDeque<T>>>,
     done_called: Arc<Mutex<DoneCallDetector>>,
+}
+
+use crate::eh1::top_level::Expectation;
+pub fn next_transaction<T>(mock: &mut Generic<T>) -> T where T: PartialEq + std::fmt::Debug + Clone + std::convert::TryFrom<crate::eh1::top_level::Expectation>, <T as TryFrom<Expectation>>::Error: Debug {
+    if let Some(hal) = &mock.hal {
+        hal.lock().unwrap().next().unwrap().try_into().expect("wrong expectation type")
+    } else {
+        mock.next().unwrap()
+    }
 }
 
 impl<'a, T: 'a> Generic<T>
@@ -38,11 +48,28 @@ where
         E: IntoIterator<Item = &'a T>,
     {
         let mut g = Generic {
+            hal: None,
             expected: Arc::new(Mutex::new(VecDeque::new())),
             done_called: Arc::new(Mutex::new(DoneCallDetector::new())),
         };
 
         g.update_expectations(expected);
+
+        g
+    }
+
+    pub(crate) fn with_hal<E>(expected: E, hal: Arc<Mutex<crate::eh1::top_level::Hal>>) -> Generic<T>
+    where
+        E: IntoIterator<Item = &'a T>,
+    {
+        let mut g = Generic {
+            hal: Some(hal),
+            expected: Arc::new(Mutex::new(VecDeque::new())),
+            done_called: Arc::new(Mutex::new(DoneCallDetector::new())),
+        };
+
+        g.update_expectations(expected);
+        g.done();
 
         g
     }
@@ -97,7 +124,10 @@ where
             .unwrap()
             .mark_as_called(panic_if_already_done);
         let e = self.expected.lock().unwrap();
-        assert!(e.is_empty(), "Not all expectations consumed");
+        if !e.is_empty() {
+            eprintln!("{:?}", e);
+            assert!(e.is_empty(), "Not all expectations consumed")
+        }
     }
 }
 

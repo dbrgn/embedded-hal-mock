@@ -13,3 +13,5 @@ pub mod pin;
 pub mod pwm;
 pub mod serial;
 pub mod spi;
+
+pub mod top_level;
