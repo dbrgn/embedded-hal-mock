@@ -149,9 +149,13 @@ pub enum TransactionKind {
     ///
     /// The delay may be either blocking or async. In most cases, this is what you'll want to use.
     DelayNs(u64),
-    /// Delay in nanoseconds, must be a blocking delay. Expectation will fail for async delays.
+    /// Expect a blocking delay in nanoseconds
+    ///
+    /// The delay must be blocking. Expectation will fail for async delays.
     BlockingDelayNs(u64),
-    /// Delay in nanoseconds, must be an async delay. Expectation will fail for blocking delays.
+    /// Expect an async delay in nanoseconds
+    ///
+    /// The delay must be async. Expectation will fail for blocking delays.
     AsyncDelayNs(u64),
 }
 
