@@ -1,13 +1,14 @@
-//! Mock digital [`InputPin`] and [`OutputPin`] implementations
+//! Mock digital [`InputPin`], [`OutputPin`], and [`StatefulOutputPin`] implementations
 //!
 //! [`InputPin`]: https://docs.rs/embedded-hal/1/embedded_hal/digital/trait.InputPin.html
 //! [`OutputPin`]: https://docs.rs/embedded-hal/1/embedded_hal/digital/trait.OutputPin.html
+//! [`StatefulOutputPin`]: https://docs.rs/embedded-hal/1/embedded_hal/digital/trait.StatefulOutputPin.html
 //!
 //! ```
 //! # use eh1 as embedded_hal;
 //! use std::io::ErrorKind;
 //!
-//! use embedded_hal::digital::{InputPin, OutputPin};
+//! use embedded_hal::digital::{InputPin, OutputPin, StatefulOutputPin};
 //! use embedded_hal_mock::eh1::{
 //!     pin::{Mock as PinMock, State as PinState, Transaction as PinTransaction},
 //!     MockError,
@@ -21,6 +22,9 @@
 //!     PinTransaction::get(PinState::High),
 //!     PinTransaction::set(PinState::Low),
 //!     PinTransaction::set(PinState::High).with_error(err.clone()),
+//!     PinTransaction::get_state(PinState::High),
+//!     PinTransaction::toggle(),
+//!     PinTransaction::get_state(PinState::Low),
 //! ];
 //!
 //! // Create pin
@@ -33,6 +37,10 @@
 //! pin.set_low().unwrap();
 //! pin.set_high().expect_err("expected error return");
 //!
+//! pin.is_set_high().unwrap();
+//! pin.toggle().unwrap();
+//! pin.is_set_low().unwrap();
+//!
 //! pin.done();
 //!
 //! // Update expectations
@@ -42,7 +50,7 @@
 //! ```
 
 use eh1 as embedded_hal;
-use embedded_hal::digital::{ErrorType, InputPin, OutputPin};
+use embedded_hal::digital::{ErrorType, InputPin, OutputPin, StatefulOutputPin};
 
 use crate::{common::Generic, eh1::error::MockError};
 
@@ -82,6 +90,16 @@ impl Transaction {
         Transaction::new(TransactionKind::Set(state))
     }
 
+    /// Create a new toggle transaction
+    pub fn toggle() -> Transaction {
+        Transaction::new(TransactionKind::Toggle)
+    }
+
+    /// Create a new get stateful pin state transaction
+    pub fn get_state(state: State) -> Transaction {
+        Transaction::new(TransactionKind::GetState(state))
+    }
+
     /// Add an error return to a transaction
     ///
     /// This is used to mock failure behaviours.
@@ -105,6 +123,10 @@ pub enum TransactionKind {
     Set(State),
     /// Get the pin state
     Get(State),
+    /// Toggle for an expected toggle of the pin
+    Toggle,
+    /// Get the set state of the stateful pin
+    GetState(State),
 }
 
 impl TransactionKind {
@@ -199,16 +221,71 @@ impl InputPin for Mock {
     }
 }
 
+/// Single digital output pin that remembers its state and can be toggled between high and low states
+impl StatefulOutputPin for Mock {
+    /// Toggle the pin low to high or high to low
+    fn toggle(&mut self) -> Result<(), Self::Error> {
+        let Transaction { kind, err } = self.next().expect("no expectation for pin::toggle call");
+
+        assert_eq!(kind, TransactionKind::Toggle, "expected pin::toggle");
+
+        match err {
+            Some(e) => Err(e),
+            None => Ok(()),
+        }
+    }
+
+    /// Is the output pin set high?
+    fn is_set_high(&mut self) -> Result<bool, Self::Error> {
+        let mut s = self.clone();
+
+        let Transaction { kind, err } = s.next().expect("no expectation for pin::is_set_high call");
+
+        assert!(
+            matches!(kind, TransactionKind::GetState(_)),
+            "expected pin::is_set_high"
+        );
+
+        if let Some(e) = err {
+            Err(e)
+        } else if let TransactionKind::GetState(v) = kind {
+            Ok(v == State::High)
+        } else {
+            unreachable!();
+        }
+    }
+
+    /// Is the output pin set low?
+    fn is_set_low(&mut self) -> Result<bool, Self::Error> {
+        let mut s = self.clone();
+
+        let Transaction { kind, err } = s.next().expect("no expectation for pin::is_set_low call");
+
+        assert!(
+            matches!(kind, TransactionKind::GetState(_)),
+            "expected pin::is_set_low"
+        );
+
+        if let Some(e) = err {
+            Err(e)
+        } else if let TransactionKind::GetState(v) = kind {
+            Ok(v == State::Low)
+        } else {
+            unreachable!();
+        }
+    }
+}
+
 #[cfg(test)]
 mod test {
     use std::io::ErrorKind;
 
     use eh1 as embedded_hal;
-    use embedded_hal::digital::{InputPin, OutputPin};
+    use embedded_hal::digital::{InputPin, OutputPin, StatefulOutputPin};
 
     use super::{
         super::error::MockError,
-        TransactionKind::{Get, Set},
+        TransactionKind::{Get, GetState, Set, Toggle},
         *,
     };
 
@@ -246,6 +323,35 @@ mod test {
         pin.set_low().unwrap();
 
         pin.set_high().expect_err("expected error return");
+
+        pin.done();
+    }
+
+    #[test]
+    fn test_stateful_output_pin() {
+        let expectations = [
+            Transaction::new(GetState(State::Low)),
+            Transaction::get_state(State::Low),
+            Transaction::new(Toggle),
+            Transaction::get_state(State::High),
+            Transaction::get_state(State::High),
+            Transaction::toggle(),
+            Transaction::get_state(State::Low).with_error(MockError::Io(ErrorKind::NotConnected)),
+            Transaction::toggle().with_error(MockError::Io(ErrorKind::NotConnected)),
+        ];
+        let mut pin = Mock::new(&expectations);
+
+        assert!(pin.is_set_low().unwrap());
+        assert!(!pin.is_set_high().unwrap());
+        pin.toggle().unwrap();
+        assert!(pin.is_set_high().unwrap());
+        assert!(!pin.is_set_low().unwrap());
+        pin.toggle().unwrap();
+
+        pin.is_set_low()
+            .expect_err("expected an error when getting state");
+        pin.toggle()
+            .expect_err("expected an error when toggling state");
 
         pin.done();
     }
