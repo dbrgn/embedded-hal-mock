@@ -40,11 +40,6 @@
 //! - `eh1`: Provide module [`eh1`] that mocks embedded-hal version 1.x
 //! - `embedded-time`: Enable the [`eh0::timer`] module (enabled by default)
 //! - `embedded-hal-async`: Provide mocks for embedded-hal-async in [`eh1`]
-//!
-//! ## no\_std
-//!
-//! Currently this crate is not `no_std`. If you think this is important, let
-//! me know.
 #![cfg_attr(docsrs, feature(doc_cfg), feature(doc_auto_cfg))]
 #![deny(missing_docs)]
 
