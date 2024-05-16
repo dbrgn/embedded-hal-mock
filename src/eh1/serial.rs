@@ -89,20 +89,17 @@
 //! serial.done();
 //! ```
 
-// This module is implemented a little differently than
-// the spi and i2c modules. We'll note that, unlike the
-// spi and i2c modules which share the foundational Generic
-// transaction queue, we provide our own implementation.
-// We found that, in keeping with the established API design
-// and the unique features of the embedded_hal serial traits
-// (described in the note below), this was a necessary trade-
-// off. We welcome any other ideas that allow us to take
-// advantage of the common components.
+// This module is implemented a little differently than the spi and i2c
+// modules. We'll note that, unlike the spi and i2c modules which share the
+// foundational Generic transaction queue, we provide our own implementation.
+// We found that, in keeping with the established API design and the unique
+// features of the embedded_hal serial traits (described in the note below),
+// this was a necessary trade- off. We welcome any other ideas that allow us to
+// take advantage of the common components.
 //
-// We also generalize over a trait's `Word`, rather than requiring
-// consumers to use traits that operate on `u8`s. This does not
-// make the public API any more confusing for users, and it permits
-// maximal flexibility.
+// We also generalize over a trait's `Word`, rather than requiring consumers to
+// use traits that operate on `u8`s. This does not make the public API any more
+// confusing for users, and it permits maximal flexibility.
 
 use std::{
     collections::VecDeque,
@@ -118,12 +115,9 @@ use crate::common::DoneCallDetector;
 
 // Note that mode is private
 //
-// Although it is public in both the spi
-// and i2c modules, the variants are not
-// required to be in the public interface.
-// We chose to not supply them publicly to
-// consumers because there is no public API
-// that readily uses them.
+// Although it is public in both the spi and i2c modules, the variants are not
+// required to be in the public interface. We chose to not supply them publicly
+// to consumers because there is no public API that readily uses them.
 
 /// Serial communication mode
 #[derive(Debug, Clone)]
@@ -144,9 +138,9 @@ enum Mode<Word> {
 
 /// A serial transaction
 ///
-/// Transactions can either be reads, writes, or flushes. A
-/// collection of transactions represent the expected operations
-/// that are performed on your serial device.
+/// Transactions can either be reads, writes, or flushes. A collection of
+/// transactions represent the expected operations that are performed on your
+/// serial device.
 ///
 /// # Example
 ///
@@ -168,10 +162,9 @@ enum Mode<Word> {
 pub struct Transaction<Word> {
     /// A collection of modes
     ///
-    /// Since we need to express a blocking write in terms of
-    /// multiple writes, we aggregate all of them into this
-    /// member. Then, they are handed-off to the mock on
-    /// construction.
+    /// Since we need to express a blocking write in terms of multiple writes,
+    /// we aggregate all of them into this member. Then, they are handed-off to
+    /// the mock on construction.
     mode: Vec<Mode<Word>>,
 }
 
@@ -246,14 +239,13 @@ where
 /// Mock serial device
 ///
 /// The mock serial device can be loaded with expected transactions, then
-/// passed-on into a serial device user. If the expectations were not met
-/// in the specified order, the type causes a panic and describes what
-/// expectation wasn't met.
+/// passed-on into a serial device user. If the expectations were not met in
+/// the specified order, the type causes a panic and describes what expectation
+/// wasn't met.
 ///
-/// The type is clonable so that it may be shared with a serial
-/// device user. Under the hood, both cloned mocks will share
-/// the same state, allowing your handle to eventually call `done()`,
-/// if desired.
+/// The type is clonable so that it may be shared with a serial device user.
+/// Under the hood, both cloned mocks will share the same state, allowing your
+/// handle to eventually call `done()`, if desired.
 #[derive(Clone)]
 pub struct Mock<Word> {
     expected_modes: Arc<Mutex<VecDeque<Mode<Word>>>>,

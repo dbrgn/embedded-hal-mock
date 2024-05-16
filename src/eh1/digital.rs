@@ -51,9 +51,9 @@ use crate::{common::Generic, eh1::error::MockError};
 pub struct Transaction {
     /// Kind is the transaction kind (and data) expected
     kind: TransactionKind,
-    /// Err is an optional error return for a transaction.
-    /// This is in addition to kind to allow validation that the transaction kind
-    /// is correct prior to returning the error.
+    /// An optional error return value for a transaction. This is in addition
+    /// to `kind` to allow validation that the transaction kind is correct
+    /// prior to returning the error.
     err: Option<MockError>,
 }
 
@@ -86,8 +86,9 @@ impl Transaction {
     ///
     /// This is used to mock failure behaviours.
     ///
-    /// Note that this can only be used for methods which actually return a [`Result`];
-    /// trying to invoke this for others will lead to an assertion error!
+    /// Note that this can only be used for methods which actually return a
+    /// [`Result`]; trying to invoke this for others will lead to an assertion
+    /// error!
     pub fn with_error(mut self, error: MockError) -> Self {
         assert!(
             self.kind.supports_errors(),

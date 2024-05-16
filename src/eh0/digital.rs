@@ -58,9 +58,9 @@ pub type PwmDuty = u16;
 pub struct Transaction {
     /// Kind is the transaction kind (and data) expected
     kind: TransactionKind,
-    /// Err is an optional error return for a transaction.
-    /// This is in addition to kind to allow validation that the transaction kind
-    /// is correct prior to returning the error.
+    /// An optional error return value for a transaction. This is in addition
+    /// to `kind` to allow validation that the transaction kind is correct
+    /// prior to returning the error.
     err: Option<MockError>,
 }
 
