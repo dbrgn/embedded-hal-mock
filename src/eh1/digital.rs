@@ -1,15 +1,15 @@
-//! Mock digital [`InputPin`] and [`OutputPin`] v2 implementations
+//! Mock digital [`InputPin`] and [`OutputPin`] implementations
 //!
-//! [`InputPin`]: https://docs.rs/embedded-hal/0.2/embedded_hal/digital/v2/trait.InputPin.html
-//! [`OutputPin`]: https://docs.rs/embedded-hal/0.2/embedded_hal/digital/v2/trait.OutputPin.html
+//! [`InputPin`]: https://docs.rs/embedded-hal/1/embedded_hal/digital/trait.InputPin.html
+//! [`OutputPin`]: https://docs.rs/embedded-hal/1/embedded_hal/digital/trait.OutputPin.html
 //!
 //! ```
-//! # use eh0 as embedded_hal;
+//! # use eh1 as embedded_hal;
 //! use std::io::ErrorKind;
 //!
-//! use embedded_hal::digital::v2::{InputPin, OutputPin};
-//! use embedded_hal_mock::eh0::{
-//!     pin::{Mock as PinMock, State as PinState, Transaction as PinTransaction},
+//! use embedded_hal::digital::{InputPin, OutputPin};
+//! use embedded_hal_mock::eh1::{
+//!     digital::{Mock as PinMock, State as PinState, Transaction as PinTransaction},
 //!     MockError,
 //! };
 //!
@@ -41,17 +41,10 @@
 //! pin.done();
 //! ```
 
-use eh0 as embedded_hal;
-use embedded_hal::{
-    digital::v2::{InputPin, OutputPin},
-    PwmPin,
-};
+use eh1 as embedded_hal;
+use embedded_hal::digital::{ErrorType, InputPin, OutputPin};
 
-use super::error::MockError;
-use crate::common::Generic;
-
-/// The type used for the duty of the [`PwmPin`] mock.
-pub type PwmDuty = u16;
+use crate::{common::Generic, eh1::error::MockError};
 
 /// MockPin transaction
 #[derive(PartialEq, Eq, Clone, Debug)]
@@ -89,31 +82,6 @@ impl Transaction {
         Transaction::new(TransactionKind::Set(state))
     }
 
-    /// Create a new disable transaction
-    pub fn disable() -> Transaction {
-        Transaction::new(TransactionKind::Disable)
-    }
-
-    /// Create a new enable transaction
-    pub fn enable() -> Transaction {
-        Transaction::new(TransactionKind::Enable)
-    }
-
-    /// Create a new get_duty transaction
-    pub fn get_duty(duty: PwmDuty) -> Transaction {
-        Transaction::new(TransactionKind::GetDuty(duty))
-    }
-
-    /// Create a new get_max_duty transaction
-    pub fn get_max_duty(max_duty: PwmDuty) -> Transaction {
-        Transaction::new(TransactionKind::GetMaxDuty(max_duty))
-    }
-
-    /// Create a new set_duty transaction
-    pub fn set_duty(expected_duty: PwmDuty) -> Transaction {
-        Transaction::new(TransactionKind::SetDuty(expected_duty))
-    }
-
     /// Add an error return to a transaction
     ///
     /// This is used to mock failure behaviours.
@@ -137,16 +105,6 @@ pub enum TransactionKind {
     Set(State),
     /// Get the pin state
     Get(State),
-    /// Disable a [`PwmPin`] using [`PwmPin::disable`]
-    Disable,
-    /// Enable a [`PwmPin`] using [`PwmPin::enable`]
-    Enable,
-    /// Query the duty of a [`PwmPin`] using [`PwmPin::get_duty`], returning the specified value
-    GetDuty(PwmDuty),
-    /// Query the max. duty of a [`PwmPin`] using [`PwmPin::get_max_duty`], returning the specified value
-    GetMaxDuty(PwmDuty),
-    /// Set the duty of a [`PwmPin`] using [`PwmPin::set_duty`], expecting the specified value
-    SetDuty(PwmDuty),
 }
 
 impl TransactionKind {
@@ -159,21 +117,19 @@ impl TransactionKind {
 
     /// Specifies whether the actual API returns a [`Result`] (= supports errors) or not.
     fn supports_errors(&self) -> bool {
-        match self {
-            TransactionKind::Set(_) | TransactionKind::Get(_) => true,
-            _ => false,
-        }
+        true
     }
 }
 
 /// Mock Pin implementation
 pub type Mock = Generic<Transaction>;
 
+impl ErrorType for Mock {
+    type Error = MockError;
+}
+
 /// Single digital push-pull output pin
 impl OutputPin for Mock {
-    /// Error type
-    type Error = MockError;
-
     /// Drives the pin low
     fn set_low(&mut self) -> Result<(), Self::Error> {
         let Transaction { kind, err } = self.next().expect("no expectation for pin::set_low call");
@@ -208,11 +164,8 @@ impl OutputPin for Mock {
 }
 
 impl InputPin for Mock {
-    /// Error type
-    type Error = MockError;
-
     /// Is the input pin high?
-    fn is_high(&self) -> Result<bool, Self::Error> {
+    fn is_high(&mut self) -> Result<bool, Self::Error> {
         let mut s = self.clone();
 
         let Transaction { kind, err } = s.next().expect("no expectation for pin::is_high call");
@@ -229,7 +182,7 @@ impl InputPin for Mock {
     }
 
     /// Is the input pin low?
-    fn is_low(&self) -> Result<bool, Self::Error> {
+    fn is_low(&mut self) -> Result<bool, Self::Error> {
         let mut s = self.clone();
 
         let Transaction { kind, err } = s.next().expect("no expectation for pin::is_low call");
@@ -246,72 +199,18 @@ impl InputPin for Mock {
     }
 }
 
-impl PwmPin for Mock {
-    type Duty = PwmDuty;
-
-    fn disable(&mut self) {
-        // Note: Error is being ignored, because method doesn't return a result
-        let Transaction { kind, .. } = self.next().expect("no expectation for pin::disable call");
-
-        assert_eq!(kind, TransactionKind::Disable, "expected pin::disable");
-    }
-
-    fn enable(&mut self) {
-        // Note: Error is being ignored, because method doesn't return a result
-        let Transaction { kind, .. } = self.next().expect("no expectation for pin::enable call");
-
-        assert_eq!(kind, TransactionKind::Enable, "expected pin::enable");
-    }
-
-    fn get_duty(&self) -> Self::Duty {
-        let mut s = self.clone();
-
-        // Note: Error is being ignored, because method doesn't return a result
-        let Transaction { kind, .. } = s.next().expect("no expectation for pin::get_duty call");
-
-        if let TransactionKind::GetDuty(duty) = kind {
-            duty
-        } else {
-            panic!("expected pin::get_duty");
-        }
-    }
-
-    fn get_max_duty(&self) -> Self::Duty {
-        let mut s = self.clone();
-
-        // Note: Error is being ignored, because method doesn't return a result
-        let Transaction { kind, .. } = s.next().expect("no expectation for pin::get_max_duty call");
-
-        if let TransactionKind::GetMaxDuty(max_duty) = kind {
-            max_duty
-        } else {
-            panic!("expected pin::get_max_duty");
-        }
-    }
-
-    fn set_duty(&mut self, duty: Self::Duty) {
-        // Note: Error is being ignored, because method doesn't return a result
-        let Transaction { kind, .. } = self.next().expect("no expectation for pin::set_duty call");
-
-        assert_eq!(
-            kind,
-            TransactionKind::SetDuty(duty),
-            "expected pin::set_duty"
-        );
-    }
-}
-
 #[cfg(test)]
 mod test {
     use std::io::ErrorKind;
 
-    use eh0 as embedded_hal;
-    use embedded_hal::{
-        digital::v2::{InputPin, OutputPin},
-        PwmPin,
-    };
+    use eh1 as embedded_hal;
+    use embedded_hal::digital::{InputPin, OutputPin};
 
-    use super::{super::error::MockError, TransactionKind::*, *};
+    use super::{
+        super::error::MockError,
+        TransactionKind::{Get, Set},
+        *,
+    };
 
     #[test]
     fn test_input_pin() {
@@ -347,27 +246,6 @@ mod test {
         pin.set_low().unwrap();
 
         pin.set_high().expect_err("expected error return");
-
-        pin.done();
-    }
-
-    #[test]
-    fn test_pwm_pin() {
-        let expected_duty = 10_000;
-        let expectations = [
-            Transaction::new(Enable),
-            Transaction::new(GetMaxDuty(expected_duty)),
-            Transaction::new(SetDuty(expected_duty)),
-            Transaction::new(GetDuty(expected_duty)),
-            Transaction::new(Disable),
-        ];
-        let mut pin = Mock::new(&expectations);
-
-        pin.enable();
-        let max_duty = pin.get_max_duty();
-        pin.set_duty(max_duty);
-        assert_eq!(pin.get_duty(), expected_duty);
-        pin.disable();
 
         pin.done();
     }
