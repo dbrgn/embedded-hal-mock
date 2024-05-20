@@ -173,8 +173,10 @@ impl Transaction {
 
 /// Mock I2C implementation
 ///
-/// This supports the specification and evaluation of expectations to allow automated testing of I2C based drivers.
-/// Mismatches between expectations will cause runtime assertions to assist in locating the source of the fault.
+/// This supports the specification and evaluation of expectations to allow
+/// automated testing of I2C based drivers. Mismatches between expectations
+/// will cause runtime assertions to assist in locating the source of the
+/// fault.
 pub type Mock = Generic<Transaction>;
 
 impl ErrorType for Mock {

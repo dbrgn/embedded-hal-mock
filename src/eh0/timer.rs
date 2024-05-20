@@ -1,8 +1,8 @@
-//! Provides a mocked [embedded_time::Clock] that can be used for host-side testing
-//! crates that use [embedded_hal::timer].
+//! Provides a mocked [embedded_time::Clock] that can be used for host-side
+//! testing crates that use [embedded_hal::timer].
 //!
-//! The provided [embedded_time::Clock] implementation is thread safe and can be freely
-//! skipped forward with nanosecond precision.
+//! The provided [embedded_time::Clock] implementation is thread safe and can
+//! be freely skipped forward with nanosecond precision.
 //!
 //! # Usage
 //!
