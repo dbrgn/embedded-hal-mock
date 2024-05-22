@@ -298,6 +298,34 @@ impl i2c::I2c for Mock {
     }
 }
 
+#[cfg(feature = "embedded-hal-async")]
+impl embedded_hal_async::i2c::I2c for Mock {
+    async fn read(&mut self, address: u8, buffer: &mut [u8]) -> Result<(), Self::Error> {
+        eh1::i2c::I2c::read(self, address, buffer)
+    }
+
+    async fn write(&mut self, address: u8, bytes: &[u8]) -> Result<(), Self::Error> {
+        eh1::i2c::I2c::write(self, address, bytes)
+    }
+
+    async fn write_read(
+        &mut self,
+        address: u8,
+        bytes: &[u8],
+        buffer: &mut [u8],
+    ) -> Result<(), Self::Error> {
+        eh1::i2c::I2c::write_read(self, address, bytes, buffer)
+    }
+
+    async fn transaction<'a>(
+        &mut self,
+        address: u8,
+        operations: &mut [i2c::Operation<'a>],
+    ) -> Result<(), Self::Error> {
+        eh1::i2c::I2c::transaction(self, address, operations)
+    }
+}
+
 #[cfg(test)]
 mod test {
     use std::time::SystemTime;
@@ -316,6 +344,18 @@ mod test {
         i2c.done();
     }
 
+    #[tokio::test]
+    #[cfg(feature = "embedded-hal-async")]
+    async fn write_async() {
+        use embedded_hal_async::i2c::I2c;
+        let expectations = [Transaction::write(0xaa, vec![10, 12])];
+        let mut i2c = Mock::new(&expectations);
+
+        I2c::write(&mut i2c, 0xaa, &vec![10, 12]).await.unwrap();
+
+        i2c.done();
+    }
+
     #[test]
     fn read() {
         let expectations = [Transaction::read(0xaa, vec![1, 2])];
@@ -323,6 +363,20 @@ mod test {
 
         let mut buff = vec![0; 2];
         i2c.read(0xaa, &mut buff).unwrap();
+        assert_eq!(vec![1, 2], buff);
+
+        i2c.done();
+    }
+
+    #[tokio::test]
+    #[cfg(feature = "embedded-hal-async")]
+    async fn read_async() {
+        use embedded_hal_async::i2c::I2c;
+        let expectations = [Transaction::read(0xaa, vec![1, 2])];
+        let mut i2c = Mock::new(&expectations);
+
+        let mut buff = vec![0; 2];
+        I2c::read(&mut i2c, 0xaa, &mut buff).await.unwrap();
         assert_eq!(vec![1, 2], buff);
 
         i2c.done();
@@ -341,6 +395,21 @@ mod test {
         i2c.done();
     }
 
+    #[tokio::test]
+    #[cfg(feature = "embedded-hal-async")]
+    async fn write_read_async() {
+        use embedded_hal_async::i2c::I2c;
+        let expectations = [Transaction::write_read(0xaa, vec![1, 2], vec![3, 4])];
+        let mut i2c = Mock::new(&expectations);
+
+        let v = vec![1, 2];
+        let mut buff = vec![0; 2];
+        I2c::write_read(&mut i2c, 0xaa, &v, &mut buff).await.unwrap();
+        assert_eq!(vec![3, 4], buff);
+
+        i2c.done();
+    }
+
     #[test]
     fn multiple_transactions() {
         let expectations = [
@@ -353,6 +422,26 @@ mod test {
 
         let mut v = vec![0; 2];
         i2c.read(0xbb, &mut v).unwrap();
+
+        assert_eq!(v, vec![3, 4]);
+
+        i2c.done();
+    }
+
+    #[tokio::test]
+    #[cfg(feature = "embedded-hal-async")]
+    async fn multiple_transactions_async() {
+        use embedded_hal_async::i2c::I2c;
+        let expectations = [
+            Transaction::write(0xaa, vec![1, 2]),
+            Transaction::read(0xbb, vec![3, 4]),
+        ];
+        let mut i2c = Mock::new(&expectations);
+
+        I2c::write(&mut i2c, 0xaa, &vec![1, 2]).await.unwrap();
+
+        let mut v = vec![0; 2];
+        I2c::read(&mut i2c, 0xbb, &mut v).await.unwrap();
 
         assert_eq!(v, vec![3, 4]);
 
@@ -384,6 +473,35 @@ mod test {
         i2c.done();
     }
 
+    #[tokio::test]
+    #[cfg(feature = "embedded-hal-async")]
+    async fn test_i2c_mock_multiple_transaction_async() {
+        use embedded_hal_async::i2c::I2c;
+        let expectations = [
+            Transaction::transaction_start(0xaa),
+            Transaction::write(0xaa, vec![1, 2]),
+            Transaction::read(0xaa, vec![3, 4]),
+            Transaction::transaction_end(0xaa),
+        ];
+        let mut i2c = Mock::new(&expectations);
+
+        let mut v = vec![0u8; 2];
+        I2c::transaction(
+            &mut i2c,
+            0xaa,
+            &mut [
+                i2c::Operation::Write(&vec![1, 2]),
+                i2c::Operation::Read(&mut v),
+            ],
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(v, vec![3, 4]);
+
+        i2c.done();
+    }
+
     #[test]
     #[should_panic(expected = "i2c::write data does not match expectation")]
     fn write_data_mismatch() {
@@ -391,6 +509,17 @@ mod test {
         let mut i2c = Mock::new(&expectations);
 
         i2c.write(0xaa, &vec![1, 3]).unwrap();
+    }
+
+    #[tokio::test]
+    #[should_panic(expected = "i2c::write data does not match expectation")]
+    #[cfg(feature = "embedded-hal-async")]
+    async fn write_data_mismatch_async() {
+        use embedded_hal_async::i2c::I2c;
+        let expectations = [Transaction::write(0xaa, vec![1, 2])];
+        let mut i2c = Mock::new(&expectations);
+
+        I2c::write(&mut i2c, 0xaa, &vec![1, 3]).await.unwrap();
     }
 
     #[test]
@@ -401,6 +530,18 @@ mod test {
 
         let mut buff = vec![0; 2];
         i2c.write(0xaa, &mut buff).unwrap();
+    }
+
+    #[tokio::test]
+    #[should_panic(expected = "i2c::write unexpected mode")]
+    #[cfg(feature = "embedded-hal-async")]
+    async fn transaction_type_mismatch_async() {
+        use embedded_hal_async::i2c::I2c;
+        let expectations = [Transaction::read(0xaa, vec![10, 12])];
+        let mut i2c = Mock::new(&expectations);
+
+        let mut buff = vec![0; 2];
+        I2c::write(&mut i2c, 0xaa, &mut buff).await.unwrap();
     }
 
     #[test]
@@ -414,6 +555,19 @@ mod test {
         i2c.write_read(0xaa, &v, &mut buff).unwrap();
     }
 
+    #[tokio::test]
+    #[should_panic(expected = "i2c::write_read address mismatch")]
+    #[cfg(feature = "embedded-hal-async")]
+    async fn address_mismatch_async() {
+        use embedded_hal_async::i2c::I2c;
+        let expectations = [Transaction::write_read(0xbb, vec![1, 2], vec![3, 4])];
+        let mut i2c = Mock::new(&expectations);
+
+        let v = vec![1, 2];
+        let mut buff = vec![0; 2];
+        I2c::write_read(&mut i2c, 0xaa, &v, &mut buff).await.unwrap();
+    }
+
     #[test]
     #[should_panic(expected = "i2c::write unexpected mode")]
     fn test_i2c_mock_mode_err() {
@@ -421,6 +575,19 @@ mod test {
         let mut i2c = Mock::new(&expectations);
 
         i2c.write(0xaa, &vec![10, 12]).unwrap();
+
+        i2c.done();
+    }
+
+    #[tokio::test]
+    #[should_panic(expected = "i2c::write unexpected mode")]
+    #[cfg(feature = "embedded-hal-async")]
+    async fn test_i2c_mock_mode_err_async() {
+        use embedded_hal_async::i2c::I2c;
+        let expectations = [Transaction::read(0xaa, vec![10, 12])];
+        let mut i2c = Mock::new(&expectations);
+
+        I2c::write(&mut i2c, 0xaa, &vec![10, 12]).await.unwrap();
 
         i2c.done();
     }
@@ -435,6 +602,22 @@ mod test {
         let mut i2c = Mock::new(&expectations);
 
         i2c.write(0xaa, &vec![10, 12]).unwrap();
+
+        i2c.done();
+    }
+
+    #[tokio::test]
+    #[should_panic(expected = "Not all expectations consumed")]
+    #[cfg(feature = "embedded-hal-async")]
+    async fn unconsumed_expectations_async() {
+        use embedded_hal_async::i2c::I2c;
+        let expectations = [
+            Transaction::write(0xaa, vec![10, 12]),
+            Transaction::write(0xaa, vec![10, 12]),
+        ];
+        let mut i2c = Mock::new(&expectations);
+
+        I2c::write(&mut i2c, 0xaa, &vec![10, 12]).await.unwrap();
 
         i2c.done();
     }
@@ -470,6 +653,39 @@ mod test {
         }
     }
 
+    #[tokio::test]
+    #[cfg(feature = "embedded-hal-async")]
+    async fn clone_linked_to_original_async() {
+        use embedded_hal_async::i2c::I2c;
+        let expectations = [
+            Transaction::read(0xaa, vec![1, 2]),
+            Transaction::write(0xbb, vec![3, 4]),
+        ];
+        let mut i2c = Mock::new(&expectations);
+
+        // Clone mock. The clone should be linked to the same data as the original.
+        let mut i2c_clone = i2c.clone();
+
+        // Read on the original mock
+        let mut buff = vec![0; 2];
+        I2c::read(&mut i2c, 0xaa, &mut buff).await.unwrap();
+        assert_eq!(vec![1, 2], buff);
+
+        // Write on the clone
+        I2c::write(&mut i2c_clone, 0xbb, &[3, 4]).await.unwrap();
+
+        // Randomly call `.done()` on the original mock, or on the clone.
+        // Use "system time % 2" as poor man's `rand()`.
+        let now = SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .unwrap();
+        if now.as_millis() % 2 == 0 {
+            i2c.done();
+        } else {
+            i2c_clone.done();
+        }
+    }
+
     mod with_error {
         use super::*;
 
@@ -484,6 +700,19 @@ mod test {
             i2c.done();
         }
 
+        #[tokio::test]
+        #[cfg(feature = "embedded-hal-async")]
+        async fn write_async() {
+            use embedded_hal_async::i2c::I2c;
+            let expected_err = ErrorKind::Other;
+            let mut i2c = Mock::new(&[
+                Transaction::write(0xaa, vec![10, 12]).with_error(expected_err.clone())
+            ]);
+            let err = I2c::write(&mut i2c, 0xaa, &vec![10, 12]).await.unwrap_err();
+            assert_eq!(err, expected_err);
+            i2c.done();
+        }
+
         /// The transaction mode should still be validated.
         #[test]
         #[should_panic(expected = "i2c::read unexpected mode")]
@@ -494,6 +723,18 @@ mod test {
             let _ = i2c.read(0xaa, &mut buf);
         }
 
+        /// The transaction mode should still be validated.
+        #[tokio::test]
+        #[should_panic(expected = "i2c::read unexpected mode")]
+        #[cfg(feature = "embedded-hal-async")]
+        async fn write_wrong_mode_async() {
+            use embedded_hal_async::i2c::I2c;
+            let mut i2c =
+                Mock::new(&[Transaction::write(0xaa, vec![10, 12]).with_error(ErrorKind::Other)]);
+            let mut buf = vec![0; 2];
+            let _ = I2c::read(&mut i2c, 0xaa, &mut buf).await;
+        }
+
         /// The transaction bytes should still be validated.
         #[test]
         #[should_panic(expected = "i2c::write data does not match expectation")]
@@ -501,6 +742,17 @@ mod test {
             let mut i2c =
                 Mock::new(&[Transaction::write(0xaa, vec![10, 12]).with_error(ErrorKind::Other)]);
             let _ = i2c.write(0xaa, &vec![10, 13]);
+        }
+
+        /// The transaction bytes should still be validated.
+        #[tokio::test]
+        #[should_panic(expected = "i2c::write data does not match expectation")]
+        #[cfg(feature = "embedded-hal-async")]
+        async fn write_wrong_data_async() {
+            use embedded_hal_async::i2c::I2c;
+            let mut i2c =
+                Mock::new(&[Transaction::write(0xaa, vec![10, 12]).with_error(ErrorKind::Other)]);
+            let _ = I2c::write(&mut i2c, 0xaa, &vec![10, 13]).await;
         }
 
         #[test]
@@ -516,6 +768,21 @@ mod test {
             i2c.done();
         }
 
+        #[tokio::test]
+        #[cfg(feature = "embedded-hal-async")]
+        async fn read_async() {
+            use embedded_hal_async::i2c::I2c;
+            let expected_err = ErrorKind::Other;
+            let mut i2c =
+                Mock::new(
+                    &[Transaction::read(0xaa, vec![10, 12]).with_error(expected_err.clone())],
+                );
+            let mut buf = vec![0; 2];
+            let err = I2c::read(&mut i2c, 0xaa, &mut buf).await.unwrap_err();
+            assert_eq!(err, expected_err);
+            i2c.done();
+        }
+
         /// The transaction mode should still be validated.
         #[test]
         #[should_panic(expected = "i2c::write unexpected mode")]
@@ -523,6 +790,18 @@ mod test {
             let mut i2c =
                 Mock::new(&[Transaction::read(0xaa, vec![10, 12]).with_error(ErrorKind::Other)]);
             let _ = i2c.write(0xaa, &vec![10, 12]);
+        }
+
+
+        /// The transaction mode should still be validated.
+        #[tokio::test]
+        #[should_panic(expected = "i2c::write unexpected mode")]
+        #[cfg(feature = "embedded-hal-async")]
+        async fn read_wrong_mode_async() {
+            use embedded_hal_async::i2c::I2c;
+            let mut i2c =
+                Mock::new(&[Transaction::read(0xaa, vec![10, 12]).with_error(ErrorKind::Other)]);
+            let _ = I2c::write(&mut i2c, 0xaa, &vec![10, 12]).await;
         }
 
         #[test]
@@ -536,6 +815,19 @@ mod test {
             i2c.done();
         }
 
+        #[tokio::test]
+        #[cfg(feature = "embedded-hal-async")]
+        async fn write_read_async() {
+            use embedded_hal_async::i2c::I2c;
+            let expected_err = ErrorKind::Other;
+            let mut i2c = Mock::new(&[Transaction::write_read(0xaa, vec![10, 12], vec![13, 14])
+                .with_error(expected_err.clone())]);
+            let mut buf = vec![0; 2];
+            let err = I2c::write_read(&mut i2c, 0xaa, &[10, 12], &mut buf).await.unwrap_err();
+            assert_eq!(err, expected_err);
+            i2c.done();
+        }
+
         /// The transaction mode should still be validated.
         #[test]
         #[should_panic(expected = "i2c::write unexpected mode")]
@@ -543,6 +835,17 @@ mod test {
             let mut i2c = Mock::new(&[Transaction::write_read(0xaa, vec![10, 12], vec![13, 14])
                 .with_error(ErrorKind::Other)]);
             let _ = i2c.write(0xaa, &vec![10, 12]);
+        }
+
+        /// The transaction mode should still be validated.
+        #[tokio::test]
+        #[should_panic(expected = "i2c::write unexpected mode")]
+        #[cfg(feature = "embedded-hal-async")]
+        async fn write_read_wrong_mode_async() {
+            use embedded_hal_async::i2c::I2c;
+            let mut i2c = Mock::new(&[Transaction::write_read(0xaa, vec![10, 12], vec![13, 14])
+                .with_error(ErrorKind::Other)]);
+            let _ = I2c::write(&mut i2c, 0xaa, &vec![10, 12]).await;
         }
 
         /// The transaction bytes should still be validated.
@@ -553,6 +856,18 @@ mod test {
                 .with_error(ErrorKind::Other)]);
             let mut buf = vec![0; 2];
             let _ = i2c.write_read(0xaa, &vec![10, 13], &mut buf);
+        }
+
+        /// The transaction bytes should still be validated.
+        #[tokio::test]
+        #[should_panic(expected = "i2c::write_read write data does not match expectation")]
+        #[cfg(feature = "embedded-hal-async")]
+        async fn write_read_wrong_data_async() {
+            use embedded_hal_async::i2c::I2c;
+            let mut i2c = Mock::new(&[Transaction::write_read(0xaa, vec![10, 12], vec![13, 14])
+                .with_error(ErrorKind::Other)]);
+            let mut buf = vec![0; 2];
+            let _ = I2c::write_read(&mut i2c, 0xaa, &vec![10, 13], &mut buf).await;
         }
     }
 }
