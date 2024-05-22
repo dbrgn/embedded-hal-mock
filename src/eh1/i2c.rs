@@ -404,7 +404,9 @@ mod test {
 
         let v = vec![1, 2];
         let mut buff = vec![0; 2];
-        I2c::write_read(&mut i2c, 0xaa, &v, &mut buff).await.unwrap();
+        I2c::write_read(&mut i2c, 0xaa, &v, &mut buff)
+            .await
+            .unwrap();
         assert_eq!(vec![3, 4], buff);
 
         i2c.done();
@@ -565,7 +567,9 @@ mod test {
 
         let v = vec![1, 2];
         let mut buff = vec![0; 2];
-        I2c::write_read(&mut i2c, 0xaa, &v, &mut buff).await.unwrap();
+        I2c::write_read(&mut i2c, 0xaa, &v, &mut buff)
+            .await
+            .unwrap();
     }
 
     #[test]
@@ -792,7 +796,6 @@ mod test {
             let _ = i2c.write(0xaa, &vec![10, 12]);
         }
 
-
         /// The transaction mode should still be validated.
         #[tokio::test]
         #[should_panic(expected = "i2c::write unexpected mode")]
@@ -823,7 +826,9 @@ mod test {
             let mut i2c = Mock::new(&[Transaction::write_read(0xaa, vec![10, 12], vec![13, 14])
                 .with_error(expected_err.clone())]);
             let mut buf = vec![0; 2];
-            let err = I2c::write_read(&mut i2c, 0xaa, &[10, 12], &mut buf).await.unwrap_err();
+            let err = I2c::write_read(&mut i2c, 0xaa, &[10, 12], &mut buf)
+                .await
+                .unwrap_err();
             assert_eq!(err, expected_err);
             i2c.done();
         }
