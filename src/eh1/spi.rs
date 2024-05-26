@@ -530,10 +530,10 @@ mod test {
 
         let mut spi = Mock::new(&[Transaction::read(10)]);
 
-        let mut buff = vec![0u8; 1];
-        SpiBus::read(&mut spi, &mut buff).unwrap();
+        let mut buf = vec![0u8; 1];
+        SpiBus::read(&mut spi, &mut buf).unwrap();
 
-        assert_eq!(buff, [10]);
+        assert_eq!(buf, [10]);
 
         spi.done();
     }
@@ -544,10 +544,10 @@ mod test {
 
         let mut spi = Mock::new(&[Transaction::read(0xFFFF_u16)]);
 
-        let mut buff = vec![0u16; 1];
-        SpiBus::read(&mut spi, &mut buff).unwrap();
+        let mut buf = vec![0u16; 1];
+        SpiBus::read(&mut spi, &mut buf).unwrap();
 
-        assert_eq!(buff, [0xFFFF_u16]);
+        assert_eq!(buf, [0xFFFF_u16]);
 
         spi.done();
     }

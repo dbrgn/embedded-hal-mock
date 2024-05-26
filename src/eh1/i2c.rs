@@ -336,9 +336,9 @@ mod test {
         let expectations = [Transaction::read(0xaa, vec![1, 2])];
         let mut i2c = Mock::new(&expectations);
 
-        let mut buff = vec![0; 2];
-        i2c.read(0xaa, &mut buff).unwrap();
-        assert_eq!(vec![1, 2], buff);
+        let mut buf = vec![0; 2];
+        i2c.read(0xaa, &mut buf).unwrap();
+        assert_eq!(vec![1, 2], buf);
 
         i2c.done();
     }
@@ -349,9 +349,9 @@ mod test {
         let mut i2c = Mock::new(&expectations);
 
         let v = vec![1, 2];
-        let mut buff = vec![0; 2];
-        i2c.write_read(0xaa, &v, &mut buff).unwrap();
-        assert_eq!(vec![3, 4], buff);
+        let mut buf = vec![0; 2];
+        i2c.write_read(0xaa, &v, &mut buf).unwrap();
+        assert_eq!(vec![3, 4], buf);
 
         i2c.done();
     }
@@ -414,8 +414,8 @@ mod test {
         let expectations = [Transaction::read(0xaa, vec![10, 12])];
         let mut i2c = Mock::new(&expectations);
 
-        let mut buff = vec![0; 2];
-        i2c.write(0xaa, &mut buff).unwrap();
+        let mut buf = vec![0; 2];
+        i2c.write(0xaa, &mut buf).unwrap();
     }
 
     #[test]
@@ -425,8 +425,8 @@ mod test {
         let mut i2c = Mock::new(&expectations);
 
         let v = vec![1, 2];
-        let mut buff = vec![0; 2];
-        i2c.write_read(0xaa, &v, &mut buff).unwrap();
+        let mut buf = vec![0; 2];
+        i2c.write_read(0xaa, &v, &mut buf).unwrap();
     }
 
     #[test]
@@ -466,9 +466,9 @@ mod test {
         let mut i2c_clone = i2c.clone();
 
         // Read on the original mock
-        let mut buff = vec![0; 2];
-        i2c.read(0xaa, &mut buff).unwrap();
-        assert_eq!(vec![1, 2], buff);
+        let mut buf = vec![0; 2];
+        i2c.read(0xaa, &mut buf).unwrap();
+        assert_eq!(vec![1, 2], buf);
 
         // Write on the clone
         i2c_clone.write(0xbb, &[3, 4]).unwrap();
