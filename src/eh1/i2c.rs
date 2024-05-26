@@ -67,7 +67,7 @@
 use eh1 as embedded_hal;
 use embedded_hal::{
     i2c,
-    i2c::{ErrorKind, ErrorType},
+    i2c::{ErrorKind, ErrorType, I2c},
 };
 
 use crate::common::Generic;
@@ -183,7 +183,7 @@ impl ErrorType for Mock {
     type Error = ErrorKind;
 }
 
-impl i2c::I2c for Mock {
+impl I2c for Mock {
     fn read(&mut self, address: u8, buffer: &mut [u8]) -> Result<(), Self::Error> {
         let e = self
             .next()
@@ -301,11 +301,11 @@ impl i2c::I2c for Mock {
 #[cfg(feature = "embedded-hal-async")]
 impl embedded_hal_async::i2c::I2c for Mock {
     async fn read(&mut self, address: u8, buffer: &mut [u8]) -> Result<(), Self::Error> {
-        eh1::i2c::I2c::read(self, address, buffer)
+        I2c::read(self, address, buffer)
     }
 
     async fn write(&mut self, address: u8, bytes: &[u8]) -> Result<(), Self::Error> {
-        eh1::i2c::I2c::write(self, address, bytes)
+        I2c::write(self, address, bytes)
     }
 
     async fn write_read(
@@ -314,7 +314,7 @@ impl embedded_hal_async::i2c::I2c for Mock {
         bytes: &[u8],
         buffer: &mut [u8],
     ) -> Result<(), Self::Error> {
-        eh1::i2c::I2c::write_read(self, address, bytes, buffer)
+        I2c::write_read(self, address, bytes, buffer)
     }
 
     async fn transaction<'a>(
@@ -322,15 +322,13 @@ impl embedded_hal_async::i2c::I2c for Mock {
         address: u8,
         operations: &mut [i2c::Operation<'a>],
     ) -> Result<(), Self::Error> {
-        eh1::i2c::I2c::transaction(self, address, operations)
+        I2c::transaction(self, address, operations)
     }
 }
 
 #[cfg(test)]
 mod test {
     use std::time::SystemTime;
-
-    use embedded_hal::i2c::I2c;
 
     use super::*;
 
