@@ -26,14 +26,6 @@
 //! i2c.done();
 //! ```
 //!
-//! ## Transactions
-//!
-//! There are currently three transaction types:
-//!
-//! - `Read`: This expects an I²C `read` command and will return the wrapped bytes.
-//! - `Write`: This expects an I²C `write` command with the wrapped bytes.
-//!   `expected` bytes are written and the `response` bytes are returned.
-//!
 //! ## Testing Error Handling
 //!
 //! If you want to test error handling of your code, you can attach an error to
