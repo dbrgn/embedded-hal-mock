@@ -65,10 +65,7 @@
 //! ```
 
 use eh1 as embedded_hal;
-use embedded_hal::{
-    i2c,
-    i2c::{ErrorKind, ErrorType, I2c},
-};
+use embedded_hal::i2c::{self, ErrorKind, ErrorType, I2c};
 
 use crate::common::Generic;
 
