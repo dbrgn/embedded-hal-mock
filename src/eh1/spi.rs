@@ -498,18 +498,6 @@ mod test {
         spi.done();
     }
 
-    #[tokio::test]
-    #[cfg(feature = "embedded-hal-async")]
-    async fn test_async_spi_mock_write() {
-        use embedded_hal_async::spi::SpiBus;
-
-        let mut spi = Mock::new(&[Transaction::write(10)]);
-
-        let _ = SpiBus::write(&mut spi, &[10]).await.unwrap();
-
-        spi.done();
-    }
-
     #[test]
     fn test_spi_mock_read_duplex() {
         use embedded_hal_nb::spi::FullDuplex;
@@ -564,37 +552,12 @@ mod test {
         spi.done();
     }
 
-    #[tokio::test]
-    #[cfg(feature = "embedded-hal-async")]
-    async fn test_async_spi_mock_read_bus() {
-        use embedded_hal_async::spi::SpiBus;
-
-        let mut spi = Mock::new(&[Transaction::read(10)]);
-
-        let mut buff = vec![0u8; 1];
-        SpiBus::read(&mut spi, &mut buff).await.unwrap();
-
-        assert_eq!(buff, [10]);
-
-        spi.done();
-    }
-
     #[test]
     fn test_spi_mock_flush() {
         use eh1::spi::SpiBus;
 
         let mut spi = Mock::new(&[Transaction::<u8>::flush()]);
         spi.flush().unwrap();
-        spi.done();
-    }
-
-    #[tokio::test]
-    #[cfg(feature = "embedded-hal-async")]
-    async fn test_async_spi_mock_flush() {
-        use embedded_hal_async::spi::SpiBus;
-
-        let mut spi = Mock::new(&[Transaction::<u8>::flush()]);
-        SpiBus::flush(&mut spi).await.unwrap();
         spi.done();
     }
 
@@ -626,7 +589,10 @@ mod test {
         spi.done();
     }
 
-    fn test_spi_mock_multiple_transaction_expectations() -> Mock<u8> {
+    #[test]
+    fn test_spi_mock_multiple_transaction() {
+        use eh1::spi::SpiDevice;
+
         let expectations = [
             Transaction::transaction_start(),
             Transaction::write_vec(vec![1, 2]),
@@ -635,14 +601,7 @@ mod test {
             Transaction::read(10),
             Transaction::transaction_end(),
         ];
-        Mock::new(&expectations)
-    }
-
-    #[test]
-    fn test_spi_mock_multiple_transaction() {
-        use eh1::spi::SpiDevice;
-
-        let mut spi = test_spi_mock_multiple_transaction_expectations();
+        let mut spi = Mock::new(&expectations);
         let mut ans = [0u8; 1];
         spi.transaction(&mut [
             Operation::Write(&[1, 2]),
@@ -650,30 +609,6 @@ mod test {
             Operation::DelayNs(100),
             Operation::Read(&mut ans),
         ])
-        .unwrap();
-
-        assert_eq!(ans, [10]);
-
-        spi.done();
-    }
-
-    #[tokio::test]
-    #[cfg(feature = "embedded-hal-async")]
-    async fn test_async_spi_mock_multiple_transaction() {
-        use embedded_hal_async::spi::SpiDevice;
-
-        let mut spi = test_spi_mock_multiple_transaction_expectations();
-        let mut ans = [0u8; 1];
-        SpiDevice::transaction(
-            &mut spi,
-            &mut [
-                Operation::Write(&[1, 2]),
-                Operation::Write(&[0x09]),
-                Operation::DelayNs(100),
-                Operation::Read(&mut ans),
-            ],
-        )
-        .await
         .unwrap();
 
         assert_eq!(ans, [10]);
@@ -705,19 +640,6 @@ mod test {
         spi.done();
     }
 
-    #[tokio::test]
-    #[cfg(feature = "embedded-hal-async")]
-    async fn test_async_spi_mock_write_vec() {
-        use embedded_hal_async::spi::SpiBus;
-
-        let expectations = [Transaction::write_vec(vec![10, 12])];
-        let mut spi = Mock::new(&expectations);
-
-        SpiBus::write(&mut spi, &[10, 12]).await.unwrap();
-
-        spi.done();
-    }
-
     #[test]
     fn test_spi_mock_transfer_in_place() {
         use eh1::spi::SpiBus;
@@ -727,22 +649,6 @@ mod test {
 
         let mut v = vec![10, 12];
         SpiBus::transfer_in_place(&mut spi, &mut v).unwrap();
-
-        assert_eq!(v, vec![12, 13]);
-
-        spi.done();
-    }
-
-    #[tokio::test]
-    #[cfg(feature = "embedded-hal-async")]
-    async fn test_async_spi_mock_transfer_in_place() {
-        use embedded_hal_async::spi::SpiBus;
-
-        let expectations = [Transaction::transfer_in_place(vec![10, 12], vec![12, 13])];
-        let mut spi = Mock::new(&expectations);
-
-        let mut v = vec![10, 12];
-        SpiBus::transfer_in_place(&mut spi, &mut v).await.unwrap();
 
         assert_eq!(v, vec![12, 13]);
 
@@ -782,22 +688,6 @@ mod test {
         spi.done();
     }
 
-    #[tokio::test]
-    #[cfg(feature = "embedded-hal-async")]
-    async fn test_async_spi_mock_transfer() {
-        use embedded_hal_async::spi::SpiBus;
-
-        let expectations = [Transaction::transfer(vec![10, 12], vec![12, 13])];
-        let mut spi = Mock::new(&expectations);
-
-        let mut v = vec![10, 12];
-        SpiBus::transfer(&mut spi, &mut v, &[10, 12]).await.unwrap();
-
-        assert_eq!(v, vec![12, 13]);
-
-        spi.done();
-    }
-
     #[test]
     fn test_spi_mock_multiple() {
         use eh1::spi::SpiBus;
@@ -818,27 +708,6 @@ mod test {
         spi.done();
     }
 
-    #[tokio::test]
-    #[cfg(feature = "embedded-hal-async")]
-    async fn test_async_spi_mock_multiple() {
-        use embedded_hal_async::spi::SpiBus;
-
-        let expectations = [
-            Transaction::write_vec(vec![1, 2]),
-            Transaction::transfer_in_place(vec![3, 4], vec![5, 6]),
-        ];
-        let mut spi = Mock::new(&expectations);
-
-        SpiBus::write(&mut spi, &[1, 2]).await.unwrap();
-
-        let mut v = vec![3, 4];
-        SpiBus::transfer_in_place(&mut spi, &mut v).await.unwrap();
-
-        assert_eq!(v, vec![5, 6]);
-
-        spi.done();
-    }
-
     #[test]
     #[should_panic(expected = "spi::write data does not match expectation")]
     fn test_spi_mock_write_err() {
@@ -846,16 +715,6 @@ mod test {
         let expectations = [Transaction::write_vec(vec![10, 12])];
         let mut spi = Mock::new(&expectations);
         SpiBus::write(&mut spi, &[10, 12, 12]).unwrap();
-    }
-
-    #[tokio::test]
-    #[cfg(feature = "embedded-hal-async")]
-    #[should_panic(expected = "spi::write data does not match expectation")]
-    async fn test_async_spi_mock_write_err() {
-        use embedded_hal_async::spi::SpiBus;
-        let expectations = [Transaction::write_vec(vec![10, 12])];
-        let mut spi = Mock::new(&expectations);
-        SpiBus::write(&mut spi, &[10, 12, 12]).await.unwrap();
     }
 
     #[test]
@@ -867,18 +726,6 @@ mod test {
         SpiBus::transfer_in_place(&mut spi, &mut vec![10, 13]).unwrap();
     }
 
-    #[tokio::test]
-    #[cfg(feature = "embedded-hal-async")]
-    #[should_panic(expected = "spi::transfer_in_place write data does not match expectation")]
-    async fn test_async_spi_mock_transfer_err() {
-        use embedded_hal_async::spi::SpiBus;
-        let expectations = [Transaction::transfer_in_place(vec![10, 12], vec![12, 15])];
-        let mut spi = Mock::new(&expectations);
-        SpiBus::transfer_in_place(&mut spi, &mut vec![10, 13])
-            .await
-            .unwrap();
-    }
-
     #[test]
     #[should_panic(expected = "spi::write unexpected mode")]
     fn test_spi_mock_mode_err() {
@@ -886,16 +733,6 @@ mod test {
         let expectations = [Transaction::transfer_in_place(vec![10, 12], vec![])];
         let mut spi = Mock::new(&expectations);
         SpiBus::write(&mut spi, &[10, 12, 12]).unwrap();
-    }
-
-    #[tokio::test]
-    #[cfg(feature = "embedded-hal-async")]
-    #[should_panic(expected = "spi::write unexpected mode")]
-    async fn test_async_spi_mock_mode_err() {
-        use embedded_hal_async::spi::SpiBus;
-        let expectations = [Transaction::transfer_in_place(vec![10, 12], vec![])];
-        let mut spi = Mock::new(&expectations);
-        SpiBus::write(&mut spi, &[10, 12, 12]).await.unwrap();
     }
 
     #[test]
@@ -911,17 +748,53 @@ mod test {
         SpiBus::write(&mut spi, &[10, 12, 10]).unwrap();
     }
 
+    /// Test that the async trait impls call the synchronous variants under the hood.
     #[tokio::test]
     #[cfg(feature = "embedded-hal-async")]
-    #[should_panic(expected = "spi::write data does not match expectation")]
-    async fn test_async_spi_mock_multiple_transaction_err() {
-        use embedded_hal_async::spi::SpiBus;
+    async fn async_impls() {
+        use embedded_hal_async::spi::{SpiBus, SpiDevice};
 
-        let expectations = [
-            Transaction::write_vec(vec![10, 12]),
-            Transaction::write_vec(vec![10, 12]),
-        ];
-        let mut spi = Mock::new(&expectations);
-        SpiBus::write(&mut spi, &[10, 12, 12]).await.unwrap();
+        let mut spi = Mock::new(&[
+            Transaction::read(1),
+            Transaction::write(2),
+            Transaction::transfer(vec![3], vec![4, 5]),
+            Transaction::transfer_in_place(vec![6, 7], vec![8, 9]),
+            Transaction::flush(),
+            Transaction::transaction_start(),
+            Transaction::delay(100),
+            Transaction::write(10),
+            Transaction::transaction_end(),
+        ]);
+
+        // Test read
+        let mut buf = vec![0u8; 1];
+        SpiBus::read(&mut spi, &mut buf).await.unwrap();
+        assert_eq!(buf, vec![1]);
+
+        // Test write
+        SpiBus::write(&mut spi, &[2]).await.unwrap();
+
+        // Test transfer
+        let mut buf = vec![0u8; 2];
+        SpiBus::transfer(&mut spi, &mut buf, &[3]).await.unwrap();
+        assert_eq!(buf, vec![4, 5]);
+
+        // Test transfer_in_place
+        let mut buf = vec![6, 7];
+        SpiBus::transfer_in_place(&mut spi, &mut buf).await.unwrap();
+        assert_eq!(buf, vec![8, 9]);
+
+        // Test flush
+        SpiBus::flush(&mut spi).await.unwrap();
+
+        // Test transaction
+        SpiDevice::transaction(
+            &mut spi,
+            &mut [Operation::DelayNs(100), Operation::Write(&[10])],
+        )
+        .await
+        .unwrap();
+
+        spi.done();
     }
 }
