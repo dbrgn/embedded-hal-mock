@@ -39,16 +39,17 @@ me know.
 
 ## Status
 
-- [x] I²C
-- [x] SPI
-- [x] No-op delay
-- [x] Actual delay
-- [x] Serial
-- [ ] RNG
-- [x] I/O pins (including PWM)
-- [x] ADC
-- [x] Timers (with `embedded-time` Cargo feature)
-- [ ] ...
+| Feature                                     | embedded-hal | embeded-hal-async |
+|---------------------------------------------|--------------|-------------------|
+| I²C                                         | ✅           | ✅               |
+| SPI                                         | ✅           | ✅               |
+| No-op delay                                 | ✅           | ✅               |
+| Actual delay                                | ✅           | ✅               |
+| Serial                                      | ✅           | -                |
+| RNG                                         | -            | -                |
+| I/O pins (including PWM)                    | ✅           | -                |
+| ADC                                         | ✅           | -                |
+| Timers (with `embedded-time` Cargo feature) | ✅           | -                |
 
 Pull requests for more mock implementations are welcome! :)
 
