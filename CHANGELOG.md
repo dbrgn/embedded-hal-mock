@@ -15,6 +15,30 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Changed
 
 
+## 0.11.0 - 2024-05-30
+
+This release adds support for various async APIs as defined in
+`embedded-hal-async`. To use these features, you need to enable the
+`embedded-hal-async` Cargo feature.
+
+If you're upgrading from an earlier version, please note that the `pin` module
+was renamed to `digital` to match `embedded-hal`.
+
+### Added
+
+- Add `ToggleableOutputPin` support for `eh0::digital::Mock` (#89)
+- Add `StatefulOutputPin` support for `eh1::digital::Mock` (#89)
+- Async support for `eh1::i2c::Mock` (#119)
+- Async support for `eh1::digital::Mock` (#91)
+- Async delay for `NoopDelay` / `StdSleep` (#104)
+- New `CheckedDelay` mock that supports both sync and async delays (#104)
+
+### Changed
+
+- Rename `pin` module to `digital` to match embedded-hal (#113)
+- Improve top level usage docs (#117)
+
+
 ## 0.10.0 - 2024-01-10
 
 This release contains a big change: `embedded-hal-mock` now supports both
