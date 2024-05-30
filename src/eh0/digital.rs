@@ -1,13 +1,14 @@
-//! Mock digital [`InputPin`] and [`OutputPin`] v2 implementations
+//! Mock digital [`InputPin`], [`OutputPin`], and [`ToggleableOutputPin`] v2 implementations
 //!
 //! [`InputPin`]: https://docs.rs/embedded-hal/0.2/embedded_hal/digital/v2/trait.InputPin.html
 //! [`OutputPin`]: https://docs.rs/embedded-hal/0.2/embedded_hal/digital/v2/trait.OutputPin.html
+//! [`ToggleableOutputPin`]: https://docs.rs/embedded-hal/0.2/embedded_hal/digital/v2/trait.ToggleableOutputPin.html
 //!
 //! ```
 //! # use eh0 as embedded_hal;
 //! use std::io::ErrorKind;
 //!
-//! use embedded_hal::digital::v2::{InputPin, OutputPin};
+//! use embedded_hal::digital::v2::{InputPin, OutputPin, ToggleableOutputPin};
 //! use embedded_hal_mock::eh0::{
 //!     digital::{Mock as PinMock, State as PinState, Transaction as PinTransaction},
 //!     MockError,
@@ -21,6 +22,7 @@
 //!     PinTransaction::get(PinState::High),
 //!     PinTransaction::set(PinState::Low),
 //!     PinTransaction::set(PinState::High).with_error(err.clone()),
+//!     PinTransaction::toggle(),
 //! ];
 //!
 //! // Create pin
@@ -33,6 +35,8 @@
 //! pin.set_low().unwrap();
 //! pin.set_high().expect_err("expected error return");
 //!
+//! pin.toggle().unwrap();
+//!
 //! pin.done();
 //!
 //! // Update expectations
@@ -43,7 +47,7 @@
 
 use eh0 as embedded_hal;
 use embedded_hal::{
-    digital::v2::{InputPin, OutputPin},
+    digital::v2::{InputPin, OutputPin, ToggleableOutputPin},
     PwmPin,
 };
 
@@ -82,6 +86,11 @@ impl Transaction {
     /// Create a new get transaction
     pub fn get(state: State) -> Transaction {
         Transaction::new(TransactionKind::Get(state))
+    }
+
+    /// Create a new toggle transaction
+    pub fn toggle() -> Transaction {
+        Transaction::new(TransactionKind::Toggle)
     }
 
     /// Create a new get transaction
@@ -137,6 +146,8 @@ pub enum TransactionKind {
     Set(State),
     /// Get the pin state
     Get(State),
+    /// Toggle the pin state
+    Toggle,
     /// Disable a [`PwmPin`] using [`PwmPin::disable`]
     Disable,
     /// Enable a [`PwmPin`] using [`PwmPin::enable`]
@@ -160,7 +171,7 @@ impl TransactionKind {
     /// Specifies whether the actual API returns a [`Result`] (= supports errors) or not.
     fn supports_errors(&self) -> bool {
         match self {
-            TransactionKind::Set(_) | TransactionKind::Get(_) => true,
+            TransactionKind::Set(_) | TransactionKind::Get(_) | TransactionKind::Toggle => true,
             _ => false,
         }
     }
@@ -242,6 +253,24 @@ impl InputPin for Mock {
             Ok(v == State::Low)
         } else {
             unreachable!();
+        }
+    }
+}
+
+/// Single digital output pin that can be toggled between high and low states
+impl ToggleableOutputPin for Mock {
+    /// Error type
+    type Error = MockError;
+
+    /// Toggle the pin low to high or high to low
+    fn toggle(&mut self) -> Result<(), Self::Error> {
+        let Transaction { kind, err } = self.next().expect("no expectation for pin::toggle call");
+
+        assert_eq!(kind, TransactionKind::Toggle, "expected pin::toggle");
+
+        match err {
+            Some(e) => Err(e),
+            None => Ok(()),
         }
     }
 }
@@ -347,6 +376,23 @@ mod test {
         pin.set_low().unwrap();
 
         pin.set_high().expect_err("expected error return");
+
+        pin.done();
+    }
+
+    #[test]
+    fn test_toggleable_output_pin() {
+        let expectations = [
+            Transaction::new(Toggle),
+            Transaction::toggle(),
+            Transaction::new(Toggle).with_error(MockError::Io(ErrorKind::NotConnected)),
+        ];
+        let mut pin = Mock::new(&expectations);
+
+        pin.toggle().unwrap();
+        pin.toggle().unwrap();
+
+        pin.toggle().expect_err("expected error return");
 
         pin.done();
     }
