@@ -47,7 +47,7 @@ me know.
 | Actual delay                                | ✅           | ✅               |
 | Serial                                      | ✅           | -                |
 | RNG                                         | -            | -                |
-| I/O pins (including PWM)                    | ✅           | -                |
+| I/O pins (including PWM)                    | ✅           | ✅               |
 | ADC                                         | ✅           | -                |
 | Timers (with `embedded-time` Cargo feature) | ✅           | -                |
 
