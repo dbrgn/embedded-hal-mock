@@ -66,7 +66,7 @@ the dependency version.
 
 ```yaml
 [patch.crates-io]
-eh0 = { git = "https://github.com/rust-embedded/embedded-hal" }
+eh1 = { git = "https://github.com/rust-embedded/embedded-hal" }
 ```
 
 ## License
