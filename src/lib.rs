@@ -38,6 +38,7 @@
 //! - `eh0`: Provide module [`eh0`] that mocks embedded-hal version 0.x
 //!   (enabled by default)
 //! - `eh1`: Provide module [`eh1`] that mocks embedded-hal version 1.x
+//!   (enabled by default)
 //! - `embedded-time`: Enable the [`eh0::timer`] module (enabled by default)
 //! - `embedded-hal-async`: Provide mocks for embedded-hal-async in [`eh1`]
 #![cfg_attr(docsrs, feature(doc_cfg), feature(doc_auto_cfg))]
