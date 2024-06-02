@@ -15,6 +15,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Changed
 
 
+## 0.11.1 - 2024-06-02
+
+This release only includes a documentation fix (with regards to default-enabled
+Cargo features), but no code changes.
+
+
 ## 0.11.0 - 2024-05-30
 
 This release adds support for various async APIs as defined in
