@@ -264,6 +264,10 @@ impl I2c for Mock {
             Mode::TransactionStart,
             "i2c::transaction_start unexpected mode"
         );
+        assert_eq!(
+            w.expected_addr, address,
+            "i2c::transaction_start address mismatch"
+        );
 
         for op in operations {
             match op {
@@ -281,6 +285,10 @@ impl I2c for Mock {
             w.expected_mode,
             Mode::TransactionEnd,
             "i2c::transaction_end unexpected mode"
+        );
+        assert_eq!(
+            w.expected_addr, address,
+            "i2c::transaction_end address mismatch"
         );
 
         Ok(())
