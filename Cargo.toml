@@ -26,7 +26,7 @@ eh1 = ["dep:eh1", "dep:embedded-hal-nb"]
 embedded-time = ["dep:embedded-time", "dep:void"]
 embedded-hal-async = ["dep:embedded-hal-async"]
 
-default = ["eh0", "eh1", "embedded-time"]
+default = ["eh1", "embedded-time"]
 
 [dependencies]
 eh0 = { package = "embedded-hal", version = "0.2.7", features = ["unproven"], optional = true }
