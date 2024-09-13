@@ -1,7 +1,6 @@
 # embedded-hal-mock
 
 [![GitHub Actions][github-actions-badge]][github-actions]
-![Minimum Rust Version][min-rust-badge]
 [![Crates.io Version][version-badge]][crates-io]
 
 This is a collection of types that implement the embedded-hal traits.
@@ -55,8 +54,9 @@ Pull requests for more mock implementations are welcome! :)
 
 ## Minimum Supported Rust Version (MSRV)
 
-This crate is guaranteed to compile on stable Rust 1.63 and up. It *might*
-compile with older versions but that may change in any new patch release.
+This crate is guaranteed to compile on the latest stable Rust release. It
+*might* compile with older versions but that may change in any new patch
+release.
 
 ## Development Version of `embedded-hal`
 
@@ -87,6 +87,5 @@ be dual licensed as above, without any additional terms or conditions.
 <!-- Badges -->
 [github-actions]: https://github.com/dbrgn/embedded-hal-mock/actions/workflows/ci.yml
 [github-actions-badge]: https://github.com/dbrgn/embedded-hal-mock/actions/workflows/ci.yml/badge.svg
-[min-rust-badge]: https://img.shields.io/badge/rustc-1.63+-blue.svg
 [crates-io]: https://crates.io/crates/embedded-hal-mock
 [version-badge]: https://img.shields.io/crates/v/embedded-hal-mock.svg
