@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 
+- Drop fixed MSRV policy (#124)
+
 
 ## 0.11.1 - 2024-06-02
 
