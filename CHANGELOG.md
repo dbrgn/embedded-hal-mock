@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- Check address in I2C transaction start/end operations. (#121)
+
 ### Changed
 
 - Drop fixed MSRV policy (#124)
