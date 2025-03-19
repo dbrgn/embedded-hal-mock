@@ -21,24 +21,24 @@ use std::{
 /// cloned instance of the mock can be used to check the expectations of the
 /// original instance that has been moved into a driver.
 ///
-/// Optional Data type allows for storage of arbitrary state data in mocks.
+/// The `mock_data` field allows for storage of arbitrary state data in mocks.
 /// Mock data can be accessed via appropriate getter/setter methods, i.e. `mock_data()` and `set_mock_data()`.
 ///
 #[derive(Debug, Clone)]
-pub struct Generic<T: Clone + Debug + PartialEq, Data = ()> {
+pub struct Generic<T: Clone + Debug + PartialEq, TData = ()> {
     expected: Arc<Mutex<VecDeque<T>>>,
     done_called: Arc<Mutex<DoneCallDetector>>,
-    mock_data: Option<Data>,
+    mock_data: Option<TData>,
 }
 
-impl<'a, T: 'a, Data> Generic<T, Data>
+impl<'a, T: 'a, TData> Generic<T, TData>
 where
     T: Clone + Debug + PartialEq,
 {
     /// Create a new mock interface
     ///
     /// This creates a new generic mock interface with initial expectations
-    pub fn new<E>(expected: E) -> Generic<T, Data>
+    pub fn new<E>(expected: E) -> Generic<T, TData>
     where
         E: IntoIterator<Item = &'a T>,
     {
@@ -107,18 +107,18 @@ where
     }
 
     /// Get the mock data
-    pub fn mock_data(&self) -> &Option<Data> {
+    pub fn mock_data(&self) -> &Option<TData> {
         &self.mock_data
     }
 
     /// Set the mock data
-    pub fn set_mock_data(&mut self, data: Option<Data>) {
+    pub fn set_mock_data(&mut self, data: Option<TData>) {
         self.mock_data = data;
     }
 }
 
 /// Iterator impl for use in mock impls
-impl<T, Data> Iterator for Generic<T, Data>
+impl<T, TData> Iterator for Generic<T, TData>
 where
     T: Clone + Debug + PartialEq,
 {

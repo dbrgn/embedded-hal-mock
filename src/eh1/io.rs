@@ -1,8 +1,8 @@
 //! IO mock implementations.
 //!
 //! This mock supports the specification and checking of expectations to allow
-//! automated testing of IO based drivers. Mismatches between expected and
-//! real IO transactions will cause runtime assertions to assist with locating
+//! automated testing of `embedded-io` based drivers. Mismatches between expected
+//! and real IO transactions will cause runtime assertions to assist with locating
 //! faults.
 //!
 //! ## Usage
@@ -21,14 +21,14 @@
 //! let mut io = IoMock::new(&expectations);
 //!
 //! // Writing
-//! let ret = io.write(&[10, 20]).unwrap();
-//! assert_eq!(ret, 2);
+//! let bytes_written = io.write(&[10, 20]).unwrap();
+//! assert_eq!(bytes_written, 2);
 //!
 //! // Reading
 //! let mut buffer = [0; 2];
-//! let ret = io.read(&mut buffer).unwrap();
+//! let bytes_read = io.read(&mut buffer).unwrap();
 //! assert_eq!(buffer, [20, 30]);
-//! assert_eq!(ret, 2);
+//! assert_eq!(bytes_read, 2);
 //!
 //! // Flushing
 //! io.flush().unwrap();
@@ -36,13 +36,13 @@
 //! // Finalizing expectations
 //! io.done();
 //!
-//! // optional async
+//! // Async is supported with the optional `embedded-hal-async` feature.
 //! #[cfg(feature = "embedded-hal-async")]
 //! async {
 //!     use embedded_io_async;
 //!     let mut io = IoMock::new(&[IoTransaction::write(vec![10, 20])]);
-//!     let ret = embedded_io_async::Write::write(&mut io, &[10, 20]).await.unwrap();
-//!     assert_eq!(ret, 2);
+//!     let bytes_written = embedded_io_async::Write::write(&mut io, &[10, 20]).await.unwrap();
+//!     assert_eq!(bytes_written, 2);
 //!     io.done();
 //! };
 //!
@@ -92,10 +92,10 @@ pub struct Transaction {
 
 impl Transaction {
     /// Create a write transaction
-    pub fn write(expected: Vec<u8>) -> Transaction {
+    pub fn write(expected_data: Vec<u8>) -> Transaction {
         Transaction {
             expected_mode: Mode::Write,
-            expected_data: expected,
+            expected_data,
             response: Vec::new(),
             expected_err: None,
         }
@@ -237,7 +237,7 @@ impl Read for Mock {
             panic!("response longer than read buffer for io::read");
         }
 
-        let len = std::cmp::min(buffer.len(), transaction.response.len());
+        let len = transaction.response.len();
         buffer[..len].copy_from_slice(&transaction.response[..len]);
 
         match transaction.expected_err {
@@ -252,7 +252,7 @@ impl Seek for Mock {
         let transaction = self.next().expect("no expectation for io::seek call");
 
         if let Mode::Seek(expected_pos) = transaction.expected_mode {
-            assert_eq!(expected_pos, pos, "io::seek unexpected mode");
+            assert_eq!(expected_pos, pos, "io::seek unexpected pos");
 
             let ret_offset: u64 = u64::from_be_bytes(transaction.response.try_into().unwrap());
             match transaction.expected_err {
@@ -313,8 +313,7 @@ impl BufRead for Mock {
             "io::fill_buf unexpected mode"
         );
 
-        let response_vec = transaction.response;
-        self.set_mock_data(Some(response_vec));
+        self.set_mock_data(Some(transaction.response));
 
         match transaction.expected_err {
             Some(err) => Err(err),
@@ -616,7 +615,7 @@ mod test {
     }
 
     #[test]
-    #[should_panic(expected = "io::seek unexpected mode")]
+    #[should_panic(expected = "io::seek unexpected pos")]
     fn test_io_mock_seek_err() {
         let mut io = Mock::new(&[Transaction::seek(SeekFrom::End(2), 0)]);
 
