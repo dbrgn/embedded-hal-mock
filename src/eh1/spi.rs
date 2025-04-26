@@ -38,7 +38,37 @@
 //! spi.transfer_in_place(&mut buf).unwrap();
 //! assert_eq!(buf, vec![5, 6]);
 //!
-//! // Finalise expectations
+//! // Finalize expectations
+//! spi.done();
+//! ```
+//!
+//! ## Mocking Errors
+//!
+//! ```
+//! # use eh1 as embedded_hal;
+//! use embedded_hal::spi::{SpiBus, SpiDevice, ErrorKind};
+//! use embedded_hal_mock::eh1::spi::{Mock as SpiMock, Transaction as SpiTransaction};
+//! use embedded_hal_nb::{nb::Error, spi::FullDuplex};
+//!
+//! // Configure expectations
+//! let expectations = [
+//!     SpiTransaction::write(0x09).with_error(ErrorKind::Other),
+//!     SpiTransaction::transfer_in_place(vec![3, 4], vec![5, 6]).with_error(ErrorKind::Other),
+//!     SpiTransaction::transaction_start().with_error(ErrorKind::Other),
+//! ];
+//!
+//! let mut spi = SpiMock::new(&expectations);
+//! // FullDuplex transfers
+//! assert_eq!(FullDuplex::write(&mut spi, 0x09), Err(Error::Other(ErrorKind::Other)));
+//!
+//! // Transferring
+//! let mut buf = vec![3, 4];
+//! assert_eq!(SpiBus::transfer_in_place(&mut spi, &mut buf), Err(ErrorKind::Other));
+//!
+//! // SpiDevice transfer that fails to start
+//! assert_eq!(SpiDevice::write(&mut spi, &vec![7, 8]), Err(ErrorKind::Other));
+//!
+//! // Finalize expectations
 //! spi.done();
 //! ```
 use core::fmt::Debug;
@@ -77,6 +107,7 @@ pub struct Transaction<W> {
     expected_mode: Mode,
     expected_data: Vec<W>,
     response: Vec<W>,
+    err: Option<spi::ErrorKind>,
 }
 
 impl<W> Transaction<W>
@@ -89,6 +120,7 @@ where
             expected_mode: Mode::Write,
             expected_data: expected,
             response: Vec::new(),
+            err: None,
         }
     }
 
@@ -98,6 +130,7 @@ where
             expected_mode: Mode::Transfer,
             expected_data: expected,
             response,
+            err: None,
         }
     }
 
@@ -107,6 +140,7 @@ where
             expected_mode: Mode::TransferInplace,
             expected_data: expected,
             response,
+            err: None,
         }
     }
 
@@ -116,6 +150,7 @@ where
             expected_mode: Mode::Write,
             expected_data: [expected].to_vec(),
             response: Vec::new(),
+            err: None,
         }
     }
 
@@ -125,6 +160,7 @@ where
             expected_mode: Mode::Read,
             expected_data: Vec::new(),
             response: [response].to_vec(),
+            err: None,
         }
     }
 
@@ -134,6 +170,7 @@ where
             expected_mode: Mode::Read,
             expected_data: Vec::new(),
             response,
+            err: None,
         }
     }
 
@@ -143,6 +180,7 @@ where
             expected_mode: Mode::Flush,
             expected_data: Vec::new(),
             response: Vec::new(),
+            err: None,
         }
     }
 
@@ -152,6 +190,7 @@ where
             expected_mode: Mode::TransactionStart,
             expected_data: Vec::new(),
             response: Vec::new(),
+            err: None,
         }
     }
 
@@ -161,6 +200,7 @@ where
             expected_mode: Mode::TransactionEnd,
             expected_data: Vec::new(),
             response: Vec::new(),
+            err: None,
         }
     }
 
@@ -170,6 +210,17 @@ where
             expected_mode: Mode::Delay(delay),
             expected_data: Vec::new(),
             response: Vec::new(),
+            err: None,
+        }
+    }
+
+    /// Add an error return to a transaction
+    ///
+    /// This is used to mock hardware failures.
+    pub fn with_error(self, error: spi::ErrorKind) -> Self {
+        Self {
+            err: Some(error),
+            ..self
         }
     }
 }
@@ -230,7 +281,10 @@ where
             "spi:read mismatched response length"
         );
         buffer.copy_from_slice(&w.response);
-        Ok(())
+        match w.err {
+            Some(err) => Err(err),
+            None => Ok(()),
+        }
     }
 
     /// spi::Write implementation for Mock
@@ -243,7 +297,10 @@ where
             &w.expected_data, &buffer,
             "spi::write data does not match expectation"
         );
-        Ok(())
+        match w.err {
+            Some(err) => Err(err),
+            None => Ok(()),
+        }
     }
 
     fn transfer(&mut self, read: &mut [W], write: &[W]) -> Result<(), Self::Error> {
@@ -263,7 +320,10 @@ where
             "mismatched response length for spi::transfer"
         );
         read.copy_from_slice(&w.response);
-        Ok(())
+        match w.err {
+            Some(err) => Err(err),
+            None => Ok(()),
+        }
     }
 
     /// spi::TransferInplace implementation for Mock
@@ -288,7 +348,10 @@ where
             "mismatched response length for spi::transfer_in_place"
         );
         buffer.copy_from_slice(&w.response);
-        Ok(())
+        match w.err {
+            Some(err) => Err(err),
+            None => Ok(()),
+        }
     }
 
     fn flush(&mut self) -> Result<(), Self::Error> {
@@ -345,7 +408,10 @@ where
             data.expected_data[0], buffer,
             "spi::write data does not match expectation"
         );
-        Ok(())
+        match data.err {
+            Some(err) => Err(embedded_hal_nb::nb::Error::Other(err)),
+            None => Ok(()),
+        }
     }
 
     /// spi::FullDuplex implementation for Mock
@@ -360,7 +426,10 @@ where
             "mismatched response length for spi::read"
         );
         let buffer: W = w.response[0];
-        Ok(buffer)
+        match w.err {
+            Some(err) => Err(embedded_hal_nb::nb::Error::Other(err)),
+            None => Ok(buffer),
+        }
     }
 }
 
@@ -380,7 +449,9 @@ where
             Mode::TransactionStart,
             "spi::transaction unexpected mode"
         );
-
+        if let Some(err) = w.err {
+            return Err(err);
+        }
         for op in operations {
             match op {
                 Operation::Read(buffer) => {
@@ -415,7 +486,10 @@ where
             "spi::transaction unexpected mode"
         );
 
-        Ok(())
+        match w.err {
+            Some(err) => Err(err),
+            None => Ok(()),
+        }
     }
 }
 
@@ -558,6 +632,70 @@ mod test {
 
         let mut spi = Mock::new(&[Transaction::<u8>::flush()]);
         spi.flush().unwrap();
+        spi.done();
+    }
+
+    #[test]
+    fn test_spi_mock_bus_error() {
+        use eh1::spi::SpiBus;
+
+        let expectations = [
+            Transaction::write_vec(vec![1, 2]).with_error(spi::ErrorKind::Other),
+            Transaction::write(9).with_error(spi::ErrorKind::Other),
+            Transaction::read(10).with_error(spi::ErrorKind::Other),
+            Transaction::write(0xFE).with_error(spi::ErrorKind::Other),
+            Transaction::read(0xFF).with_error(spi::ErrorKind::Other),
+            Transaction::transfer_in_place(vec![3, 4], vec![5, 6])
+                .with_error(spi::ErrorKind::Other),
+        ];
+        let mut spi = Mock::new(&expectations);
+
+        assert_eq!(SpiBus::write(&mut spi, &[1, 2]), Err(spi::ErrorKind::Other));
+        assert_eq!(SpiBus::write(&mut spi, &[0x09]), Err(spi::ErrorKind::Other));
+        assert_eq!(
+            FullDuplex::read(&mut spi),
+            Err(embedded_hal_nb::nb::Error::Other(spi::ErrorKind::Other))
+        );
+        assert_eq!(SpiBus::write(&mut spi, &[0xfe]), Err(spi::ErrorKind::Other));
+        assert_eq!(
+            FullDuplex::read(&mut spi),
+            Err(embedded_hal_nb::nb::Error::Other(spi::ErrorKind::Other))
+        );
+        let mut v = vec![3, 4];
+        assert_eq!(
+            SpiBus::transfer_in_place(&mut spi, &mut v),
+            Err(spi::ErrorKind::Other)
+        );
+
+        spi.done();
+    }
+
+    #[test]
+    fn test_spi_mock_device_error() {
+        use eh1::spi::SpiDevice;
+
+        let expectations = [
+            Transaction::transaction_start().with_error(spi::ErrorKind::Other),
+            Transaction::transaction_start(),
+            Transaction::transfer_in_place(vec![3, 4], vec![5, 6]),
+            Transaction::transaction_end().with_error(spi::ErrorKind::Other),
+        ];
+        let mut spi = Mock::new(&expectations);
+
+        let mut v = vec![3, 4];
+
+        // exits early due to returned error on transaction start
+        assert_eq!(
+            SpiDevice::transfer_in_place(&mut spi, &mut v),
+            Err(spi::ErrorKind::Other)
+        );
+        // transfers successfully, but transaction_end() results in error
+        assert_eq!(
+            SpiDevice::transfer_in_place(&mut spi, &mut v),
+            Err(spi::ErrorKind::Other)
+        );
+        assert_eq!(v, vec![5, 6]);
+
         spi.done();
     }
 
