@@ -8,15 +8,13 @@
 //!
 //! ```
 //! # use eh1 as embedded_hal;
-//! use std::io::ErrorKind;
 //!
-//! use embedded_hal::digital::{InputPin, OutputPin, StatefulOutputPin};
+//! use embedded_hal::digital::{InputPin, OutputPin, StatefulOutputPin, ErrorKind};
 //! use embedded_hal_mock::eh1::{
 //!     digital::{Mock as PinMock, State as PinState, Transaction as PinTransaction},
-//!     MockError,
 //! };
 //!
-//! let err = MockError::Io(ErrorKind::NotConnected);
+//! let err = ErrorKind::Other;
 //!
 //! // Configure expectations
 //! let expectations = [
@@ -52,9 +50,9 @@
 //! ```
 
 use eh1 as embedded_hal;
-use embedded_hal::digital::{ErrorType, InputPin, OutputPin, StatefulOutputPin};
+use embedded_hal::digital::{ErrorKind, ErrorType, InputPin, OutputPin, StatefulOutputPin};
 
-use crate::{common::Generic, eh1::error::MockError};
+use crate::common::Generic;
 
 /// MockPin transaction
 #[derive(PartialEq, Eq, Clone, Debug)]
@@ -64,7 +62,7 @@ pub struct Transaction {
     /// An optional error return value for a transaction. This is in addition
     /// to `kind` to allow validation that the transaction kind is correct
     /// prior to returning the error.
-    err: Option<MockError>,
+    err: Option<ErrorKind>,
 }
 
 #[derive(PartialEq, Eq, Copy, Clone, Debug)]
@@ -149,7 +147,7 @@ impl Transaction {
     /// Note that this can only be used for methods which actually return a
     /// [`Result`]; trying to invoke this for others will lead to an assertion
     /// error!
-    pub fn with_error(mut self, error: MockError) -> Self {
+    pub fn with_error(mut self, error: ErrorKind) -> Self {
         assert!(
             self.kind.supports_errors(),
             "the transaction kind supports errors"
@@ -202,7 +200,7 @@ impl TransactionKind {
 pub type Mock = Generic<Transaction>;
 
 impl ErrorType for Mock {
-    type Error = MockError;
+    type Error = ErrorKind;
 }
 
 /// Single digital push-pull output pin
@@ -458,17 +456,15 @@ impl embedded_hal_async::digital::Wait for Mock {
 
 #[cfg(test)]
 mod test {
-    use std::io::ErrorKind;
     #[cfg(feature = "embedded-hal-async")]
     use std::time::Duration;
 
     use eh1 as embedded_hal;
-    use embedded_hal::digital::{InputPin, OutputPin, StatefulOutputPin};
+    use embedded_hal::digital::{ErrorKind, InputPin, OutputPin, StatefulOutputPin};
     #[cfg(feature = "embedded-hal-async")]
     use tokio::time::timeout;
 
     use super::{
-        super::error::MockError,
         TransactionKind::{Get, GetState, Set, Toggle},
         *,
     };
@@ -480,7 +476,7 @@ mod test {
             Transaction::new(Get(State::High)),
             Transaction::new(Get(State::Low)),
             Transaction::new(Get(State::Low)),
-            Transaction::new(Get(State::High)).with_error(MockError::Io(ErrorKind::NotConnected)),
+            Transaction::new(Get(State::High)).with_error(ErrorKind::Other),
         ];
         let mut pin = Mock::new(&expectations);
 
@@ -499,7 +495,7 @@ mod test {
         let expectations = [
             Transaction::new(Set(State::High)),
             Transaction::new(Set(State::Low)),
-            Transaction::new(Set(State::High)).with_error(MockError::Io(ErrorKind::NotConnected)),
+            Transaction::new(Set(State::High)).with_error(ErrorKind::Other),
         ];
         let mut pin = Mock::new(&expectations);
 
@@ -520,8 +516,8 @@ mod test {
             Transaction::get_state(State::High),
             Transaction::get_state(State::High),
             Transaction::toggle(),
-            Transaction::get_state(State::Low).with_error(MockError::Io(ErrorKind::NotConnected)),
-            Transaction::toggle().with_error(MockError::Io(ErrorKind::NotConnected)),
+            Transaction::get_state(State::Low).with_error(ErrorKind::Other),
+            Transaction::toggle().with_error(ErrorKind::Other),
         ];
         let mut pin = Mock::new(&expectations);
 
@@ -549,7 +545,7 @@ mod test {
             Transaction::new(TransactionKind::WaitForState(State::High)),
             Transaction::new(TransactionKind::WaitForState(State::Low)),
             Transaction::new(TransactionKind::WaitForState(State::High))
-                .with_error(MockError::Io(ErrorKind::NotConnected)),
+                .with_error(ErrorKind::Other),
         ];
         let mut pin = Mock::new(&expectations);
 
@@ -586,7 +582,7 @@ mod test {
             Transaction::new(TransactionKind::WaitForStateForever(State::High)),
             Transaction::new(TransactionKind::WaitForStateForever(State::Low)),
             Transaction::new(TransactionKind::WaitForStateForever(State::High))
-                .with_error(MockError::Io(ErrorKind::NotConnected)),
+                .with_error(ErrorKind::Other),
         ];
         let mut pin = Mock::new(&expectations);
 
@@ -616,7 +612,7 @@ mod test {
             Transaction::new(TransactionKind::WaitForEdge(Edge::Falling)),
             Transaction::new(TransactionKind::WaitForEdge(Edge::Any)),
             Transaction::new(TransactionKind::WaitForEdge(Edge::Rising))
-                .with_error(MockError::Io(ErrorKind::NotConnected)),
+                .with_error(ErrorKind::Other),
         ];
         let mut pin = Mock::new(&expectations);
 
@@ -641,7 +637,7 @@ mod test {
             Transaction::new(TransactionKind::WaitForEdgeForever(Edge::Falling)),
             Transaction::new(TransactionKind::WaitForEdgeForever(Edge::Any)),
             Transaction::new(TransactionKind::WaitForEdgeForever(Edge::Rising))
-                .with_error(MockError::Io(ErrorKind::NotConnected)),
+                .with_error(ErrorKind::Other),
         ];
         let mut pin = Mock::new(&expectations);
 

@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Drop fixed MSRV policy (#124)
 - **Breaking**: the `eh0` feature is no longer part of the default features.
   it still exists as an optional feature and has to be explicitly added when needed.
+- **Breaking**: Switch to `embedded_hal::digital::ErrorKind` (replaces previous type `eh1::MockError`)
+  for `eh1::digital::Transactions`. (#132)
 
 
 ## 0.11.1 - 2024-06-02
