@@ -191,29 +191,6 @@ where
     type Error = spi::ErrorKind;
 }
 
-#[derive(Default)]
-struct SpiBusFuture {
-    awaited: bool,
-}
-
-impl std::future::Future for SpiBusFuture {
-    type Output = Result<(), spi::ErrorKind>;
-
-    fn poll(
-        mut self: std::pin::Pin<&mut Self>,
-        _cx: &mut std::task::Context<'_>,
-    ) -> std::task::Poll<Self::Output> {
-        self.awaited = true;
-        std::task::Poll::Ready(Ok(()))
-    }
-}
-
-impl Drop for SpiBusFuture {
-    fn drop(&mut self) {
-        assert!(self.awaited, "spi::flush call was not awaited");
-    }
-}
-
 impl<W> SpiBus<W> for Mock<W>
 where
     W: Copy + 'static + Debug + PartialEq,
